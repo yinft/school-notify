@@ -1,0 +1,404 @@
+using System.IO;
+using System.Net.Http;
+using System.Globalization;
+using System.Windows;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
+using Forms = System.Windows.Forms;
+using QRCoder;
+using SchoolNotify.WindowsClient.Models;
+using SchoolNotify.WindowsClient.Services;
+
+namespace SchoolNotify.WindowsClient;
+
+public partial class MainWindow : Window
+{
+    private readonly DeviceApiClient _apiClient;
+
+    private readonly ClientSessionStore _clientSessionStore = new();
+
+    private readonly BannerSettingsStore _bannerSettingsStore = new();
+
+    private readonly AutoStartService _autoStartService = new();
+
+    private readonly SpeechAnnouncementService _speechAnnouncementService = new();
+
+    private readonly DeviceWebSocketClient _webSocketClient;
+
+    private readonly DispatcherTimer _heartbeatTimer;
+
+    private readonly DispatcherTimer _bannerHideTimer;
+
+    private readonly DispatcherTimer _reconnectTimer;
+
+    private readonly CancellationTokenSource _cancellationTokenSource = new();
+
+    private readonly Forms.NotifyIcon _notifyIcon;
+
+    private readonly BannerOverlayWindow _bannerOverlay = new();
+
+    private ClientSession? _currentSession;
+
+    private BannerSettings _bannerSettings = BannerSettings.Default;
+
+    private int _reconnectAttempt;
+
+    private bool _isExplicitExitRequested;
+
+    private bool _isLoadingBannerSettings;
+
+    public MainWindow()
+    {
+        InitializeComponent();
+
+        var httpClient = new HttpClient
+        {
+            BaseAddress = new Uri("http://127.0.0.1:8000")
+        };
+
+        _apiClient = new DeviceApiClient(httpClient);
+        _webSocketClient = new DeviceWebSocketClient(httpClient.BaseAddress!);
+        _heartbeatTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(30)
+        };
+        _bannerHideTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(10)
+        };
+        _reconnectTimer = new DispatcherTimer();
+        _heartbeatTimer.Tick += HeartbeatTimerOnTick;
+        _bannerHideTimer.Tick += BannerHideTimerOnTick;
+        _reconnectTimer.Tick += ReconnectTimerOnTick;
+
+        _notifyIcon = new Forms.NotifyIcon
+        {
+            Text = "校园通知屏客户端",
+            Icon = System.Drawing.SystemIcons.Application,
+            Visible = true,
+            ContextMenuStrip = BuildTrayMenu()
+        };
+        _notifyIcon.DoubleClick += (_, _) => RestoreFromTray();
+
+        Loaded += OnLoadedAsync;
+        Closing += OnClosingAsync;
+    }
+
+    private async void OnLoadedAsync(object sender, RoutedEventArgs e)
+    {
+        await InitializeClientAsync();
+    }
+
+    private async Task InitializeClientAsync()
+    {
+        try
+        {
+            _currentSession = await _clientSessionStore.LoadOrCreateAsync();
+            DeviceNameTextBlock.Text = $"设备名称：{_currentSession.DeviceName}";
+            DeviceIdTextBlock.Text = $"设备 ID：{_currentSession.DeviceId}";
+            _autoStartService.EnableForCurrentUser("SchoolNotifyWindowsClient", Environment.ProcessPath ?? string.Empty);
+
+            var registeredDevice = await _apiClient.RegisterDeviceAsync(
+                new DeviceRegistrationRequest(_currentSession.DeviceId, _currentSession.DeviceName, _currentSession.ClientVersion));
+            ApplyDeviceState(registeredDevice, "注册成功，等待小程序绑定");
+
+            var bindingCode = await _apiClient.RequestBindingCodeAsync(_currentSession.DeviceId);
+            ApplyBindingCode(bindingCode.Code);
+
+            _bannerSettings = await _bannerSettingsStore.LoadAsync(_cancellationTokenSource.Token);
+            ApplyBannerSettingsToControls(_bannerSettings);
+            ApplyBannerSettingsToBanner(_bannerSettings);
+
+            await ConnectWebSocketAsync();
+            _heartbeatTimer.Start();
+            ReconnectStatusTextBlock.Text = "重连状态：托盘和开机自启已启用";
+        }
+        catch (Exception exception)
+        {
+            StatusSummaryTextBlock.Text = $"初始化失败：{exception.Message}";
+            ConnectionStatusTextBlock.Text = "连接状态：异常";
+        }
+    }
+
+    private async void HeartbeatTimerOnTick(object? sender, EventArgs e)
+    {
+        if (_currentSession is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var heartbeat = await _apiClient.SendHeartbeatAsync(_currentSession.DeviceId);
+            ApplyDeviceState(heartbeat, "心跳正常，客户端在线");
+        }
+        catch (Exception exception)
+        {
+            StatusSummaryTextBlock.Text = $"心跳失败：{exception.Message}";
+            ConnectionStatusTextBlock.Text = "连接状态：心跳失败";
+        }
+    }
+
+    private async Task ConnectWebSocketAsync()
+    {
+        if (_currentSession is null)
+        {
+            return;
+        }
+
+        await _webSocketClient.ConnectAsync(
+            _currentSession.DeviceId,
+            HandleNotificationAsync,
+            HandleWebSocketDisconnectedAsync,
+            _cancellationTokenSource.Token);
+
+        _reconnectAttempt = 0;
+        ReconnectStatusTextBlock.Text = "重连状态：WebSocket 已连接";
+        ConnectionStatusTextBlock.Text = "连接状态：在线";
+    }
+
+    private Task HandleWebSocketDisconnectedAsync(Exception? exception)
+    {
+        return Dispatcher.InvokeAsync(() =>
+        {
+            ConnectionStatusTextBlock.Text = "连接状态：WebSocket 已断开";
+            ScheduleReconnect(exception?.Message);
+        }).Task;
+    }
+
+    private void ScheduleReconnect(string? reason)
+    {
+        _reconnectAttempt += 1;
+        var delay = ReconnectPolicy.GetDelay(_reconnectAttempt);
+        ReconnectStatusTextBlock.Text = $"重连状态：{delay.TotalSeconds:0} 秒后重试";
+        StatusSummaryTextBlock.Text = string.IsNullOrWhiteSpace(reason)
+            ? "WebSocket 连接已断开，准备重连"
+            : $"WebSocket 已断开：{reason}";
+        _reconnectTimer.Stop();
+        _reconnectTimer.Interval = delay;
+        _reconnectTimer.Start();
+    }
+
+    private async void ReconnectTimerOnTick(object? sender, EventArgs e)
+    {
+        _reconnectTimer.Stop();
+
+        try
+        {
+            await ConnectWebSocketAsync();
+        }
+        catch (Exception exception)
+        {
+            ScheduleReconnect(exception.Message);
+        }
+    }
+
+    private void BannerHideTimerOnTick(object? sender, EventArgs e)
+    {
+        _bannerOverlay.HideNotification();
+        _bannerHideTimer.Stop();
+    }
+
+    private async Task HandleNotificationAsync(DeviceNotificationMessage message)
+    {
+        var colorName = message.Payload.Level switch
+        {
+            "urgent" => _bannerSettings.UrgentColorName,
+            "important" => _bannerSettings.ImportantColorName,
+            _ => _bannerSettings.NormalColorName,
+        };
+        var bannerText = FormatBannerMessage(message.Payload.Title, message.Payload.Content);
+
+        await Dispatcher.InvokeAsync(() =>
+        {
+            _bannerOverlay.ShowNotification(bannerText, colorName, _bannerSettings);
+            StatusSummaryTextBlock.Text = $"已收到通知：{message.Payload.Title}";
+            _bannerHideTimer.Stop();
+            _bannerHideTimer.Start();
+        });
+
+        await _webSocketClient.SendReceiptAsync("receipt_displayed", message.Payload.NotificationId, _cancellationTokenSource.Token);
+
+        try
+        {
+            await _speechAnnouncementService.SpeakAsync(
+                message.Payload.Title,
+                message.Payload.Content,
+                message.Payload.Level,
+                _cancellationTokenSource.Token);
+            await _webSocketClient.SendReceiptAsync("receipt_spoken", message.Payload.NotificationId, _cancellationTokenSource.Token);
+        }
+        catch
+        {
+            await Dispatcher.InvokeAsync(() =>
+            {
+                StatusSummaryTextBlock.Text = $"已收到通知：{message.Payload.Title}，但语音播报失败";
+            });
+        }
+    }
+
+    private async void OnClosingAsync(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (TrayBehavior.ShouldMinimizeToTray(_isExplicitExitRequested))
+        {
+            e.Cancel = true;
+            Hide();
+            _notifyIcon.ShowBalloonTip(2000, "校园通知屏客户端", "客户端仍在后台运行，可从系统托盘重新打开。", Forms.ToolTipIcon.Info);
+            return;
+        }
+
+        _heartbeatTimer.Stop();
+        _bannerHideTimer.Stop();
+        _reconnectTimer.Stop();
+        _bannerOverlay.HideNotification();
+        _cancellationTokenSource.Cancel();
+        await _webSocketClient.DisconnectAsync(CancellationToken.None);
+        _notifyIcon.Visible = false;
+        _notifyIcon.Dispose();
+        _cancellationTokenSource.Dispose();
+    }
+
+    private Forms.ContextMenuStrip BuildTrayMenu()
+    {
+        var menu = new Forms.ContextMenuStrip();
+        menu.Items.Add("打开主窗口", image: null, (_, _) => RestoreFromTray());
+        menu.Items.Add("退出", image: null, (_, _) => ExitApplication());
+        return menu;
+    }
+
+    private void RestoreFromTray()
+    {
+        Show();
+        WindowState = WindowState.Normal;
+        Activate();
+    }
+
+    private void ExitApplication()
+    {
+        _isExplicitExitRequested = true;
+        Close();
+    }
+
+    private void ApplyDeviceState(DeviceResponse device, string summary)
+    {
+        StatusSummaryTextBlock.Text = summary;
+        ConnectionStatusTextBlock.Text = $"连接状态：{device.Status}";
+        LastHeartbeatTextBlock.Text = $"最后心跳：{device.LastSeenAt:yyyy-MM-dd HH:mm:ss}";
+    }
+
+    private void ApplyBindingCode(string code)
+    {
+        var payload = $"school-notify://bind?code={code}";
+        BindingCodeTextBlock.Text = $"绑定码：{code}";
+        BindingPayloadTextBlock.Text = $"扫码内容：{payload}";
+        QrImage.Source = CreateQrImage(payload);
+    }
+
+    private static string FormatBannerMessage(string title, string content)
+    {
+        return $"{title}    |    {content}";
+    }
+
+    private static BitmapImage CreateQrImage(string payload)
+    {
+        using var qrGenerator = new QRCodeGenerator();
+        using var qrCodeData = qrGenerator.CreateQrCode(payload, QRCodeGenerator.ECCLevel.Q);
+        var pngQrCode = new PngByteQRCode(qrCodeData);
+        var bytes = pngQrCode.GetGraphic(20);
+
+        using var memoryStream = new MemoryStream(bytes);
+        var image = new BitmapImage();
+        image.BeginInit();
+        image.CacheOption = BitmapCacheOption.OnLoad;
+        image.StreamSource = memoryStream;
+        image.EndInit();
+        image.Freeze();
+        return image;
+    }
+
+    private async void BannerSettingsControlChanged(object sender, RoutedEventArgs e)
+    {
+        if (_isLoadingBannerSettings || !IsLoaded)
+        {
+            return;
+        }
+
+        _bannerSettings = ReadBannerSettingsFromControls();
+        ApplyBannerSettingsToBanner(_bannerSettings);
+        await _bannerSettingsStore.SaveAsync(_bannerSettings, _cancellationTokenSource.Token);
+        StatusSummaryTextBlock.Text = "横幅设置已更新";
+    }
+
+    private void ApplyBannerSettingsToControls(BannerSettings settings)
+    {
+        _isLoadingBannerSettings = true;
+        BannerSpeedSlider.Value = settings.ScrollSpeed;
+        BannerFontSizeSlider.Value = settings.FontSize;
+        SelectComboBoxItemByTag(BannerNormalColorComboBox, settings.NormalColorName);
+        SelectComboBoxItemByTag(BannerImportantColorComboBox, settings.ImportantColorName);
+        SelectComboBoxItemByTag(BannerUrgentColorComboBox, settings.UrgentColorName);
+        SelectComboBoxItemByTag(BannerDurationComboBox, settings.DisplayDurationSeconds.ToString(CultureInfo.InvariantCulture));
+        UpdateBannerSettingsSummary(settings);
+        _isLoadingBannerSettings = false;
+    }
+
+    private void ApplyBannerSettingsToBanner(BannerSettings settings)
+    {
+        _bannerHideTimer.Interval = TimeSpan.FromSeconds(settings.DisplayDurationSeconds);
+        UpdateBannerSettingsSummary(settings);
+    }
+
+    private BannerSettings ReadBannerSettingsFromControls()
+    {
+        var durationTag = ReadSelectedTag(BannerDurationComboBox, BannerSettings.Default.DisplayDurationSeconds.ToString(CultureInfo.InvariantCulture));
+        if (!int.TryParse(durationTag, CultureInfo.InvariantCulture, out var duration))
+        {
+            duration = BannerSettings.Default.DisplayDurationSeconds;
+        }
+
+        return new BannerSettings(
+            ScrollSpeed: BannerSpeedSlider.Value,
+            FontSize: BannerFontSizeSlider.Value,
+            NormalColorName: ReadSelectedTag(BannerNormalColorComboBox, BannerSettings.Default.NormalColorName),
+            ImportantColorName: ReadSelectedTag(BannerImportantColorComboBox, BannerSettings.Default.ImportantColorName),
+            UrgentColorName: ReadSelectedTag(BannerUrgentColorComboBox, BannerSettings.Default.UrgentColorName),
+            DisplayDurationSeconds: duration);
+    }
+
+    private void UpdateBannerSettingsSummary(BannerSettings settings)
+    {
+        BannerSpeedValueTextBlock.Text = $"{settings.ScrollSpeed:0} px/s";
+        BannerFontSizeValueTextBlock.Text = $"{settings.FontSize:0} px";
+    }
+
+    private static void SelectComboBoxItemByTag(System.Windows.Controls.ComboBox comboBox, string tag)
+    {
+        foreach (System.Windows.Controls.ComboBoxItem item in comboBox.Items)
+        {
+            if (string.Equals(item.Tag?.ToString(), tag, StringComparison.Ordinal))
+            {
+                comboBox.SelectedItem = item;
+                return;
+            }
+        }
+
+        if (comboBox.Items.Count > 0)
+        {
+            comboBox.SelectedIndex = 0;
+        }
+    }
+
+    private static string ReadSelectedTag(System.Windows.Controls.ComboBox comboBox, string fallback)
+    {
+        return (comboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag?.ToString() ?? fallback;
+    }
+
+    private async void BannerResetToDefaultClicked(object sender, RoutedEventArgs e)
+    {
+        _bannerSettings = BannerSettings.Default;
+        ApplyBannerSettingsToControls(_bannerSettings);
+        ApplyBannerSettingsToBanner(_bannerSettings);
+        await _bannerSettingsStore.SaveAsync(_bannerSettings, _cancellationTokenSource.Token);
+        StatusSummaryTextBlock.Text = "横幅设置已恢复默认";
+    }
+}

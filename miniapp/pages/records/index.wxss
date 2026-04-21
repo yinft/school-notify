@@ -1,0 +1,53 @@
+.record-card {
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #f1f5f9;
+}
+
+.record-card:last-child {
+  border-bottom: none;
+}
+
+.record-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 8rpx;
+}
+
+.record-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.record-content {
+  color: #64748b;
+  font-size: 26rpx;
+  margin-bottom: 12rpx;
+}
+
+.record-summary {
+  font-weight: 600;
+  font-size: 26rpx;
+  color: #475569;
+  margin-bottom: 12rpx;
+}
+
+.delivery-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12rpx 0;
+  border-top: 1rpx solid #f1f5f9;
+  font-size: 24rpx;
+}
+
+.delivery-device {
+  color: #64748b;
+}
+
+.delivery-status {
+  font-weight: 600;
+  font-size: 24rpx;
+}

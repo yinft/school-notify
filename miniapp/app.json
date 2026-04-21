@@ -1,0 +1,30 @@
+{
+  "pages": [
+    "pages/devices/index",
+    "pages/bind/index",
+    "pages/send/index",
+    "pages/records/index",
+    "pages/profile/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "校园通知屏",
+    "navigationBarBackgroundColor": "#0F172A",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#F8FAFC",
+    "backgroundTextStyle": "light"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#94a3b8",
+    "selectedColor": "#0f172a",
+    "backgroundColor": "#ffffff",
+    "list": [
+      { "pagePath": "pages/devices/index", "text": "设备" },
+      { "pagePath": "pages/send/index", "text": "发送" },
+      { "pagePath": "pages/records/index", "text": "记录" },
+      { "pagePath": "pages/profile/index", "text": "我的" }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

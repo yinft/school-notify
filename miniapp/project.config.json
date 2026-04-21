@@ -1,0 +1,30 @@
+{
+  "appid": "wxa9a741f0ea2d7753",
+  "projectname": "school-notify-miniapp",
+  "compileType": "miniprogram",
+  "miniprogramRoot": "",
+  "srcMiniprogramRoot": "",
+  "setting": {
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "urlCheck": false,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "simulatorType": "wechat",
+  "libVersion": "3.15.2",
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "condition": {},
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  }
+}

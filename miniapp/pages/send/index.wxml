@@ -1,0 +1,51 @@
+<view class="page">
+  <view class="card">
+    <view class="section-title">目标设备</view>
+
+    <view wx:if="{{isLoadingDevices}}" class="empty-state">
+      <view class="muted">正在加载在线设备...</view>
+    </view>
+    <view wx:elif="{{errorText}}" class="empty-state">
+      <view class="status-offline">{{errorText}}</view>
+    </view>
+    <view wx:elif="{{!devices.length}}" class="empty-state">
+      <view class="empty-icon">📡</view>
+      <view class="empty-text">当前没有可发送的在线设备</view>
+    </view>
+    <checkbox-group wx:else bindchange="onDeviceSelectionChange">
+      <label wx:for="{{devices}}" wx:key="id" class="device-option">
+        <checkbox value="{{item.id}}" checked="{{selectedDeviceIds.indexOf(item.id) !== -1}}" color="#0f172a" />
+        <view class="device-option-body">
+          <view class="device-option-name">{{item.name}}</view>
+          <view class="muted">{{item.lastSeenText}}</view>
+        </view>
+      </label>
+    </checkbox-group>
+  </view>
+
+  <view style="height: 24rpx;"></view>
+
+  <view class="card">
+    <view class="section-title">通知内容</view>
+
+    <view class="form-label">标题</view>
+    <input class="form-input" placeholder="请输入通知标题" bindinput="onTitleInput" value="{{title}}" />
+
+    <view class="form-label">正文</view>
+    <textarea class="form-input form-textarea" placeholder="请输入通知正文" bindinput="onContentInput" value="{{content}}" />
+
+    <view class="form-label">紧急级别</view>
+    <picker mode="selector" range="{{levels}}" value="{{levelIndex}}" bindchange="onLevelChange">
+      <view class="form-picker">{{levels[levelIndex]}}</view>
+    </picker>
+
+    <view class="form-label">展示时长</view>
+    <picker mode="selector" range="{{durations}}" value="{{durationIndex}}" bindchange="onDurationChange">
+      <view class="form-picker">{{durations[durationIndex]}}</view>
+    </picker>
+
+    <view class="submit-btn {{isSubmitting ? 'submit-btn-disabled' : ''}}" bindtap="submit">
+      {{isSubmitting ? '发送中...' : '发送通知'}}
+    </view>
+  </view>
+</view>

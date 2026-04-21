@@ -1,0 +1,7 @@
+{
+  "name": "school-notify-miniapp",
+  "private": true,
+  "scripts": {
+    "test": "node --test"
+  }
+}
