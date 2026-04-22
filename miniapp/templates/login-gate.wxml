@@ -1,0 +1,28 @@
+<template name="login-gate">
+  <view class="login-gate-shell">
+    <view class="login-gate-orb login-gate-orb-a"></view>
+    <view class="login-gate-orb login-gate-orb-b"></view>
+    <view class="login-gate-grid"></view>
+
+    <view class="login-gate-card">
+      <view class="login-gate-topline">
+        <view class="login-gate-eyebrow">{{loginGate.eyebrow}}</view>
+        <view class="login-gate-scene">{{loginGate.sceneLabel}}</view>
+      </view>
+
+      <view class="login-gate-mark">{{loginGate.icon}}</view>
+      <view class="login-gate-title">{{loginGate.title}}</view>
+      <view class="login-gate-description">{{loginGate.description}}</view>
+
+      <view class="login-gate-highlights">
+        <view wx:for="{{loginGate.highlights}}" wx:key="*this" class="login-gate-chip">{{item}}</view>
+      </view>
+
+      <view class="button-primary login-gate-button {{isAuthorizingLogin ? 'button-disabled' : ''}}" bindtap="manualLogin">
+        {{isAuthorizingLogin ? '登录中...' : '手动授权登录'}}
+      </view>
+
+      <view class="login-gate-note">{{loginGate.note}}</view>
+    </view>
+  </view>
+</template>

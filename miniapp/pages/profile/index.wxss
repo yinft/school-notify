@@ -134,3 +134,9 @@
   font-weight: 700;
   color: #16324f;
 }
+
+.profile-logout-button {
+  color: #d64545;
+  background: #fff4f4;
+  border-color: #ffd5d5;
+}

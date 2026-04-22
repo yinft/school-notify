@@ -1,98 +1,106 @@
+<import src="../../templates/login-gate.wxml" />
+
 <view class="page">
-  <view class="hero-card hero-card-send hero-card-compact">
-    <view class="hero-overline">当前发送任务</view>
-    <view class="hero-send-lite-row">
-      <view class="hero-simple-main">
-        <view class="send-hero-title">把通知快速送到在线设备</view>
-        <view class="hero-subtitle">默认全选在线设备，也可以按场景立即调整这次发送目标。</view>
-      </view>
-      <view class="hero-send-lite-focus">
-        <view class="hero-simple-emphasis-label">本次目标</view>
-        <view class="hero-simple-emphasis-value">{{selectedCount}} 台</view>
-      </view>
-    </view>
-    <view class="hero-simple-meta">
-      <view class="hero-simple-chip">在线 {{devices.length}} 台</view>
-      <view class="hero-simple-chip">{{isSubmitting ? '发送中' : '待发送'}}</view>
-    </view>
-  </view>
+  <block wx:if="{{isLoginRequired}}">
+    <template is="login-gate" data="{{ loginGate: loginGate, isAuthorizingLogin: isAuthorizingLogin }}" />
+  </block>
 
-  <view class="card stack-lg">
-    <view class="section-header">
-      <view class="section-title">目标设备</view>
-      <view class="section-meta">已选 {{selectedCount}} / {{devices.length}}</view>
-    </view>
-
-    <view wx:if="{{devices.length}}" class="action-row send-quick-actions send-action-strip">
-      <view class="button-inline" bindtap="selectAllDevices">全选在线设备</view>
-      <view class="button-inline" bindtap="clearSelectedDevices">清空选择</view>
-    </view>
-
-    <view wx:if="{{isLoadingDevices}}" class="state-panel">
-      <view class="state-icon">...</view>
-      <view class="state-title">正在加载在线设备</view>
-      <view class="state-text">请稍候，系统正在同步可发送设备。</view>
-    </view>
-    <view wx:elif="{{errorText}}" class="state-panel state-panel-error">
-      <view class="state-icon">!</view>
-      <view class="state-title">设备加载失败</view>
-      <view class="state-text">{{errorText}}</view>
-      <view class="state-action">
-        <view class="button-inline" bindtap="loadDevices">重新加载</view>
-      </view>
-    </view>
-    <view wx:elif="{{!devices.length}}" class="state-panel">
-      <view class="state-icon">~</view>
-      <view class="state-title">当前没有在线设备</view>
-      <view class="state-text">先检查设备连接状态，或去绑定新的客户端设备。</view>
-      <view class="state-action action-row send-empty-actions">
-        <view class="button-inline" bindtap="goToDevices">查看设备页</view>
-        <view class="button-inline" bindtap="goToBind">去绑定</view>
-      </view>
-    </view>
-    <checkbox-group wx:else bindchange="onDeviceSelectionChange">
-      <label wx:for="{{devices}}" wx:key="id" class="device-option">
-        <checkbox value="{{item.id}}" checked="{{selectedDeviceIds.indexOf(item.id) !== -1}}" color="#2f80ff" />
-        <view class="device-option-body">
-          <view class="device-option-name">{{item.name}}</view>
-          <view class="device-option-meta">{{item.lastSeenText}}</view>
+  <block wx:else>
+    <view class="hero-card hero-card-send hero-card-compact">
+      <view class="hero-overline">当前发送任务</view>
+      <view class="hero-send-lite-row">
+        <view class="hero-simple-main">
+          <view class="send-hero-title">把通知快速送到在线设备</view>
+          <view class="hero-subtitle">默认全选在线设备，也可以按场景立即调整这次发送目标。</view>
         </view>
-      </label>
-    </checkbox-group>
-  </view>
-
-  <view class="card stack-lg">
-    <view class="section-header">
-      <view class="section-title">通知内容</view>
-      <view class="section-meta">清晰、简短、易读</view>
+        <view class="hero-send-lite-focus">
+          <view class="hero-simple-emphasis-label">本次目标</view>
+          <view class="hero-simple-emphasis-value">{{selectedCount}} 台</view>
+        </view>
+      </view>
+      <view class="hero-simple-meta">
+        <view class="hero-simple-chip">在线 {{devices.length}} 台</view>
+        <view class="hero-simple-chip">{{isSubmitting ? '发送中' : '待发送'}}</view>
+      </view>
     </view>
 
-    <view class="field-label">标题</view>
-    <input class="field-input" placeholder="例如：下午三点全体班委集合" bindinput="onTitleInput" value="{{title}}" />
-    <view class="field-helper">建议一句话说清主题，便于设备端快速识别。</view>
+    <view class="card stack-lg">
+      <view class="section-header">
+        <view class="section-title">目标设备</view>
+        <view class="section-meta">已选 {{selectedCount}} / {{devices.length}}</view>
+      </view>
 
-    <view class="field-label">正文</view>
-    <textarea class="field-input field-textarea" placeholder="请输入通知正文，例如集合地点、截止时间或注意事项。" bindinput="onContentInput" value="{{content}}" />
+      <view wx:if="{{devices.length}}" class="action-row send-quick-actions send-action-strip">
+        <view class="button-inline" bindtap="selectAllDevices">全选在线设备</view>
+        <view class="button-inline" bindtap="clearSelectedDevices">清空选择</view>
+      </view>
 
-    <view class="field-label">紧急级别</view>
-    <picker mode="selector" range="{{levels}}" value="{{levelIndex}}" bindchange="onLevelChange">
-      <view class="field-picker">{{levels[levelIndex]}}</view>
-    </picker>
-    <view class="field-helper">普通通知建议使用默认级别，紧急情况再提升提醒强度。</view>
-
-    <view class="field-label">展示时长</view>
-    <picker mode="selector" range="{{durations}}" value="{{durationIndex}}" bindchange="onDurationChange">
-      <view class="field-picker">{{durations[durationIndex]}}</view>
-    </picker>
-    <view wx:if="{{durationIndex === 5}}">
-      <view class="field-label">自定义时长</view>
-      <input class="field-input" type="number" placeholder="请输入秒数，例如 90" bindinput="onCustomDurationInput" value="{{customDurationValue}}" />
-      <view class="field-helper">自定义时长按秒提交，例如 `90` 表示 90 秒。</view>
+      <view wx:if="{{isLoadingDevices}}" class="state-panel">
+        <view class="state-icon">...</view>
+        <view class="state-title">正在加载在线设备</view>
+        <view class="state-text">请稍候，系统正在同步可发送设备。</view>
+      </view>
+      <view wx:elif="{{errorText}}" class="state-panel state-panel-error">
+        <view class="state-icon">!</view>
+        <view class="state-title">设备加载失败</view>
+        <view class="state-text">{{errorText}}</view>
+        <view class="state-action">
+          <view class="button-inline" bindtap="loadDevices">重新加载</view>
+        </view>
+      </view>
+      <view wx:elif="{{!devices.length}}" class="state-panel">
+        <view class="state-icon">~</view>
+        <view class="state-title">当前没有在线设备</view>
+        <view class="state-text">先检查设备连接状态，或去绑定新的客户端设备。</view>
+        <view class="state-action action-row send-empty-actions">
+          <view class="button-inline" bindtap="goToDevices">查看设备页</view>
+          <view class="button-inline" bindtap="goToBind">去绑定</view>
+        </view>
+      </view>
+      <checkbox-group wx:else bindchange="onDeviceSelectionChange">
+        <label wx:for="{{devices}}" wx:key="id" class="device-option">
+          <checkbox value="{{item.id}}" checked="{{selectedDeviceIds.indexOf(item.id) !== -1}}" color="#2f80ff" />
+          <view class="device-option-body">
+            <view class="device-option-name">{{item.name}}</view>
+            <view class="device-option-meta">{{item.lastSeenText}}</view>
+          </view>
+        </label>
+      </checkbox-group>
     </view>
 
-    <view class="button-primary {{isSubmitDisabled ? 'button-disabled' : ''}} stack-lg" bindtap="submit">
-      {{isSubmitting ? '发送中...' : '发送通知'}}
+    <view class="card stack-lg">
+      <view class="section-header">
+        <view class="section-title">通知内容</view>
+        <view class="section-meta">清晰、简短、易读</view>
+      </view>
+
+      <view class="field-label">标题</view>
+      <input class="field-input" placeholder="例如：下午三点全体班委集合" bindinput="onTitleInput" value="{{title}}" />
+      <view class="field-helper">建议一句话说清主题，便于设备端快速识别。</view>
+
+      <view class="field-label">正文</view>
+      <textarea class="field-input field-textarea" placeholder="请输入通知正文，例如集合地点、截止时间或注意事项。" bindinput="onContentInput" value="{{content}}" />
+
+      <view class="field-label">紧急级别</view>
+      <picker mode="selector" range="{{levels}}" value="{{levelIndex}}" bindchange="onLevelChange">
+        <view class="field-picker">{{levels[levelIndex]}}</view>
+      </picker>
+      <view class="field-helper">普通通知建议使用默认级别，紧急情况再提升提醒强度。</view>
+
+      <view class="field-label">展示时长</view>
+      <picker mode="selector" range="{{durations}}" value="{{durationIndex}}" bindchange="onDurationChange">
+        <view class="field-picker">{{durations[durationIndex]}}</view>
+      </picker>
+      <view wx:if="{{durationIndex === 5}}">
+        <view class="field-label">自定义时长</view>
+        <input class="field-input" type="number" placeholder="请输入秒数，例如 90" bindinput="onCustomDurationInput" value="{{customDurationValue}}" />
+        <view class="field-helper">自定义时长按秒提交，例如 `90` 表示 90 秒。</view>
+      </view>
+
+      <view class="button-primary {{isSubmitDisabled ? 'button-disabled' : ''}} stack-lg" bindtap="submit">
+        {{isSubmitting ? '发送中...' : '发送通知'}}
+      </view>
+      <view class="field-helper">{{submitHint}}</view>
     </view>
-    <view class="field-helper">{{submitHint}}</view>
-  </view>
+  </block>
 </view>

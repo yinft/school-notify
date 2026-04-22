@@ -17,6 +17,7 @@ public sealed class DeviceWebSocketClient
 
     public async Task ConnectAsync(
         string deviceId,
+        string token,
         Func<DeviceNotificationMessage, Task> onNotification,
         Func<Exception?, Task>? onDisconnected,
         CancellationToken cancellationToken)
@@ -25,7 +26,8 @@ public sealed class DeviceWebSocketClient
         var websocketUri = new UriBuilder(_baseUri)
         {
             Scheme = _baseUri.Scheme == "https" ? "wss" : "ws",
-            Path = $"/ws/devices/{deviceId}"
+            Path = $"/ws/devices/{deviceId}",
+            Query = $"token={Uri.EscapeDataString(token)}"
         }.Uri;
 
         await _socket.ConnectAsync(websocketUri, cancellationToken);

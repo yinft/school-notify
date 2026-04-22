@@ -39,6 +39,8 @@ public partial class MainWindow : Window
 
     private ClientSession? _currentSession;
 
+    private string? _deviceToken;
+
     private BannerSettings _bannerSettings = BannerSettings.Default;
 
     private int _reconnectAttempt;
@@ -100,6 +102,7 @@ public partial class MainWindow : Window
 
             var registeredDevice = await _apiClient.RegisterDeviceAsync(
                 new DeviceRegistrationRequest(_currentSession.DeviceId, _currentSession.DeviceName, _currentSession.ClientVersion));
+            _deviceToken = registeredDevice.DeviceToken;
             ApplyDeviceState(registeredDevice, "注册成功，等待小程序绑定");
 
             var bindingCode = await _apiClient.RequestBindingCodeAsync(_currentSession.DeviceId);
@@ -141,18 +144,20 @@ public partial class MainWindow : Window
 
     private async Task ConnectWebSocketAsync()
     {
-        if (_currentSession is null)
+        if (_currentSession is null || string.IsNullOrEmpty(_deviceToken))
         {
             return;
         }
 
         await _webSocketClient.ConnectAsync(
             _currentSession.DeviceId,
+            _deviceToken,
             HandleNotificationAsync,
             HandleWebSocketDisconnectedAsync,
             _cancellationTokenSource.Token);
 
         _reconnectAttempt = 0;
+        _heartbeatTimer.Start();
         ReconnectStatusTextBlock.Text = "重连状态：WebSocket 已连接";
         ConnectionStatusTextBlock.Text = "连接状态：在线";
     }
@@ -161,6 +166,7 @@ public partial class MainWindow : Window
     {
         return Dispatcher.InvokeAsync(() =>
         {
+            _heartbeatTimer.Stop();
             ConnectionStatusTextBlock.Text = "连接状态：WebSocket 已断开";
             ScheduleReconnect(exception?.Message);
         }).Task;

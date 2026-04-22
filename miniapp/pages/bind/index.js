@@ -1,25 +1,29 @@
 const { createBindingService, extractBindCodeFromScan, normalizeBindCode } = require('../../services/binding')
+const { ensurePageLogin } = require('../../utils/page-auth')
 const { request } = require('../../utils/request')
-
-function checkAuth() {
-  const app = getApp()
-  const p = app.globalData.userProfile
-  if (!p || !p.avatarUrl || !p.nickName) {
-    wx.redirectTo({ url: '/pages/auth/index' })
-    return false
-  }
-  return true
-}
 
 Page({
   data: {
     code: '',
     isSubmitting: false,
-    helperText: '请输入 Windows 客户端展示的 6 位绑定码'
+    helperText: '请输入 Windows 客户端展示的 6 位绑定码',
+    isLoginRequired: false,
+    loginTipText: '',
+    loginGate: null,
+    isAuthorizingLogin: false
   },
 
-  onShow() {
-    checkAuth()
+  async onShow() {
+    await ensurePageLogin(this, '设备绑定')
+  },
+
+  async manualLogin() {
+    if (this.data.isAuthorizingLogin) {
+      return
+    }
+
+    this.setData({ isAuthorizingLogin: true })
+    await ensurePageLogin(this, '设备绑定', { manual: true })
   },
 
   onCodeInput(event) {
@@ -49,6 +53,11 @@ Page({
   async submit() {
     const { code, isSubmitting } = this.data
     if (isSubmitting) {
+      return
+    }
+
+    if (this.data.isLoginRequired) {
+      wx.showToast({ title: '请先登录', icon: 'none' })
       return
     }
 

@@ -15,12 +15,14 @@ function createNotificationService({ request, currentUserId }) {
       })
     },
 
-    async fetchNotificationRecords() {
-      const response = await request({
-        url: `/notifications?sender_user_id=${encodeURIComponent(currentUserId)}`
-      })
+    async fetchNotificationRecords({ limit, offset } = {}) {
+      let url = `/notifications?sender_user_id=${encodeURIComponent(currentUserId)}`
+      if (limit !== undefined) url += `&limit=${limit}`
+      if (offset !== undefined) url += `&offset=${offset}`
 
-      return (response.items || []).map((item) => {
+      const response = await request({ url })
+
+      const records = (response.items || []).map((item) => {
         const deliveries = (item.deliveries || []).map((delivery) => ({
           deviceId: delivery.device_id,
           received: delivery.received,
@@ -41,6 +43,8 @@ function createNotificationService({ request, currentUserId }) {
           deliveries
         }
       })
+
+      return { records, total: response.total || 0 }
     }
   }
 }

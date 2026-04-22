@@ -1,30 +1,38 @@
 const { createNotificationService } = require('../../services/notification')
+const { ensurePageLogin } = require('../../utils/page-auth')
 const { request } = require('../../utils/request')
-
-function checkAuth() {
-  const app = getApp()
-  const p = app.globalData.userProfile
-  if (!p || !p.avatarUrl || !p.nickName) {
-    wx.redirectTo({ url: '/pages/auth/index' })
-    return false
-  }
-  return true
-}
 
 Page({
   data: {
     records: [],
     isLoading: false,
     errorText: '',
-    displayedCount: 0
+    displayedCount: 0,
+    isLoginRequired: false,
+    loginTipText: '',
+    loginGate: null,
+    isAuthorizingLogin: false
   },
 
-  onShow() {
-    if (!checkAuth()) return
+  async onShow() {
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 2 })
     }
+    if (!(await ensurePageLogin(this, '发送记录'))) {
+      return
+    }
     this.loadRecords()
+  },
+
+  async manualLogin() {
+    if (this.data.isAuthorizingLogin) {
+      return
+    }
+
+    this.setData({ isAuthorizingLogin: true })
+    if (await ensurePageLogin(this, '发送记录', { manual: true })) {
+      this.loadRecords()
+    }
   },
 
   async loadRecords() {
@@ -37,7 +45,8 @@ Page({
     this.setData({ isLoading: true, errorText: '' })
 
     try {
-      const records = (await notificationService.fetchNotificationRecords()).map((record) => ({
+      const { records: rawRecords } = await notificationService.fetchNotificationRecords()
+      const records = rawRecords.map((record) => ({
         ...record,
         levelText: this.getLevelText(record.level),
         createdAtText: this.formatCreatedAt(record.createdAt)
@@ -83,6 +92,11 @@ Page({
   },
 
   onPullDownRefresh() {
+    if (this.data.isLoginRequired) {
+      wx.stopPullDownRefresh()
+      return
+    }
+
     this.loadRecords().then(() => {
       wx.stopPullDownRefresh()
     })

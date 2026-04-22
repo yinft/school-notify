@@ -4,8 +4,19 @@ const assert = require('node:assert/strict')
 const { createDeviceService, formatLastSeenText } = require('../services/device')
 const { createBindingService, extractBindCodeFromScan, normalizeBindCode } = require('../services/binding')
 const { createNotificationService } = require('../services/notification')
+const { createAuthService } = require('../services/auth')
 const { getDurationSeconds, isCustomDurationSelected } = require('../pages/send/duration')
+const { createLoginGateModel } = require('../utils/login-gate')
+const { buildRequestOptions } = require('../utils/request')
 const { hasAuthorizedProfile } = require('../utils/user-profile')
+const {
+  DEFAULT_USER_ID,
+  createLoggedInSession,
+  createLoggedOutSession,
+  hasLoginSession,
+  shouldAutoLogin,
+  getLoginRequiredMessage
+} = require('../utils/auth-session')
 
 test('formatLastSeenText formats missing timestamps', () => {
   assert.equal(formatLastSeenText(null), '暂无在线记录')
@@ -109,13 +120,14 @@ test('createNotificationService fetches and maps notification records', async ()
               }
             ]
           }
-        ]
+        ],
+        total: 1
       })
     },
     currentUserId: 'user-001'
   })
 
-  const records = await service.fetchNotificationRecords()
+  const { records } = await service.fetchNotificationRecords()
 
   assert.deepEqual(calls, [{ url: '/notifications?sender_user_id=user-001' }])
   assert.deepEqual(records, [
@@ -191,15 +203,16 @@ test('records keep createdAt when backend provides created_at', async () => {
             created_at: '2026-04-21T10:30:00Z',
             deliveries: []
           }
-        ]
+        ],
+        total: 1
       })
     },
     currentUserId: 'user-001'
   })
 
-  const [record] = await service.fetchNotificationRecords()
+  const { records } = await service.fetchNotificationRecords()
 
-  assert.equal(record.createdAt, '2026-04-21T10:30:00Z')
+  assert.equal(records[0].createdAt, '2026-04-21T10:30:00Z')
 })
 
 test('getDurationSeconds maps preset durations', () => {
@@ -224,4 +237,120 @@ test('hasAuthorizedProfile requires avatar and nickname', () => {
   assert.equal(hasAuthorizedProfile({ avatarUrl: '', nickName: 'Alice' }), false)
   assert.equal(hasAuthorizedProfile({ avatarUrl: 'https://example.com/a.png', nickName: '' }), false)
   assert.equal(hasAuthorizedProfile(null), false)
+})
+
+test('createLoggedInSession keeps stable default user id', () => {
+  assert.deepEqual(
+    createLoggedInSession({
+      loginCode: 'wx-code-001',
+      sessionToken: 'wechat-session:user-001',
+      authProvider: 'wechat'
+    }),
+    {
+      isLoggedIn: true,
+      currentUserId: DEFAULT_USER_ID,
+      loginCode: 'wx-code-001',
+      sessionToken: 'wechat-session:user-001',
+      authProvider: 'wechat',
+      requiresManualLogin: false
+    }
+  )
+})
+
+test('logout session disables auto login until manual login', () => {
+  const session = createLoggedOutSession()
+
+  assert.equal(hasLoginSession(session), false)
+  assert.equal(shouldAutoLogin(session), false)
+})
+
+test('missing session still allows initial auto login', () => {
+  assert.equal(shouldAutoLogin(null), true)
+})
+
+test('getLoginRequiredMessage includes page title', () => {
+  assert.equal(getLoginRequiredMessage('设备列表'), '无法查看当前设备列表页面，请登录')
+})
+
+test('createAuthService posts login code and returns backend session', async () => {
+  const calls = []
+  const service = createAuthService({
+    request(options) {
+      calls.push(options)
+      return Promise.resolve({
+        user_id: 'demo-user',
+        session_token: 'mock-session-demo-user',
+        auth_provider: 'wechat_mock'
+      })
+    }
+  })
+
+  const session = await service.login({ code: 'wx-code-001' })
+
+  assert.deepEqual(calls, [
+    {
+      url: '/auth/login',
+      method: 'POST',
+      data: { code: 'wx-code-001' }
+    }
+  ])
+  assert.deepEqual(session, {
+    userId: 'demo-user',
+    sessionToken: 'mock-session-demo-user',
+    authProvider: 'wechat_mock'
+  })
+})
+
+test('createAuthService calls logout endpoint', async () => {
+  const calls = []
+  const service = createAuthService({
+    request(options) {
+      calls.push(options)
+      return Promise.resolve({})
+    }
+  })
+
+  await service.logout()
+
+  assert.deepEqual(calls, [
+    {
+      url: '/auth/logout',
+      method: 'POST'
+    }
+  ])
+})
+
+test('buildRequestOptions adds bearer token when logged in', () => {
+  const options = buildRequestOptions({
+    apiBaseUrl: 'https://example.com/api',
+    authSession: { sessionToken: 'wechat-session:openid-001' },
+    url: '/devices',
+    method: 'GET'
+  })
+
+  assert.deepEqual(options, {
+    url: 'https://example.com/api/devices',
+    method: 'GET',
+    data: undefined,
+    header: {
+      Authorization: 'Bearer wechat-session:openid-001'
+    }
+  })
+})
+
+test('createLoginGateModel builds page-specific login copy', () => {
+  const model = createLoginGateModel('设备列表')
+
+  assert.equal(model.eyebrow, '微信身份校验')
+  assert.equal(model.title, '登录后查看设备列表')
+  assert.equal(model.sceneLabel, '设备列表')
+  assert.equal(model.highlights.length, 3)
+  assert.equal(model.highlights[0], '同步你的设备归属关系')
+})
+
+test('createLoginGateModel falls back to generic highlights', () => {
+  const model = createLoginGateModel('我的')
+
+  assert.equal(model.sceneLabel, '我的')
+  assert.equal(model.highlights[0], '恢复你的账号身份')
 })

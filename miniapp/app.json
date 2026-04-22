@@ -1,6 +1,5 @@
 {
   "pages": [
-    "pages/auth/index",
     "pages/devices/index",
     "pages/bind/index",
     "pages/send/index",
