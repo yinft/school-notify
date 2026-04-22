@@ -15,6 +15,7 @@ class DeviceResponse(BaseModel):
     client_version: str
     status: str
     last_seen_at: datetime
+    device_token: str = ""
 
 
 class DeviceListResponse(BaseModel):

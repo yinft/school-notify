@@ -33,3 +33,4 @@ class NotificationRecord(BaseModel):
 
 class NotificationRecordListResponse(BaseModel):
     items: list[NotificationRecord]
+    total: int = 0

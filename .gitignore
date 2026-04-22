@@ -18,3 +18,7 @@ artifacts/
 *.exe
 *.dll
 *.pdb
+backend/.env
+backend/.idea/
+*.db
+backend/test_school_notify.db

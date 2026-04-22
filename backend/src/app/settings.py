@@ -4,9 +4,26 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "school-notify-backend"
     debug: bool = False
+    database_url: str = "sqlite:///./school_notify.db"
     bind_code_expires_seconds: int = 300
+    mock_user_id: str = "demo-user"
+    mock_auth_provider: str = "wechat_mock"
+    wechat_app_id: str = ""
+    wechat_app_secret: str = ""
+    wechat_code2session_url: str = "https://api.weixin.qq.com/sns/jscode2session"
+    session_signing_secret: str = "school-notify-dev-secret"
+    redis_url: str = ""
+    redis_password: str = ""
+    redis_key_prefix: str = "school-notify"
+    auth_session_cache_ttl_seconds: int = 7200
+    device_online_ttl_seconds: int = 90
 
-    model_config = SettingsConfigDict(env_prefix="SCHOOL_NOTIFY_", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_prefix="SCHOOL_NOTIFY_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
 
 settings = Settings()

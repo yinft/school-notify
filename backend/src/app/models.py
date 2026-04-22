@@ -1,0 +1,97 @@
+from datetime import UTC, datetime
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.db import Base
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    openid: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    nickname: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    avatar_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+    auth_sessions: Mapped[list["AuthSession"]] = relationship(back_populates="user")
+
+
+class AuthSession(Base):
+    __tablename__ = "auth_sessions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    session_token: Mapped[str] = mapped_column(String(512), unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    user: Mapped[User] = relationship(back_populates="auth_sessions")
+
+
+class Device(Base):
+    __tablename__ = "devices"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    device_id: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    device_name: Mapped[str] = mapped_column(String(128))
+    client_version: Mapped[str] = mapped_column(String(64))
+    status: Mapped[str] = mapped_column(String(32), default="online")
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+
+
+class DeviceBindCode(Base):
+    __tablename__ = "device_bind_codes"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    device_id: Mapped[str] = mapped_column(String(128), index=True)
+    code: Mapped[str] = mapped_column(String(16), unique=True, index=True)
+    expires_in_seconds: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+
+
+class UserDevice(Base):
+    __tablename__ = "user_devices"
+    __table_args__ = (
+        UniqueConstraint("user_id", "device_id", name="uq_user_devices_user_device"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(128), index=True)
+    device_id: Mapped[str] = mapped_column(String(128), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    notification_id: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    sender_user_id: Mapped[str] = mapped_column(String(128), index=True)
+    title: Mapped[str] = mapped_column(String(256))
+    content: Mapped[str] = mapped_column(String(2048))
+    level: Mapped[str] = mapped_column(String(32))
+    target_count: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+
+
+class NotificationDelivery(Base):
+    __tablename__ = "notification_deliveries"
+    __table_args__ = (
+        UniqueConstraint("notification_id", "device_id", name="uq_notification_deliveries_notification_device"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    notification_id: Mapped[str] = mapped_column(String(128), index=True)
+    device_id: Mapped[str] = mapped_column(String(128), index=True)
+    received: Mapped[bool] = mapped_column(Boolean, default=False)
+    displayed: Mapped[bool] = mapped_column(Boolean, default=False)
+    spoken: Mapped[bool] = mapped_column(Boolean, default=False)

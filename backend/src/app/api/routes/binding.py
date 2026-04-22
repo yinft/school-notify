@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
+from app.api.deps.auth import ensure_same_user, require_current_user
 from app.schemas.binding import (
     BindingCodeCreateRequest,
     BindingCodeResponse,
@@ -21,7 +22,8 @@ def create_binding_code(payload: BindingCodeCreateRequest) -> BindingCodeRespons
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-def create_binding(payload: BindingCreateRequest) -> BindingResponse:
+def create_binding(payload: BindingCreateRequest, current_user_id: str = Depends(require_current_user)) -> BindingResponse:
+    ensure_same_user(expected_user_id=payload.user_id, current_user_id=current_user_id)
     try:
         return store.bind_user_to_device(user_id=payload.user_id, code=payload.code)
     except BindingCodeNotFoundError as exc:

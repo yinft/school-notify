@@ -1,5 +1,9 @@
 from fastapi.testclient import TestClient
 
+from app import settings as app_settings
+
+app_settings.settings.database_url = "sqlite:///./test_school_notify.db"
+
 from app.main import app
 
 
