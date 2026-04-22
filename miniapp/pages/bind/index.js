@@ -1,11 +1,25 @@
 const { createBindingService, extractBindCodeFromScan, normalizeBindCode } = require('../../services/binding')
 const { request } = require('../../utils/request')
 
+function checkAuth() {
+  const app = getApp()
+  const p = app.globalData.userProfile
+  if (!p || !p.avatarUrl || !p.nickName) {
+    wx.redirectTo({ url: '/pages/auth/index' })
+    return false
+  }
+  return true
+}
+
 Page({
   data: {
     code: '',
     isSubmitting: false,
     helperText: '请输入 Windows 客户端展示的 6 位绑定码'
+  },
+
+  onShow() {
+    checkAuth()
   },
 
   onCodeInput(event) {

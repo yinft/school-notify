@@ -1,0 +1,17 @@
+<view class="page auth-page">
+  <view class="auth-card">
+    <view class="auth-logo">
+      <view class="auth-logo-icon">
+        <view class="auth-icon-head"></view>
+        <view class="auth-icon-body"></view>
+      </view>
+    </view>
+
+    <view class="auth-title">欢迎使用校园通知屏</view>
+    <view class="auth-text">授权微信头像和昵称后即可使用设备管理、通知发送和发送记录等功能。</view>
+
+    <view class="button-primary stack-lg {{isSubmitting ? 'button-disabled' : ''}}" bindtap="authorizeProfile">
+      {{isSubmitting ? '授权中...' : '微信授权登录'}}
+    </view>
+  </view>
+</view>

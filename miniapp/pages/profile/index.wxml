@@ -1,34 +1,54 @@
 <view class="page">
-  <view class="profile-header">
-    <view class="avatar">👤</view>
-    <view class="user-info">
-      <view class="user-name">校园通知屏用户</view>
-      <view class="user-id muted">ID：{{userId}}</view>
+  <view class="hero-card hero-card-profile hero-card-compact">
+    <view class="profile-glow profile-glow-a"></view>
+    <view class="profile-glow profile-glow-b"></view>
+
+    <view class="profile-top">
+      <view class="profile-avatar-wrap">
+        <image wx:if="{{avatarUrl}}" class="profile-avatar-image" src="{{avatarUrl}}" mode="aspectFill" />
+        <view wx:else class="profile-avatar-default">我</view>
+      </view>
+      <view class="profile-info">
+        <view class="hero-overline">账号中心</view>
+        <view class="profile-nick">{{nickName || '校园通知屏用户'}}</view>
+        <view class="hero-subtitle">当前账号可以管理设备、发送通知并查看触达记录。</view>
+      </view>
     </view>
+
   </view>
 
-  <view style="height: 24rpx;"></view>
+  <view class="card stack-lg">
+    <view class="section-header">
+      <view class="section-title">常用操作</view>
+      <view class="section-meta">快捷入口</view>
+    </view>
 
-  <view class="card">
     <view class="menu-item" bindtap="goToBind">
-      <view class="menu-icon">🔗</view>
-      <view class="menu-text">绑定新设备</view>
+      <view class="menu-icon">绑</view>
+      <view class="menu-text-group">
+        <view class="menu-text">绑定新设备</view>
+        <view class="menu-desc">添加新的 Windows 客户端到当前账号</view>
+      </view>
       <view class="menu-arrow">›</view>
     </view>
     <view class="menu-item" bindtap="goToRecords">
-      <view class="menu-icon">📋</view>
-      <view class="menu-text">发送记录</view>
+      <view class="menu-icon">记</view>
+      <view class="menu-text-group">
+        <view class="menu-text">发送记录</view>
+        <view class="menu-desc">查看最近通知的发送和展示状态</view>
+      </view>
       <view class="menu-arrow">›</view>
     </view>
   </view>
 
-  <view style="height: 24rpx;"></view>
-
-  <view class="card">
-    <view class="menu-item">
-      <view class="menu-icon">📞</view>
-      <view class="menu-text">版本信息</view>
-      <view class="muted">0.1.0</view>
+  <view class="card stack-lg">
+    <view class="section-header">
+      <view class="section-title">版本信息</view>
+      <view class="section-meta">稳定运行</view>
+    </view>
+    <view class="version-row">
+      <view class="version-label">当前版本</view>
+      <view class="version-value">0.1.0</view>
     </view>
   </view>
 </view>

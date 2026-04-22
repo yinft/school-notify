@@ -1,16 +1,48 @@
 <view class="page">
-  <view class="card">
-    <view class="section-title">已绑定设备</view>
+  <view class="hero-card hero-card-devices hero-card-compact">
+    <view class="hero-overline">设备总览</view>
+    <view class="hero-simple-row">
+      <view class="hero-simple-main">
+        <view class="hero-title">设备状态一目了然</view>
+        <view class="hero-subtitle">优先查看在线设备，快速确认通知屏当前是否可用。</view>
+      </view>
+      <view class="hero-simple-highlight">
+        <view class="hero-simple-highlight-value">{{onlineCount}}</view>
+        <view class="hero-simple-highlight-label">在线设备</view>
+      </view>
+    </view>
+    <view class="hero-simple-meta">
+      <view class="hero-simple-chip">共 {{devices.length}} 台设备</view>
+      <view class="hero-simple-chip">状态概览</view>
+    </view>
+  </view>
 
-    <view wx:if="{{isLoading}}" class="empty-state">
-      <view class="muted">正在加载设备...</view>
+  <view class="card stack-lg">
+    <view class="section-header">
+      <view class="section-title">设备列表</view>
+      <view class="section-meta">共 {{devices.length}} 台</view>
     </view>
-    <view wx:elif="{{errorText}}" class="empty-state">
-      <view class="status-offline">{{errorText}}</view>
+
+    <view wx:if="{{isLoading}}" class="state-panel">
+      <view class="state-icon">...</view>
+      <view class="state-title">正在同步设备</view>
+      <view class="state-text">请稍候，系统正在更新你的设备状态。</view>
     </view>
-    <view wx:elif="{{!devices.length}}" class="empty-state">
-      <view class="empty-icon">📱</view>
-      <view class="empty-text">当前还没有绑定设备</view>
+    <view wx:elif="{{errorText}}" class="state-panel state-panel-error">
+      <view class="state-icon">!</view>
+      <view class="state-title">设备加载失败</view>
+      <view class="state-text">{{errorText}}</view>
+      <view class="state-action">
+        <view class="button-inline" bindtap="loadDevices">重新加载</view>
+      </view>
+    </view>
+    <view wx:elif="{{!devices.length}}" class="state-panel">
+      <view class="state-icon">+</view>
+      <view class="state-title">还没有绑定设备</view>
+      <view class="state-text">先绑定一台 Windows 客户端设备，才能开始接收和管理通知。</view>
+      <view class="state-action">
+        <view class="button-inline" bindtap="goToBind">去绑定设备</view>
+      </view>
     </view>
     <block wx:else>
       <view wx:for="{{devices}}" wx:key="id" class="device-row">
@@ -18,16 +50,23 @@
           <view class="device-name">{{item.name}}</view>
           <view class="device-meta">
             <view class="device-meta-item">{{item.lastSeenText}}</view>
-            <view class="device-meta-item">v{{item.clientVersion}}</view>
+            <view class="device-meta-item">客户端 {{item.clientVersion}}</view>
           </view>
         </view>
-        <view class="device-status {{item.status === 'online' ? 'status-online' : 'status-offline'}}">
-          <view class="status-dot {{item.status === 'online' ? 'status-dot-online' : 'status-dot-offline'}}"></view>
-          {{item.statusText}}
+        <view class="status-chip {{item.status === 'online' ? 'status-chip-online' : 'status-chip-offline'}}">
+          <view class="status-dot"></view>
+          <view>{{item.statusText}}</view>
         </view>
       </view>
     </block>
   </view>
 
-  <view class="bind-btn" bindtap="goToBind">＋ 绑定新设备</view>
+  <view class="card">
+    <view class="section-header">
+      <view class="section-title">快捷操作</view>
+      <view class="section-meta">管理更轻松</view>
+    </view>
+
+    <view class="button-primary" bindtap="goToBind">+ 绑定新设备</view>
+  </view>
 </view>

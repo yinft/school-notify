@@ -35,6 +35,7 @@ function createNotificationService({ request, currentUserId }) {
           title: item.title,
           content: item.content,
           level: item.level,
+          ...(item.created_at ? { createdAt: item.created_at } : {}),
           targetCount: item.target_count,
           deliverySummary: `${item.target_count} 台设备，${displayedCount} 台已展示`,
           deliveries

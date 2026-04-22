@@ -1,44 +1,81 @@
-.profile-header {
+.profile-top {
   display: flex;
   align-items: center;
   gap: 24rpx;
-  background: #0f172a;
-  border-radius: 24rpx;
-  padding: 40rpx 32rpx;
 }
 
-.avatar {
+.profile-avatar-wrap {
   width: 96rpx;
   height: 96rpx;
   border-radius: 50%;
-  background: #1e293b;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.profile-avatar-image {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  display: block;
+  box-shadow: 0 0 0 6rpx rgba(255, 255, 255, 0.14);
+}
+
+.profile-avatar-default {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 48rpx;
-}
-
-.user-info {
-  flex: 1;
-}
-
-.user-name {
-  color: #ffffff;
   font-size: 34rpx;
-  font-weight: 600;
+  font-weight: 700;
+  color: #ffffff;
 }
 
-.user-id {
-  color: #94a3b8;
-  font-size: 24rpx;
-  margin-top: 6rpx;
+.profile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-nick {
+  margin-top: 10rpx;
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.3;
+}
+
+.profile-glow {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  filter: blur(6rpx);
+}
+
+.profile-glow-a {
+  width: 160rpx;
+  height: 160rpx;
+  right: -30rpx;
+  top: -20rpx;
+}
+
+.profile-glow-b {
+  width: 110rpx;
+  height: 110rpx;
+  right: 110rpx;
+  bottom: -28rpx;
 }
 
 .menu-item {
   display: flex;
   align-items: center;
   padding: 28rpx 0;
-  border-bottom: 1rpx solid #f1f5f9;
+  border-bottom: 1rpx solid #edf4ff;
+}
+
+.menu-item:first-child {
+  padding-top: 10rpx;
 }
 
 .menu-item:last-child {
@@ -46,17 +83,54 @@
 }
 
 .menu-icon {
-  font-size: 36rpx;
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 20rpx;
+  background: #eff6ff;
+  color: #2f80ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  font-weight: 700;
   margin-right: 20rpx;
 }
 
-.menu-text {
+.menu-text-group {
   flex: 1;
+}
+
+.menu-text {
   font-size: 30rpx;
+  font-weight: 600;
+  color: #16324f;
+}
+
+.menu-desc {
+  margin-top: 8rpx;
+  font-size: 23rpx;
+  color: #6f88a4;
 }
 
 .menu-arrow {
-  color: #cbd5e1;
+  color: #b7cce8;
   font-size: 36rpx;
   font-weight: 300;
+}
+
+.version-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.version-label {
+  font-size: 28rpx;
+  color: #5d7894;
+}
+
+.version-value {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #16324f;
 }

@@ -1,22 +1,35 @@
 <view class="page">
-  <view class="card">
-    <view class="section-title">绑定新设备</view>
+  <view class="hero-card hero-card-bind hero-card-compact">
+    <view class="hero-overline">接入引导</view>
+    <view class="hero-title">把新设备接入当前账号</view>
+    <view class="hero-subtitle">输入客户端上的绑定码，或直接扫码识别，几步完成设备接入。</view>
+    <view class="hero-simple-meta hero-simple-meta-single">
+      <view class="hero-simple-chip">1 获取绑定码</view>
+      <view class="hero-simple-chip">2 输入或扫码</view>
+      <view class="hero-simple-chip">3 完成绑定</view>
+    </view>
+  </view>
+
+  <view class="card stack-lg">
+    <view class="section-header">
+      <view class="section-title">绑定新设备</view>
+      <view class="section-meta">操作简单快捷</view>
+    </view>
     <view class="muted">{{helperText}}</view>
 
-    <view class="form-label">绑定码</view>
+    <view class="field-label">绑定码</view>
     <input
-      class="form-input"
-      placeholder="请输入 6 位绑定码"
+      class="field-input"
+      placeholder="请输入绑定码"
       maxlength="12"
       bindinput="onCodeInput"
       value="{{code}}"
     />
+    <view class="field-helper">支持手动输入或扫码识别，输入时会自动规范化为大写格式。</view>
 
-    <view class="scan-btn" bindtap="scanCode">
-      📷 扫码识别绑定码
-    </view>
+    <view class="button-secondary stack-lg" bindtap="scanCode">扫码识别绑定码</view>
 
-    <view class="submit-btn {{isSubmitting ? 'submit-btn-disabled' : ''}}" bindtap="submit">
+    <view class="button-primary {{isSubmitting ? 'button-disabled' : ''}} stack-lg" bindtap="submit">
       {{isSubmitting ? '绑定中...' : '立即绑定'}}
     </view>
   </view>

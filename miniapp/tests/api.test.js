@@ -4,6 +4,8 @@ const assert = require('node:assert/strict')
 const { createDeviceService, formatLastSeenText } = require('../services/device')
 const { createBindingService, extractBindCodeFromScan, normalizeBindCode } = require('../services/binding')
 const { createNotificationService } = require('../services/notification')
+const { getDurationSeconds, isCustomDurationSelected } = require('../pages/send/duration')
+const { hasAuthorizedProfile } = require('../utils/user-profile')
 
 test('formatLastSeenText formats missing timestamps', () => {
   assert.equal(formatLastSeenText(null), '暂无在线记录')
@@ -172,4 +174,54 @@ test('extractBindCodeFromScan supports raw bind code', () => {
 
 test('extractBindCodeFromScan supports deep link content', () => {
   assert.equal(extractBindCodeFromScan('school-notify://bind?code=ab12cd'), 'AB12CD')
+})
+
+test('records keep createdAt when backend provides created_at', async () => {
+  const service = createNotificationService({
+    request() {
+      return Promise.resolve({
+        items: [
+          {
+            notification_id: 'notification-2',
+            sender_user_id: 'user-001',
+            title: '例会提醒',
+            content: '请准时参加',
+            level: 'important',
+            target_count: 1,
+            created_at: '2026-04-21T10:30:00Z',
+            deliveries: []
+          }
+        ]
+      })
+    },
+    currentUserId: 'user-001'
+  })
+
+  const [record] = await service.fetchNotificationRecords()
+
+  assert.equal(record.createdAt, '2026-04-21T10:30:00Z')
+})
+
+test('getDurationSeconds maps preset durations', () => {
+  assert.equal(getDurationSeconds({ durationIndex: 0, customDurationValue: '' }), 30)
+  assert.equal(getDurationSeconds({ durationIndex: 1, customDurationValue: '' }), 60)
+  assert.equal(getDurationSeconds({ durationIndex: 2, customDurationValue: '' }), 180)
+  assert.equal(getDurationSeconds({ durationIndex: 3, customDurationValue: '' }), 300)
+  assert.equal(getDurationSeconds({ durationIndex: 4, customDurationValue: '' }), 600)
+})
+
+test('getDurationSeconds uses custom duration in seconds', () => {
+  assert.equal(getDurationSeconds({ durationIndex: 5, customDurationValue: '75' }), 75)
+})
+
+test('isCustomDurationSelected identifies custom option', () => {
+  assert.equal(isCustomDurationSelected(5), true)
+  assert.equal(isCustomDurationSelected(2), false)
+})
+
+test('hasAuthorizedProfile requires avatar and nickname', () => {
+  assert.equal(hasAuthorizedProfile({ avatarUrl: 'https://example.com/a.png', nickName: 'Alice' }), true)
+  assert.equal(hasAuthorizedProfile({ avatarUrl: '', nickName: 'Alice' }), false)
+  assert.equal(hasAuthorizedProfile({ avatarUrl: 'https://example.com/a.png', nickName: '' }), false)
+  assert.equal(hasAuthorizedProfile(null), false)
 })
