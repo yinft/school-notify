@@ -5,13 +5,13 @@ from fastapi.testclient import TestClient
 from sqlalchemy import delete
 from starlette.websockets import WebSocketDisconnect
 
-from app import settings as app_settings
+from app.core import settings as app_settings
 
 app_settings.settings.database_url = "postgresql+psycopg://postgres:tao1236987456@localhost:5432/school_notify"
 
 from app.api.deps import auth as auth_deps
 from app.api.routes import auth as auth_route
-from app.db import Base, SessionLocal, engine
+from app.core.db import Base, SessionLocal, engine
 from app.main import app
 from app.models import AuthSession, User
 from app.services.auth_sessions import create_auth_session, get_or_create_user_by_openid

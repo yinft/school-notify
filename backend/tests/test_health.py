@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from app import settings as app_settings
+from app.core import settings as app_settings
 
 app_settings.settings.database_url = "postgresql+psycopg://postgres:tao1236987456@localhost:5432/school_notify"
 

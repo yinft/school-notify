@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.api.deps.auth import require_current_user, require_session_token
-from app.db import get_db_session
+from app.core.db import get_db_session
 from app.schemas.auth import AuthLoginRequest, AuthSessionResponse
 from app.services.auth_sessions import create_auth_session, get_or_create_user_by_openid, revoke_session_by_token
 from app.services.wechat_auth import build_session_token, exchange_code_for_session
@@ -45,12 +45,12 @@ def logout(session_token: str = Depends(require_session_token), db: Session = De
 
 
 @router.get(
-    "/whoami",
+    "/current_user",
     summary="查询当前用户",
     description="【小程序端】根据请求头中的会话令牌返回当前用户信息，用于校验令牌是否有效。",
     responses={401: {"description": "无效或已过期的会话令牌"}},
 )
-def whoami(current_user_id: str = Depends(require_current_user)) -> AuthSessionResponse:
+def get_current_user(current_user_id: str = Depends(require_current_user)) -> AuthSessionResponse:
     return build_auth_session(openid=current_user_id)
 
 

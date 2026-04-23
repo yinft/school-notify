@@ -3,7 +3,7 @@ from secrets import randbelow
 
 from sqlalchemy import delete, select
 
-from app.db import SessionLocal
+from app.core.db import SessionLocal
 from app.models import AuthSession as AuthSessionModel, Device as DeviceModel
 from app.models import DeviceBindCode, Notification as NotificationModel, NotificationDelivery, User as UserModel, UserDevice
 from app.schemas.binding import BindingCodeResponse, BindingResponse
@@ -11,7 +11,7 @@ from app.schemas.device import DeviceResponse
 from app.schemas.notification import NotificationCreateResponse, NotificationDeliveryRecord, NotificationRecord
 from app.services.redis_service import redis_service
 from app.services.wechat_auth import build_device_token
-from app.settings import settings
+from app.core.settings import settings
 
 
 class DeviceNotFoundError(Exception):

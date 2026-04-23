@@ -1,7 +1,7 @@
 import logging
 import re
 
-from app.log_config import LOG_DATEFMT, LOG_FORMAT
+from app.core.logging import LOG_DATEFMT, LOG_FORMAT
 
 
 def test_log_format_includes_milliseconds() -> None:

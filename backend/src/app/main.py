@@ -2,8 +2,8 @@ from fastapi import FastAPI
 
 from app.api.router import api_router
 from app.api.routes.ws import router as ws_router
-from app.log_config import configure_logging
-from app.settings import settings
+from app.core.logging import configure_logging
+from app.core.settings import settings
 
 configure_logging()
 app = FastAPI(

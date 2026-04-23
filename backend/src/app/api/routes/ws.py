@@ -1,6 +1,6 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 
-from app.db import SessionLocal
+from app.core.db import SessionLocal
 from app.services.auth_sessions import get_cached_auth_user_id
 from app.services.device_connections import device_connections
 from app.services.redis_service import redis_service

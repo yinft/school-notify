@@ -3,7 +3,7 @@ import hmac
 
 import httpx
 
-from app.settings import settings
+from app.core.settings import settings
 
 
 class WeChatLoginError(Exception):

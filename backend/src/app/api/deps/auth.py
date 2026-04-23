@@ -1,7 +1,7 @@
 from fastapi import Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
-from app.db import get_db_session
+from app.core.db import get_db_session
 from app.services.auth_sessions import get_active_session_by_token, get_cached_auth_user_id, refresh_cached_auth_session
 from app.services.wechat_auth import WeChatLoginError, parse_session_token
 

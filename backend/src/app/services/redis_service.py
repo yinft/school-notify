@@ -3,7 +3,7 @@ from __future__ import annotations
 from redis import Redis
 from redis.exceptions import RedisError
 
-from app.settings import settings
+from app.core.settings import settings
 
 
 class RedisService:

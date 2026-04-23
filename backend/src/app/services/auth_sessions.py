@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.models import AuthSession, User
 from app.services.redis_service import redis_service
-from app.settings import settings
+from app.core.settings import settings
 
 
 def get_or_create_user_by_openid(db: Session, *, openid: str) -> User:
