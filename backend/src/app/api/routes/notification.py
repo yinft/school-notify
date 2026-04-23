@@ -9,7 +9,12 @@ from app.services.store import DeviceNotBoundError, DeviceNotFoundError, DeviceO
 router = APIRouter(prefix="/notifications")
 
 
-@router.get("")
+@router.get(
+    "",
+    summary="查询通知记录列表",
+    description="【小程序端】分页查询指定用户发送的通知记录，包含每条通知在各设备上的投递状态。只能查询自己的通知。",
+    responses={401: {"description": "未认证"}, 403: {"description": "无权查看其他用户的通知"}},
+)
 def list_notifications(
     sender_user_id: str,
     limit: int = 20,
@@ -21,7 +26,19 @@ def list_notifications(
     return NotificationRecordListResponse(items=items, total=total)
 
 
-@router.post("", status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="发送通知",
+    description="【小程序端】向指定设备列表发送通知。服务端创建通知记录后，通过 WebSocket 实时推送到在线设备。若目标设备离线则返回 409。",
+    responses={
+        202: {"description": "通知已接受，正在投递"},
+        401: {"description": "未认证"},
+        403: {"description": "设备未绑定到当前用户"},
+        404: {"description": "设备不存在"},
+        409: {"description": "设备离线"},
+    },
+)
 async def create_notification(payload: NotificationCreateRequest, current_user_id: str = Depends(require_current_user)) -> NotificationCreateResponse:
     ensure_same_user(expected_user_id=payload.sender_user_id, current_user_id=current_user_id)
     try:

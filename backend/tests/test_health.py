@@ -2,7 +2,7 @@ from fastapi.testclient import TestClient
 
 from app import settings as app_settings
 
-app_settings.settings.database_url = "sqlite:///./test_school_notify.db"
+app_settings.settings.database_url = "postgresql+psycopg://postgres:tao1236987456@localhost:5432/school_notify"
 
 from app.main import app
 

@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "school-notify-backend"
     debug: bool = False
-    database_url: str = "sqlite:///./school_notify.db"
+    database_url: str = "postgresql+psycopg://postgres:123@localhost:5432/school"
     bind_code_expires_seconds: int = 300
     mock_user_id: str = "demo-user"
     mock_auth_provider: str = "wechat_mock"

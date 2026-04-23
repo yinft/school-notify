@@ -7,7 +7,7 @@ from starlette.websockets import WebSocketDisconnect
 
 from app import settings as app_settings
 
-app_settings.settings.database_url = "sqlite:///./test_school_notify.db"
+app_settings.settings.database_url = "postgresql+psycopg://postgres:tao1236987456@localhost:5432/school_notify"
 
 from app.api.deps import auth as auth_deps
 from app.api.routes import auth as auth_route
@@ -16,7 +16,6 @@ from app.main import app
 from app.models import AuthSession, User
 from app.services.auth_sessions import create_auth_session, get_or_create_user_by_openid
 from app.services import store as store_module
-from app.services import auth_sessions as auth_sessions_module
 from app.services.store import store
 from app.services.wechat_auth import build_session_token
 

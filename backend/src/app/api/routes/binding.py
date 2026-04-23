@@ -13,7 +13,12 @@ from app.services.store import BindingCodeNotFoundError, DeviceNotFoundError, st
 router = APIRouter(prefix="/bindings")
 
 
-@router.post("/code")
+@router.post(
+    "/code",
+    summary="生成绑定码",
+    description="【设备端】为指定设备生成一次性绑定码。用户在小程序中输入此绑定码完成设备绑定。",
+    responses={404: {"description": "设备不存在"}},
+)
 def create_binding_code(payload: BindingCodeCreateRequest) -> BindingCodeResponse:
     try:
         return store.create_binding_code(device_id=payload.device_id)
@@ -21,7 +26,18 @@ def create_binding_code(payload: BindingCodeCreateRequest) -> BindingCodeRespons
         raise HTTPException(status_code=404, detail="device not found") from exc
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    status_code=status.HTTP_201_CREATED,
+    summary="绑定设备",
+    description="【小程序端】用户在小程序中输入绑定码，将设备绑定到自己的账号。绑定码验证通过后即失效。",
+    responses={
+        201: {"description": "绑定成功"},
+        401: {"description": "未认证"},
+        403: {"description": "无权绑定到其他用户"},
+        404: {"description": "绑定码不存在或已过期"},
+    },
+)
 def create_binding(payload: BindingCreateRequest, current_user_id: str = Depends(require_current_user)) -> BindingResponse:
     ensure_same_user(expected_user_id=payload.user_id, current_user_id=current_user_id)
     try:
