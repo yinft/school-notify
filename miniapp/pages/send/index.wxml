@@ -1,6 +1,6 @@
 <import src="../../templates/login-gate.wxml" />
 
-<view class="page">
+<view class="page {{isLoginRequired ? 'page-login' : ''}}">
   <block wx:if="{{isLoginRequired}}">
     <template is="login-gate" data="{{ loginGate: loginGate, isAuthorizingLogin: isAuthorizingLogin }}" />
   </block>
@@ -36,7 +36,11 @@
       </view>
 
       <view wx:if="{{isLoadingDevices}}" class="state-panel">
-        <view class="state-icon">...</view>
+        <view class="state-loading" aria-label="加载中">
+          <view class="state-loading-dot state-loading-dot-1"></view>
+          <view class="state-loading-dot state-loading-dot-2"></view>
+          <view class="state-loading-dot state-loading-dot-3"></view>
+        </view>
         <view class="state-title">正在加载在线设备</view>
         <view class="state-text">请稍候，系统正在同步可发送设备。</view>
       </view>
@@ -75,11 +79,11 @@
       </view>
 
       <view class="field-label">标题</view>
-      <input class="field-input" placeholder="例如：下午三点全体班委集合" bindinput="onTitleInput" value="{{title}}" />
+      <input class="field-input field-input-single" placeholder-class="field-input-placeholder" placeholder="例如：下午三点全体班委集合" bindinput="onTitleInput" value="{{title}}" />
       <view class="field-helper">建议一句话说清主题，便于设备端快速识别。</view>
 
       <view class="field-label">正文</view>
-      <textarea class="field-input field-textarea" placeholder="请输入通知正文，例如集合地点、截止时间或注意事项。" bindinput="onContentInput" value="{{content}}" />
+      <textarea class="field-input field-textarea" placeholder-class="field-textarea-placeholder" placeholder="请输入通知正文，例如集合地点、截止时间或注意事项。" bindinput="onContentInput" value="{{content}}" />
 
       <view class="field-label">紧急级别</view>
       <picker mode="selector" range="{{levels}}" value="{{levelIndex}}" bindchange="onLevelChange">
@@ -93,7 +97,7 @@
       </picker>
       <view wx:if="{{durationIndex === 5}}">
         <view class="field-label">自定义时长</view>
-        <input class="field-input" type="number" placeholder="请输入秒数，例如 90" bindinput="onCustomDurationInput" value="{{customDurationValue}}" />
+        <input class="field-input field-input-single" type="number" placeholder-class="field-input-placeholder" placeholder="请输入秒数，例如 90" bindinput="onCustomDurationInput" value="{{customDurationValue}}" />
         <view class="field-helper">自定义时长按秒提交，例如 `90` 表示 90 秒。</view>
       </view>
 

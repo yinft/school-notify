@@ -1,6 +1,6 @@
 <import src="../../templates/login-gate.wxml" />
 
-<view class="page">
+<view class="page {{isLoginRequired ? 'page-login' : ''}}">
   <block wx:if="{{isLoginRequired}}">
     <template is="login-gate" data="{{ loginGate: loginGate, isAuthorizingLogin: isAuthorizingLogin }}" />
   </block>

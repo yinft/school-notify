@@ -1,6 +1,6 @@
 <import src="../../templates/login-gate.wxml" />
 
-<view class="page">
+<view class="page {{isLoginRequired ? 'page-login' : ''}}">
   <block wx:if="{{isLoginRequired}}">
     <template is="login-gate" data="{{ loginGate: loginGate, isAuthorizingLogin: isAuthorizingLogin }}" />
   </block>
@@ -27,7 +27,11 @@
       </view>
 
       <view wx:if="{{isLoading}}" class="state-panel">
-        <view class="state-icon">...</view>
+        <view class="state-loading" aria-label="加载中">
+          <view class="state-loading-dot state-loading-dot-1"></view>
+          <view class="state-loading-dot state-loading-dot-2"></view>
+          <view class="state-loading-dot state-loading-dot-3"></view>
+        </view>
         <view class="state-title">正在加载记录</view>
         <view class="state-text">请稍候，系统正在整理最近的通知结果。</view>
       </view>
