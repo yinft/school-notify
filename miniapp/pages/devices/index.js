@@ -89,17 +89,6 @@ Page({
     }
   },
 
-  onPullDownRefresh() {
-    if (this.data.isLoginRequired) {
-      wx.stopPullDownRefresh()
-      return
-    }
-
-    this.loadDevices().then(() => {
-      wx.stopPullDownRefresh()
-    })
-  }
-})
   showUnbindConfirm(deviceName) {
     return new Promise((resolve) => {
       wx.showModal({
@@ -111,3 +100,15 @@ Page({
       })
     })
   },
+
+  onPullDownRefresh() {
+    if (this.data.isLoginRequired) {
+      wx.stopPullDownRefresh()
+      return
+    }
+
+    this.loadDevices().then(() => {
+      wx.stopPullDownRefresh()
+    })
+  }
+})
