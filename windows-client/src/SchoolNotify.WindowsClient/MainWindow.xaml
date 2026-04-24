@@ -102,7 +102,7 @@
                         <ComboBoxItem Content="绯红" Tag="Crimson" />
                     </ComboBox>
 
-                    <TextBlock Margin="0,12,0,0" Text="停留时长" />
+                    <TextBlock Margin="0,12,0,0" Text="默认停留时长（通知未指定时生效）" />
                     <ComboBox x:Name="BannerDurationComboBox" SelectionChanged="BannerSettingsControlChanged">
                         <ComboBoxItem Content="10 秒" Tag="10" />
                         <ComboBoxItem Content="30 秒" Tag="30" />

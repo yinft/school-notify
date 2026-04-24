@@ -79,6 +79,9 @@ class Notification(Base):
     title: Mapped[str] = mapped_column(String(256))
     content: Mapped[str] = mapped_column(String(2048))
     level: Mapped[str] = mapped_column(String(32))
+    duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    tts_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    tts_repeat_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     target_count: Mapped[int] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
@@ -95,3 +98,5 @@ class NotificationDelivery(Base):
     received: Mapped[bool] = mapped_column(Boolean, default=False)
     displayed: Mapped[bool] = mapped_column(Boolean, default=False)
     spoken: Mapped[bool] = mapped_column(Boolean, default=False)
+    failed: Mapped[bool] = mapped_column(Boolean, default=False)
+    error_message: Mapped[str | None] = mapped_column(String(256), nullable=True)

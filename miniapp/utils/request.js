@@ -1,3 +1,5 @@
+const { AUTH_SESSION_STORAGE_KEY, createLoggedOutSession } = require('./auth-session')
+
 function buildRequestOptions({ apiBaseUrl, authSession, url, method = 'GET', data }) {
   const header = {}
   if (authSession && authSession.sessionToken) {
@@ -10,6 +12,31 @@ function buildRequestOptions({ apiBaseUrl, authSession, url, method = 'GET', dat
     data,
     header
   }
+}
+
+function getErrorMessage(data) {
+  if (!data || !data.detail) {
+    return 'request failed'
+  }
+  if (typeof data.detail === 'string') {
+    return data.detail
+  }
+  if (Array.isArray(data.detail)) {
+    return data.detail.map((item) => item.msg || String(item)).join('；')
+  }
+  return String(data.detail)
+}
+
+function clearSessionOnUnauthorized(statusCode) {
+  if (statusCode !== 401) {
+    return
+  }
+  const loggedOutSession = createLoggedOutSession()
+  const app = getApp()
+  if (app && app.globalData) {
+    app.globalData.authSession = loggedOutSession
+  }
+  wx.setStorageSync(AUTH_SESSION_STORAGE_KEY, loggedOutSession)
 }
 
 function request({ url, method = 'GET', data }) {
@@ -31,10 +58,11 @@ function request({ url, method = 'GET', data }) {
           return
         }
 
+        clearSessionOnUnauthorized(response.statusCode)
         reject({
           statusCode: response.statusCode,
           data: response.data,
-          message: response.data && response.data.detail ? response.data.detail : 'request failed'
+          message: getErrorMessage(response.data)
         })
       },
       fail(error) {
@@ -48,5 +76,6 @@ function request({ url, method = 'GET', data }) {
 
 module.exports = {
   request,
-  buildRequestOptions
+  buildRequestOptions,
+  getErrorMessage
 }

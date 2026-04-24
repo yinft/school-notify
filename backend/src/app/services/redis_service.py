@@ -12,6 +12,9 @@ class RedisService:
         if settings.redis_url:
             self._client = Redis.from_url(settings.redis_url, password=settings.redis_password or None, decode_responses=True)
 
+    def is_enabled(self) -> bool:
+        return self._client is not None
+
     def cache_bind_code(self, *, code: str, device_id: str, ttl_seconds: int) -> None:
         if not self._client:
             return

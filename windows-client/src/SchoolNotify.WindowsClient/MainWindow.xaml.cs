@@ -103,9 +103,13 @@ public partial class MainWindow : Window
             var registeredDevice = await _apiClient.RegisterDeviceAsync(
                 new DeviceRegistrationRequest(_currentSession.DeviceId, _currentSession.DeviceName, _currentSession.ClientVersion));
             _deviceToken = registeredDevice.DeviceToken;
+            if (string.IsNullOrEmpty(_deviceToken))
+            {
+                throw new InvalidOperationException("服务端未返回设备令牌");
+            }
             ApplyDeviceState(registeredDevice, "注册成功，等待小程序绑定");
 
-            var bindingCode = await _apiClient.RequestBindingCodeAsync(_currentSession.DeviceId);
+            var bindingCode = await _apiClient.RequestBindingCodeAsync(_currentSession.DeviceId, _deviceToken);
             ApplyBindingCode(bindingCode.Code);
 
             _bannerSettings = await _bannerSettingsStore.LoadAsync(_cancellationTokenSource.Token);
@@ -125,14 +129,14 @@ public partial class MainWindow : Window
 
     private async void HeartbeatTimerOnTick(object? sender, EventArgs e)
     {
-        if (_currentSession is null)
+        if (_currentSession is null || string.IsNullOrEmpty(_deviceToken))
         {
             return;
         }
 
         try
         {
-            var heartbeat = await _apiClient.SendHeartbeatAsync(_currentSession.DeviceId);
+            var heartbeat = await _apiClient.SendHeartbeatAsync(_currentSession.DeviceId, _deviceToken);
             ApplyDeviceState(heartbeat, "心跳正常，客户端在线");
         }
         catch (Exception exception)
@@ -214,12 +218,14 @@ public partial class MainWindow : Window
             _ => _bannerSettings.NormalColorName,
         };
         var bannerText = FormatBannerMessage(message.Payload.Title, message.Payload.Content);
+        var notificationSettings = ResolveNotificationSettings(message.Payload);
 
         await Dispatcher.InvokeAsync(() =>
         {
-            _bannerOverlay.ShowNotification(bannerText, colorName, _bannerSettings);
+            _bannerOverlay.ShowNotification(bannerText, colorName, notificationSettings);
             StatusSummaryTextBlock.Text = $"已收到通知：{message.Payload.Title}";
             _bannerHideTimer.Stop();
+            _bannerHideTimer.Interval = TimeSpan.FromSeconds(notificationSettings.DisplayDurationSeconds);
             _bannerHideTimer.Start();
         });
 
@@ -227,10 +233,21 @@ public partial class MainWindow : Window
 
         try
         {
+            var repeatCount = SpeechAnnouncementService.ResolveRepeatCount(
+                message.Payload.TtsEnabled,
+                message.Payload.Level,
+                message.Payload.TtsRepeatCount);
+
+            if (repeatCount <= 0)
+            {
+                return;
+            }
+
             await _speechAnnouncementService.SpeakAsync(
                 message.Payload.Title,
                 message.Payload.Content,
                 message.Payload.Level,
+                repeatCount,
                 _cancellationTokenSource.Token);
             await _webSocketClient.SendReceiptAsync("receipt_spoken", message.Payload.NotificationId, _cancellationTokenSource.Token);
         }
@@ -303,6 +320,16 @@ public partial class MainWindow : Window
     private static string FormatBannerMessage(string title, string content)
     {
         return $"{title}    |    {content}";
+    }
+
+    private BannerSettings ResolveNotificationSettings(DeviceNotificationPayload payload)
+    {
+        if (payload.DurationSeconds is null || payload.DurationSeconds <= 0)
+        {
+            return _bannerSettings;
+        }
+
+        return _bannerSettings with { DisplayDurationSeconds = payload.DurationSeconds.Value };
     }
 
     private static BitmapImage CreateQrImage(string payload)

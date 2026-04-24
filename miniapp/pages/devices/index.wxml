@@ -63,6 +63,9 @@
               <view class="device-meta-item">{{item.lastSeenText}}</view>
               <view class="device-meta-item">客户端 {{item.clientVersion}}</view>
             </view>
+            <view class="device-actions">
+              <view class="device-action-link" data-device-id="{{item.id}}" data-device-name="{{item.name}}" bindtap="unbindDevice">解绑设备</view>
+            </view>
           </view>
           <view class="status-chip {{item.status === 'online' ? 'status-chip-online' : 'status-chip-offline'}}">
             <view class="status-dot"></view>

@@ -101,6 +101,10 @@
         <view class="field-helper">自定义时长按秒提交，例如 `90` 表示 90 秒。</view>
       </view>
 
+      <view class="field-label">语音播报</view>
+      <switch checked="{{ttsEnabled}}" color="#2f80ff" bindchange="onTtsSwitchChange" />
+      <view class="field-helper">开启后普通通知默认播报 1 次，紧急通知默认播报 3 次。</view>
+
       <view class="button-primary {{isSubmitDisabled ? 'button-disabled' : ''}} stack-lg" bindtap="submit">
         {{isSubmitting ? '发送中...' : '发送通知'}}
       </view>

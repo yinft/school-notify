@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from secrets import randbelow
 
 from sqlalchemy import delete, select
@@ -62,7 +62,7 @@ class InMemoryStore:
                 session.commit()
                 session.refresh(existing)
                 redis_service.set_device_online(device_id)
-                return self._to_device_response(existing)
+                return self._to_device_response(existing, include_token=True)
 
             device = DeviceModel(
                 device_id=device_id,
@@ -75,19 +75,19 @@ class InMemoryStore:
             session.commit()
             session.refresh(device)
             redis_service.set_device_online(device_id)
-            return self._to_device_response(device)
+            return self._to_device_response(device, include_token=True)
 
     def list_devices(self) -> list[DeviceResponse]:
         with SessionLocal() as session:
             devices = session.execute(select(DeviceModel)).scalars().all()
             results: list[DeviceResponse] = []
             for device in devices:
-                if redis_service.is_device_online(device.device_id):
+                if redis_service.is_enabled() and redis_service.is_device_online(device.device_id):
                     status = "online"
                     last_seen_str = redis_service.get_device_last_seen(device.device_id)
                     last_seen = datetime.fromisoformat(last_seen_str) if last_seen_str else device.last_seen_at
                 else:
-                    status = device.status
+                    status = device.status if not redis_service.is_enabled() else "offline"
                     last_seen = device.last_seen_at
                 results.append(
                     DeviceResponse(
@@ -136,7 +136,7 @@ class InMemoryStore:
             session.commit()
             session.refresh(device)
             redis_service.set_device_online(device_id)
-            return self._to_device_response(device)
+            return self._to_device_response(device, include_token=True)
 
     def bind_user_to_device(self, *, user_id: str, code: str) -> BindingResponse:
         with SessionLocal() as session:
@@ -145,6 +145,10 @@ class InMemoryStore:
             if device_id is None:
                 binding_code = session.execute(select(DeviceBindCode).where(DeviceBindCode.code == code)).scalar_one_or_none()
                 if binding_code is None:
+                    raise BindingCodeNotFoundError(code)
+                if binding_code.created_at + timedelta(seconds=binding_code.expires_in_seconds) < self._now():
+                    session.execute(delete(DeviceBindCode).where(DeviceBindCode.code == code))
+                    session.commit()
                     raise BindingCodeNotFoundError(code)
                 device_id = binding_code.device_id
             else:
@@ -174,6 +178,23 @@ class InMemoryStore:
             devices = session.execute(select(DeviceModel).where(DeviceModel.device_id.in_(device_ids))).scalars().all()
             return [self._to_device_response(device) for device in devices]
 
+    def unbind_user_from_device(self, *, user_id: str, device_id: str) -> BindingResponse:
+        with SessionLocal() as session:
+            device = session.execute(select(DeviceModel).where(DeviceModel.device_id == device_id)).scalar_one_or_none()
+            if device is None:
+                raise DeviceNotFoundError(device_id)
+
+            binding = session.execute(
+                select(UserDevice).where(UserDevice.user_id == user_id, UserDevice.device_id == device_id)
+            ).scalar_one_or_none()
+            if binding is None:
+                raise DeviceNotBoundError(device_id)
+
+            session.delete(binding)
+            session.commit()
+
+            return BindingResponse(user_id=user_id, device_id=device_id)
+
     def create_notification(
         self,
         *,
@@ -182,19 +203,27 @@ class InMemoryStore:
         content: str,
         level: str,
         device_ids: list[str],
+        duration_seconds: int | None = None,
+        tts_enabled: bool = True,
+        tts_repeat_count: int | None = None,
     ) -> tuple[NotificationCreateResponse, list[dict[str, object]]]:
         with SessionLocal() as session:
             bound_device_ids = set(
                 session.execute(select(UserDevice.device_id).where(UserDevice.user_id == sender_user_id)).scalars().all()
             )
 
-            for device_id in device_ids:
+            unique_device_ids = list(dict.fromkeys(device_ids))
+            if len(unique_device_ids) != len(device_ids):
+                raise ValueError("duplicate device ids")
+
+            for device_id in unique_device_ids:
                 device = session.execute(select(DeviceModel).where(DeviceModel.device_id == device_id)).scalar_one_or_none()
                 if device is None:
                     raise DeviceNotFoundError(device_id)
                 if device_id not in bound_device_ids:
                     raise DeviceNotBoundError(device_id)
-                if not redis_service.is_device_online(device_id) and device.status != "online":
+                is_online = redis_service.is_device_online(device_id) if redis_service.is_enabled() else device.status == "online"
+                if not is_online:
                     raise DeviceOfflineError(device_id)
 
             next_id = (session.execute(select(NotificationModel.id).order_by(NotificationModel.id.desc())).scalars().first() or 0) + 1
@@ -205,12 +234,15 @@ class InMemoryStore:
                 title=title,
                 content=content,
                 level=level,
-                target_count=len(device_ids),
+                duration_seconds=duration_seconds,
+                tts_enabled=tts_enabled,
+                tts_repeat_count=tts_repeat_count,
+                target_count=len(unique_device_ids),
             )
             session.add(notification)
             session.flush()
 
-            for device_id in device_ids:
+            for device_id in unique_device_ids:
                 session.add(
                     NotificationDelivery(
                         notification_id=notification_id,
@@ -218,22 +250,30 @@ class InMemoryStore:
                         received=False,
                         displayed=False,
                         spoken=False,
+                        failed=False,
                     )
                 )
 
             session.commit()
 
-            return NotificationCreateResponse(status="accepted", target_count=len(device_ids)), [
+            payload = {
+                "notification_id": notification_id,
+                "title": title,
+                "content": content,
+                "level": level,
+            }
+            if duration_seconds is not None:
+                payload["duration_seconds"] = duration_seconds
+            payload["tts_enabled"] = tts_enabled
+            if tts_repeat_count is not None:
+                payload["tts_repeat_count"] = tts_repeat_count
+
+            return NotificationCreateResponse(status="accepted", target_count=len(unique_device_ids)), [
                 {
                     "device_id": device_id,
-                    "payload": {
-                        "notification_id": notification_id,
-                        "title": title,
-                        "content": content,
-                        "level": level,
-                    },
+                    "payload": payload,
                 }
-                for device_id in device_ids
+                for device_id in unique_device_ids
             ]
 
     def set_device_status(self, *, device_id: str, status: str) -> DeviceResponse:
@@ -268,6 +308,20 @@ class InMemoryStore:
                     delivery.spoken = True
                 session.commit()
 
+    def mark_delivery_failed(self, *, device_id: str, notification_id: str, error_message: str) -> None:
+        with SessionLocal() as session:
+            delivery = session.execute(
+                select(NotificationDelivery).where(
+                    NotificationDelivery.device_id == device_id,
+                    NotificationDelivery.notification_id == notification_id,
+                )
+            ).scalar_one_or_none()
+            if delivery is None:
+                return
+            delivery.failed = True
+            delivery.error_message = error_message
+            session.commit()
+
     def list_notifications_for_user(self, *, sender_user_id: str, limit: int = 20, offset: int = 0) -> tuple[list[NotificationRecord], int]:
         with SessionLocal() as session:
             total = session.execute(
@@ -294,6 +348,8 @@ class InMemoryStore:
                         received=delivery.received,
                         displayed=delivery.displayed,
                         spoken=delivery.spoken,
+                        failed=delivery.failed,
+                        error_message=delivery.error_message,
                     )
                     for delivery in deliveries_db
                 ]
@@ -304,7 +360,11 @@ class InMemoryStore:
                         title=record.title,
                         content=record.content,
                         level=record.level,
+                        duration_seconds=record.duration_seconds,
+                        tts_enabled=record.tts_enabled,
+                        tts_repeat_count=record.tts_repeat_count,
                         target_count=record.target_count,
+                        created_at=record.created_at.isoformat(),
                         deliveries=deliveries,
                     )
                 )
@@ -329,14 +389,14 @@ class InMemoryStore:
             )
 
     @staticmethod
-    def _to_device_response(device: DeviceModel) -> DeviceResponse:
+    def _to_device_response(device: DeviceModel, *, include_token: bool = False) -> DeviceResponse:
         return DeviceResponse(
             device_id=device.device_id,
             device_name=device.device_name,
             client_version=device.client_version,
             status=device.status,
             last_seen_at=device.last_seen_at,
-            device_token=build_device_token(device.device_id),
+            device_token=build_device_token(device.device_id) if include_token else "",
         )
 
     @staticmethod

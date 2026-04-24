@@ -14,11 +14,13 @@ class DeviceConnectionManager:
     def disconnect(self, *, device_id: str) -> None:
         self._connections.pop(device_id, None)
 
-    async def send_notifications(self, *, deliveries: Iterable[dict[str, object]]) -> None:
+    async def send_notifications(self, *, deliveries: Iterable[dict[str, object]]) -> list[str]:
+        failed_device_ids: list[str] = []
         for delivery in deliveries:
             device_id = str(delivery["device_id"])
             websocket = self._connections.get(device_id)
             if websocket is None:
+                failed_device_ids.append(device_id)
                 continue
 
             await websocket.send_json(
@@ -28,6 +30,7 @@ class DeviceConnectionManager:
                     "payload": delivery["payload"],
                 }
             )
+        return failed_device_ids
 
 
 device_connections = DeviceConnectionManager()

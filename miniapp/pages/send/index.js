@@ -11,6 +11,7 @@ Page({
     levelIndex: 0,
     durationIndex: 0,
     customDurationValue: '',
+    ttsEnabled: true,
     title: '',
     content: '',
     devices: [],
@@ -102,6 +103,10 @@ Page({
     this.syncSubmitState()
   },
 
+  onTtsSwitchChange(event) {
+    this.setData({ ttsEnabled: Boolean(event.detail.value) })
+  },
+
   onDeviceSelectionChange(event) {
     this.setData({ selectedDeviceIds: event.detail.value })
     this.syncSubmitState()
@@ -157,7 +162,7 @@ Page({
   },
 
   async submit() {
-    const { title, content, levelIndex, selectedDeviceIds, isSubmitting, durationIndex, customDurationValue } = this.data
+    const { title, content, levelIndex, selectedDeviceIds, isSubmitting, durationIndex, customDurationValue, ttsEnabled } = this.data
     if (isSubmitting) {
       return
     }
@@ -193,7 +198,9 @@ Page({
         content: content.trim(),
         level: levelValues[levelIndex],
         deviceIds: selectedDeviceIds,
-        durationSeconds: getDurationSeconds({ durationIndex, customDurationValue })
+        durationSeconds: getDurationSeconds({ durationIndex, customDurationValue }),
+        ttsEnabled,
+        ttsRepeatCount: ttsEnabled ? (levelValues[levelIndex] === 'urgent' ? 3 : 1) : 0
       })
 
       wx.showToast({

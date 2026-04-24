@@ -7,8 +7,8 @@ const { createNotificationService } = require('../services/notification')
 const { createAuthService } = require('../services/auth')
 const { getDurationSeconds, isCustomDurationSelected } = require('../pages/send/duration')
 const { createLoginGateModel } = require('../utils/login-gate')
-const { buildRequestOptions } = require('../utils/request')
-const { hasAuthorizedProfile } = require('../utils/user-profile')
+const { buildRequestOptions, getErrorMessage } = require('../utils/request')
+const { createUserProfile, hasAuthorizedProfile } = require('../utils/user-profile')
 const {
   DEFAULT_USER_ID,
   createLoggedInSession,
@@ -77,7 +77,9 @@ test('createNotificationService sends current user id and selected devices', asy
     content: '请立即到场',
     level: 'urgent',
     deviceIds: ['device-001', 'device-002'],
-    durationSeconds: 30
+    durationSeconds: 30,
+    ttsEnabled: true,
+    ttsRepeatCount: 3
   })
 
   assert.deepEqual(calls, [
@@ -90,7 +92,9 @@ test('createNotificationService sends current user id and selected devices', asy
         content: '请立即到场',
         level: 'urgent',
         device_ids: ['device-001', 'device-002'],
-        duration_seconds: 30
+        duration_seconds: 30,
+        tts_enabled: true,
+        tts_repeat_count: 3
       }
     }
   ])
@@ -144,6 +148,8 @@ test('createNotificationService fetches and maps notification records', async ()
           received: true,
           displayed: true,
           spoken: false,
+          failed: false,
+          errorMessage: '',
           statusText: '已展示'
         }
       ]
@@ -239,6 +245,13 @@ test('hasAuthorizedProfile requires avatar and nickname', () => {
   assert.equal(hasAuthorizedProfile(null), false)
 })
 
+test('createUserProfile trims WeChat nickname and avatar values', () => {
+  assert.deepEqual(
+    createUserProfile({ avatarUrl: '  wxfile://avatar.png  ', nickName: ' 张老师 ' }),
+    { avatarUrl: 'wxfile://avatar.png', nickName: '张老师' }
+  )
+})
+
 test('createLoggedInSession keeps stable default user id', () => {
   assert.deepEqual(
     createLoggedInSession({
@@ -262,6 +275,10 @@ test('logout session disables auto login until manual login', () => {
 
   assert.equal(hasLoginSession(session), false)
   assert.equal(shouldAutoLogin(session), false)
+})
+
+test('hasLoginSession requires a session token', () => {
+  assert.equal(hasLoginSession({ isLoggedIn: true, currentUserId: 'user-001', sessionToken: '' }), false)
 })
 
 test('missing session still allows initial auto login', () => {
@@ -320,6 +337,27 @@ test('createAuthService calls logout endpoint', async () => {
   ])
 })
 
+test('createDeviceService deletes user binding for a device', async () => {
+  const calls = []
+  const service = createDeviceService({
+    request(options) {
+      calls.push(options)
+      return Promise.resolve({ user_id: 'user-001', device_id: 'device-001' })
+    },
+    currentUserId: 'user-001'
+  })
+
+  const result = await service.unbindDevice({ deviceId: 'device-001' })
+
+  assert.deepEqual(calls, [
+    {
+      url: '/bindings/device-001?user_id=user-001',
+      method: 'DELETE'
+    }
+  ])
+  assert.deepEqual(result, { user_id: 'user-001', device_id: 'device-001' })
+})
+
 test('buildRequestOptions adds bearer token when logged in', () => {
   const options = buildRequestOptions({
     apiBaseUrl: 'https://example.com/api',
@@ -336,6 +374,13 @@ test('buildRequestOptions adds bearer token when logged in', () => {
       Authorization: 'Bearer wechat-session:openid-001'
     }
   })
+})
+
+test('getErrorMessage formats FastAPI validation errors', () => {
+  assert.equal(
+    getErrorMessage({ detail: [{ msg: 'Field required' }, { msg: 'Invalid value' }] }),
+    'Field required；Invalid value'
+  )
 })
 
 test('createLoginGateModel builds page-specific login copy', () => {

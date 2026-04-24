@@ -26,7 +26,7 @@ def list_user_devices(user_id: str, current_user_id: str = Depends(require_curre
 
 
 @router.patch(
-    "/update",
+    "/me",
     summary="更新当前用户资料",
     description="【小程序端】更新当前登录用户的昵称和头像。仅传入的字段会被更新。",
     responses={401: {"description": "未认证"}, 404: {"description": "用户不存在"}},

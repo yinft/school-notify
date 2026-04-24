@@ -1,13 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 
-from app.api.deps.auth import ensure_same_user, require_current_user
+from app.api.deps.auth import ensure_same_user, require_current_user, require_device_token_for_device
 from app.schemas.binding import (
     BindingCodeCreateRequest,
     BindingCodeResponse,
     BindingCreateRequest,
     BindingResponse,
 )
-from app.services.store import BindingCodeNotFoundError, DeviceNotFoundError, store
+from app.services.store import BindingCodeNotFoundError, DeviceNotBoundError, DeviceNotFoundError, store
 
 
 router = APIRouter(prefix="/bindings")
@@ -19,7 +19,8 @@ router = APIRouter(prefix="/bindings")
     description="【设备端】为指定设备生成一次性绑定码。用户在小程序中输入此绑定码完成设备绑定。",
     responses={404: {"description": "设备不存在"}},
 )
-def create_binding_code(payload: BindingCodeCreateRequest) -> BindingCodeResponse:
+def create_binding_code(payload: BindingCodeCreateRequest, authorization: str = Header(default="")) -> BindingCodeResponse:
+    require_device_token_for_device(expected_device_id=payload.device_id, authorization=authorization)
     try:
         return store.create_binding_code(device_id=payload.device_id)
     except DeviceNotFoundError as exc:
@@ -44,3 +45,24 @@ def create_binding(payload: BindingCreateRequest, current_user_id: str = Depends
         return store.bind_user_to_device(user_id=payload.user_id, code=payload.code)
     except BindingCodeNotFoundError as exc:
         raise HTTPException(status_code=404, detail="binding code not found") from exc
+
+
+@router.delete(
+    "/{device_id}",
+    summary="解绑设备",
+    description="【小程序端】解绑当前用户和指定设备的关系，不影响设备本身注册和其他用户绑定。",
+    responses={
+        200: {"description": "解绑成功"},
+        401: {"description": "未认证"},
+        403: {"description": "无权解绑其他用户设备"},
+        404: {"description": "设备不存在或当前用户未绑定该设备"},
+    },
+)
+def delete_binding(device_id: str, user_id: str, current_user_id: str = Depends(require_current_user)) -> BindingResponse:
+    ensure_same_user(expected_user_id=user_id, current_user_id=current_user_id)
+    try:
+        return store.unbind_user_from_device(user_id=user_id, device_id=device_id)
+    except DeviceNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="device not found") from exc
+    except DeviceNotBoundError as exc:
+        raise HTTPException(status_code=404, detail="device not bound to user") from exc

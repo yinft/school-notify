@@ -17,7 +17,7 @@ from app.models import AuthSession, User
 from app.services.auth_sessions import create_auth_session, get_or_create_user_by_openid
 from app.services import store as store_module
 from app.services.store import store
-from app.services.wechat_auth import build_session_token
+from app.services.wechat_auth import build_device_token, build_session_token
 
 store_module.redis_service._client = None
 
@@ -40,6 +40,10 @@ def active_auth_headers(user_id: str) -> dict[str, str]:
         create_auth_session(session, user=user, session_token=token)
         session.commit()
     return {"Authorization": f"Bearer {token}"}
+
+
+def device_auth_headers(device_id: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {build_device_token(device_id)}"}
 
 
 def setup_function() -> None:
@@ -187,7 +191,7 @@ def test_device_heartbeat_refreshes_last_seen() -> None:
     )
     registered_at = parse_timestamp(register_response.json()["last_seen_at"])
 
-    heartbeat_response = client.post("/api/devices/device-001/heartbeat")
+    heartbeat_response = client.post("/api/devices/device-001/heartbeat", headers=device_auth_headers("device-001"))
 
     assert heartbeat_response.status_code == 200
     heartbeat_payload = heartbeat_response.json()
@@ -197,7 +201,7 @@ def test_device_heartbeat_refreshes_last_seen() -> None:
 
 
 def test_device_heartbeat_returns_not_found_for_unknown_device() -> None:
-    response = client.post("/api/devices/missing-device/heartbeat")
+    response = client.post("/api/devices/missing-device/heartbeat", headers=device_auth_headers("missing-device"))
 
     assert response.status_code == 404
     assert response.json() == {"detail": "device not found"}
@@ -216,6 +220,7 @@ def test_binding_code_returns_generated_code() -> None:
     response = client.post(
         "/api/bindings/code",
         json={"device_id": "device-001"},
+        headers=device_auth_headers("device-001"),
     )
 
     assert response.status_code == 200
@@ -230,10 +235,49 @@ def test_binding_code_returns_not_found_for_unknown_device() -> None:
     response = client.post(
         "/api/bindings/code",
         json={"device_id": "missing-device"},
+        headers=device_auth_headers("missing-device"),
     )
 
     assert response.status_code == 404
     assert response.json() == {"detail": "device not found"}
+
+
+def test_device_heartbeat_requires_matching_device_token() -> None:
+    client.post(
+        "/api/devices/register",
+        json={
+            "device_id": "device-001",
+            "device_name": "值班室电脑",
+            "client_version": "0.1.0",
+        },
+    )
+
+    missing = client.post("/api/devices/device-001/heartbeat")
+    mismatched = client.post("/api/devices/device-001/heartbeat", headers=device_auth_headers("device-002"))
+
+    assert missing.status_code == 401
+    assert mismatched.status_code == 403
+
+
+def test_binding_code_requires_matching_device_token() -> None:
+    client.post(
+        "/api/devices/register",
+        json={
+            "device_id": "device-001",
+            "device_name": "值班室电脑",
+            "client_version": "0.1.0",
+        },
+    )
+
+    missing = client.post("/api/bindings/code", json={"device_id": "device-001"})
+    mismatched = client.post(
+        "/api/bindings/code",
+        json={"device_id": "device-001"},
+        headers=device_auth_headers("device-002"),
+    )
+
+    assert missing.status_code == 401
+    assert mismatched.status_code == 403
 
 
 def test_user_can_bind_device_by_code_and_query_bound_devices() -> None:
@@ -248,6 +292,7 @@ def test_user_can_bind_device_by_code_and_query_bound_devices() -> None:
     bind_code_response = client.post(
         "/api/bindings/code",
         json={"device_id": "device-001"},
+        headers=device_auth_headers("device-001"),
     )
 
     bind_response = client.post(
@@ -274,6 +319,49 @@ def test_user_can_bind_device_by_code_and_query_bound_devices() -> None:
     payload = devices_response.json()
     assert len(payload["items"]) == 1
     assert payload["items"][0]["device_id"] == "device-001"
+
+
+def test_user_can_unbind_device() -> None:
+    client.post(
+        "/api/devices/register",
+        json={
+            "device_id": "device-001",
+            "device_name": "值班室电脑",
+            "client_version": "0.1.0",
+        },
+    )
+    bind_code_response = client.post(
+        "/api/bindings/code",
+        json={"device_id": "device-001"},
+        headers=device_auth_headers("device-001"),
+    )
+    client.post(
+        "/api/bindings",
+        json={
+            "user_id": "user-001",
+            "code": bind_code_response.json()["code"],
+        },
+        headers=active_auth_headers("user-001"),
+    )
+
+    response = client.delete(
+        "/api/bindings/device-001",
+        params={"user_id": "user-001"},
+        headers=active_auth_headers("user-001"),
+    )
+
+    devices_response = client.get(
+        "/api/users/user-001/devices",
+        headers=active_auth_headers("user-001"),
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "user_id": "user-001",
+        "device_id": "device-001",
+    }
+    assert devices_response.status_code == 200
+    assert devices_response.json() == {"items": []}
 
 
 def test_binding_returns_not_found_for_unknown_code() -> None:
@@ -331,6 +419,7 @@ def test_binding_code_can_only_be_used_once() -> None:
     bind_code_response = client.post(
         "/api/bindings/code",
         json={"device_id": "device-001"},
+        headers=device_auth_headers("device-001"),
     )
     code = bind_code_response.json()["code"]
 
@@ -385,6 +474,7 @@ def test_binding_forbids_mismatched_user_and_token() -> None:
     bind_code_response = client.post(
         "/api/bindings/code",
         json={"device_id": "device-001"},
+        headers=device_auth_headers("device-001"),
     )
 
     response = client.post(
@@ -429,6 +519,7 @@ def test_notifications_returns_placeholder_payload() -> None:
     bind_code_response = client.post(
         "/api/bindings/code",
         json={"device_id": "device-001"},
+        headers=device_auth_headers("device-001"),
     )
     client.post(
         "/api/bindings",
@@ -513,6 +604,7 @@ def test_notifications_return_conflict_for_offline_device() -> None:
     bind_code_response = client.post(
         "/api/bindings/code",
         json={"device_id": "device-001"},
+        headers=device_auth_headers("device-001"),
     )
     client.post(
         "/api/bindings",
@@ -552,7 +644,7 @@ def test_ws_placeholder_sends_connected_event(monkeypatch) -> None:
             "client_version": "0.1.0",
         },
     )
-    token = build_session_token("demo-user")
+    token = build_device_token("demo-device-1")
     with SessionLocal() as session:
         user = get_or_create_user_by_openid(session, openid="demo-user")
         create_auth_session(session, user=user, session_token=token)
@@ -572,6 +664,7 @@ def test_binding_code_requires_registered_device() -> None:
     response = client.post(
         "/api/bindings/code",
         json={"device_id": "unknown-device"},
+        headers=device_auth_headers("unknown-device"),
     )
     assert response.status_code == 404
 
@@ -591,6 +684,7 @@ def test_notification_offline_device_returns_409_when_redis_and_db_offline(monke
     bind_code_response = client.post(
         "/api/bindings/code",
         json={"device_id": "device-offline"},
+        headers=device_auth_headers("device-offline"),
     )
     client.post(
         "/api/bindings",
@@ -630,6 +724,7 @@ def test_websocket_receives_notification_created_event(monkeypatch) -> None:
     bind_code_response = client.post(
         "/api/bindings/code",
         json={"device_id": "device-001"},
+        headers=device_auth_headers("device-001"),
     )
     client.post(
         "/api/bindings",
@@ -640,7 +735,7 @@ def test_websocket_receives_notification_created_event(monkeypatch) -> None:
         headers=active_auth_headers("user-001"),
     )
 
-    ws_token = build_session_token("user-001")
+    ws_token = build_device_token("device-001")
     with SessionLocal() as session:
         user = get_or_create_user_by_openid(session, openid="user-001")
         create_auth_session(session, user=user, session_token=ws_token)
@@ -695,6 +790,7 @@ def test_websocket_receipt_updates_notification_delivery_state(monkeypatch) -> N
     bind_code_response = client.post(
         "/api/bindings/code",
         json={"device_id": "device-001"},
+        headers=device_auth_headers("device-001"),
     )
     client.post(
         "/api/bindings",
@@ -705,7 +801,7 @@ def test_websocket_receipt_updates_notification_delivery_state(monkeypatch) -> N
         headers=active_auth_headers("user-001"),
     )
 
-    ws_token = build_session_token("user-001")
+    ws_token = build_device_token("device-001")
     with SessionLocal() as session:
         user = get_or_create_user_by_openid(session, openid="user-001")
         create_auth_session(session, user=user, session_token=ws_token)
@@ -754,6 +850,7 @@ def test_notification_list_supports_pagination() -> None:
     bind_code_response = client.post(
         "/api/bindings/code",
         json={"device_id": "device-001"},
+        headers=device_auth_headers("device-001"),
     )
     client.post(
         "/api/bindings",
@@ -844,6 +941,7 @@ def test_notifications_query_returns_records_and_receipts(monkeypatch) -> None:
     bind_code_response = client.post(
         "/api/bindings/code",
         json={"device_id": "device-001"},
+        headers=device_auth_headers("device-001"),
     )
     client.post(
         "/api/bindings",
@@ -854,7 +952,7 @@ def test_notifications_query_returns_records_and_receipts(monkeypatch) -> None:
         headers=active_auth_headers("user-001"),
     )
 
-    ws_token = build_session_token("user-001")
+    ws_token = build_device_token("device-001")
     with SessionLocal() as session:
         user = get_or_create_user_by_openid(session, openid="user-001")
         create_auth_session(session, user=user, session_token=ws_token)
@@ -888,27 +986,25 @@ def test_notifications_query_returns_records_and_receipts(monkeypatch) -> None:
     )
 
     assert response.status_code == 200
-    assert response.json() == {
-        "items": [
-            {
-                "notification_id": "notification-1",
-                "sender_user_id": "user-001",
-                "title": "紧急通知",
-                "content": "请立即集合",
-                "level": "urgent",
-                "target_count": 1,
-                "deliveries": [
-                    {
-                        "device_id": "device-001",
-                        "received": False,
-                        "displayed": True,
-                        "spoken": False,
-                    }
-                ],
-            }
-        ],
-        "total": 1,
-    }
+    payload = response.json()
+    assert payload["total"] == 1
+    assert payload["items"][0]["notification_id"] == "notification-1"
+    assert payload["items"][0]["sender_user_id"] == "user-001"
+    assert payload["items"][0]["title"] == "紧急通知"
+    assert payload["items"][0]["content"] == "请立即集合"
+    assert payload["items"][0]["level"] == "urgent"
+    assert payload["items"][0]["target_count"] == 1
+    assert payload["items"][0]["created_at"]
+    assert payload["items"][0]["deliveries"] == [
+        {
+            "device_id": "device-001",
+            "received": False,
+            "displayed": True,
+            "spoken": False,
+            "failed": False,
+            "error_message": None,
+        }
+    ]
 
 
 def test_auth_session_cached_in_redis(monkeypatch) -> None:
@@ -957,7 +1053,7 @@ def test_device_heartbeat_sets_redis_online(monkeypatch) -> None:
 
     monkeypatch.setattr(store_module.redis_service, "set_device_online", fake_set_online)
 
-    response = client.post("/api/devices/device-hb/heartbeat")
+    response = client.post("/api/devices/device-hb/heartbeat", headers=device_auth_headers("device-hb"))
     assert response.status_code == 200
     assert cached["device_id"] == "device-hb"
     assert cached["ttl"] > 0
@@ -1027,7 +1123,7 @@ def test_websocket_accepts_valid_token() -> None:
             "client_version": "0.1.0",
         },
     )
-    token = build_session_token("ws-user")
+    token = build_device_token("device-ws")
     with SessionLocal() as session:
         user = get_or_create_user_by_openid(session, openid="ws-user")
         create_auth_session(session, user=user, session_token=token)
@@ -1049,7 +1145,7 @@ def test_websocket_disconnect_sets_device_offline(monkeypatch) -> None:
             "client_version": "0.1.0",
         },
     )
-    token = build_session_token("dc-user")
+    token = build_device_token("device-dc")
     with SessionLocal() as session:
         user = get_or_create_user_by_openid(session, openid="dc-user")
         create_auth_session(session, user=user, session_token=token)

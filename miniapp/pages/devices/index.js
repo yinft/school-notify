@@ -11,7 +11,8 @@ Page({
     isLoginRequired: false,
     loginTipText: '',
     loginGate: null,
-    isAuthorizingLogin: false
+    isAuthorizingLogin: false,
+    isUnbinding: false
   },
 
   async onShow() {
@@ -37,10 +38,7 @@ Page({
 
   async loadDevices() {
     const app = getApp()
-    const deviceService = createDeviceService({
-      request,
-      currentUserId: app.globalData.currentUserId
-    })
+    const deviceService = createDeviceService({ request, currentUserId: app.globalData.currentUserId })
 
     this.setData({ isLoading: true, errorText: '' })
 
@@ -64,6 +62,33 @@ Page({
     wx.navigateTo({ url: '/pages/bind/index' })
   },
 
+  async unbindDevice(event) {
+    if (this.data.isUnbinding) {
+      return
+    }
+
+    const { deviceId, deviceName } = event.currentTarget.dataset
+    const confirmResult = await this.showUnbindConfirm(deviceName)
+
+    if (!confirmResult.confirm) {
+      return
+    }
+
+    const app = getApp()
+    const deviceService = createDeviceService({ request, currentUserId: app.globalData.currentUserId })
+    this.setData({ isUnbinding: true })
+
+    try {
+      await deviceService.unbindDevice({ deviceId })
+      wx.showToast({ title: '设备已解绑', icon: 'none' })
+      await this.loadDevices()
+    } catch (error) {
+      wx.showToast({ title: error.message || '解绑失败', icon: 'none' })
+    } finally {
+      this.setData({ isUnbinding: false })
+    }
+  },
+
   onPullDownRefresh() {
     if (this.data.isLoginRequired) {
       wx.stopPullDownRefresh()
@@ -75,3 +100,14 @@ Page({
     })
   }
 })
+  showUnbindConfirm(deviceName) {
+    return new Promise((resolve) => {
+      wx.showModal({
+        title: '确认解绑设备',
+        content: `解绑后，你将无法继续向“${deviceName}”发送通知。是否继续？`,
+        confirmColor: '#d64545',
+        success: resolve,
+        fail: () => resolve({ confirm: false })
+      })
+    })
+  },

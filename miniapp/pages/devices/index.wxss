@@ -38,3 +38,19 @@
   font-size: 24rpx;
   color: #7189a4;
 }
+
+.device-actions {
+  margin-top: 16rpx;
+}
+
+.device-action-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48rpx;
+  padding: 0 18rpx;
+  border-radius: 999rpx;
+  background: #fff4f4;
+  color: #d64545;
+  font-size: 22rpx;
+  font-weight: 600;
+}

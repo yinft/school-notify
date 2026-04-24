@@ -1,6 +1,6 @@
 function createNotificationService({ request, currentUserId }) {
   return {
-    sendNotification({ title, content, level, deviceIds, durationSeconds }) {
+    sendNotification({ title, content, level, deviceIds, durationSeconds, ttsEnabled, ttsRepeatCount }) {
       return request({
         url: '/notifications',
         method: 'POST',
@@ -10,7 +10,9 @@ function createNotificationService({ request, currentUserId }) {
           content,
           level,
           device_ids: deviceIds,
-          duration_seconds: durationSeconds
+          duration_seconds: durationSeconds,
+          tts_enabled: ttsEnabled,
+          tts_repeat_count: ttsRepeatCount
         }
       })
     },
@@ -28,7 +30,9 @@ function createNotificationService({ request, currentUserId }) {
           received: delivery.received,
           displayed: delivery.displayed,
           spoken: delivery.spoken,
-          statusText: delivery.spoken ? '已播报' : delivery.displayed ? '已展示' : delivery.received ? '已接收' : '待送达'
+          failed: Boolean(delivery.failed),
+          errorMessage: delivery.error_message || '',
+          statusText: delivery.failed ? '投递失败' : delivery.spoken ? '已播报' : delivery.displayed ? '已展示' : delivery.received ? '已接收' : '待送达'
         }))
         const displayedCount = deliveries.filter((delivery) => delivery.displayed).length
 

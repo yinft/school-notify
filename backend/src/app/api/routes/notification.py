@@ -48,8 +48,19 @@ async def create_notification(payload: NotificationCreateRequest, current_user_i
             content=payload.content,
             level=payload.level,
             device_ids=payload.device_ids,
+            duration_seconds=payload.duration_seconds,
+            tts_enabled=payload.tts_enabled,
+            tts_repeat_count=payload.tts_repeat_count,
         )
-        await device_connections.send_notifications(deliveries=deliveries)
+        failed_device_ids = await device_connections.send_notifications(deliveries=deliveries)
+        for failed_device_id in failed_device_ids:
+            delivery = next(item for item in deliveries if item["device_id"] == failed_device_id)
+            notification_id = str(delivery["payload"]["notification_id"])
+            store.mark_delivery_failed(
+                device_id=failed_device_id,
+                notification_id=notification_id,
+                error_message="device websocket not connected",
+            )
         return response
     except DeviceNotFoundError as exc:
         raise HTTPException(status_code=404, detail="device not found") from exc
@@ -57,3 +68,5 @@ async def create_notification(payload: NotificationCreateRequest, current_user_i
         raise HTTPException(status_code=403, detail="device not bound to user") from exc
     except DeviceOfflineError as exc:
         raise HTTPException(status_code=409, detail="device offline") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc

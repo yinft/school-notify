@@ -24,6 +24,13 @@ function createDeviceService({ request, currentUserId }) {
     async fetchUserDevices() {
       const response = await request({ url: `/users/${currentUserId}/devices` })
       return (response.items || []).map(mapDevice)
+    },
+
+    unbindDevice({ deviceId }) {
+      return request({
+        url: `/bindings/${encodeURIComponent(deviceId)}?user_id=${encodeURIComponent(currentUserId)}`,
+        method: 'DELETE'
+      })
     }
   }
 }

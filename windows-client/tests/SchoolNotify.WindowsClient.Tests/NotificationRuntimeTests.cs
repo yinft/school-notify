@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using System.Text.Json;
 using System.Windows.Media.Animation;
 using SchoolNotify.WindowsClient.Models;
 using SchoolNotify.WindowsClient.Services;
@@ -38,6 +39,15 @@ public class NotificationRuntimeTests
             level: "normal");
 
         Assert.Equal("普通通知。下午两点开会。", text);
+    }
+
+    [Fact]
+    public void SpeechAnnouncementService_ResolvesDefaultRepeatCount()
+    {
+        Assert.Equal(0, SpeechAnnouncementService.ResolveRepeatCount(false, "normal", null));
+        Assert.Equal(1, SpeechAnnouncementService.ResolveRepeatCount(true, "normal", null));
+        Assert.Equal(3, SpeechAnnouncementService.ResolveRepeatCount(true, "urgent", null));
+        Assert.Equal(2, SpeechAnnouncementService.ResolveRepeatCount(true, "urgent", 2));
     }
 
     [Fact]
@@ -124,5 +134,32 @@ public class NotificationRuntimeTests
 
         var hideMethod = type.GetMethod("HideNotification", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
         Assert.NotNull(hideMethod);
+    }
+
+    [Fact]
+    public void DeviceNotificationPayload_DeserializesDurationSeconds()
+    {
+        var message = JsonSerializer.Deserialize<DeviceNotificationMessage>(
+            """
+            {
+              "event": "notification_created",
+              "device_id": "device-001",
+              "payload": {
+                "notification_id": "notification-1",
+                "title": "紧急通知",
+                "content": "请立即集合",
+                "level": "urgent",
+                "duration_seconds": 30,
+                "tts_enabled": true,
+                "tts_repeat_count": 3
+              }
+            }
+            """,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+        Assert.NotNull(message);
+        Assert.Equal(30, message!.Payload.DurationSeconds);
+        Assert.True(message.Payload.TtsEnabled);
+        Assert.Equal(3, message.Payload.TtsRepeatCount);
     }
 }

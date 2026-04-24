@@ -1,7 +1,7 @@
 const { ensurePageLogin } = require('../../utils/page-auth')
 const { getLoginRequiredMessage } = require('../../utils/auth-session')
 const { createLoginGateModel } = require('../../utils/login-gate')
-const { syncProfileToServer } = require('../../utils/user-profile')
+const { createUserProfile, syncProfileToServer } = require('../../utils/user-profile')
 
 Page({
   data: {
@@ -46,38 +46,41 @@ Page({
     }
   },
 
-  authorizeProfile() {
+  onChooseAvatar(event) {
     if (this.data.isLoginRequired || this.data.isSubmittingProfile) {
       return
     }
 
-    if (!wx.getUserProfile) {
-      wx.showToast({ title: '当前微信版本不支持', icon: 'none' })
+    this.setData({ avatarUrl: event.detail.avatarUrl || '' })
+  },
+
+  onNicknameInput(event) {
+    this.setData({ nickName: event.detail.value || '' })
+  },
+
+  async saveProfile() {
+    if (this.data.isLoginRequired || this.data.isSubmittingProfile) {
+      return
+    }
+
+    const profile = createUserProfile({
+      avatarUrl: this.data.avatarUrl,
+      nickName: this.data.nickName
+    })
+
+    if (!profile.avatarUrl || !profile.nickName) {
+      wx.showToast({ title: '请选择头像并填写昵称', icon: 'none' })
       return
     }
 
     this.setData({ isSubmittingProfile: true })
 
-    wx.getUserProfile({
-      desc: '用于展示你的微信头像和昵称',
-      success: async ({ userInfo }) => {
-        const profile = {
-          avatarUrl: userInfo.avatarUrl || '',
-          nickName: userInfo.nickName || ''
-        }
-
-        const app = getApp()
-        app.setUserProfile(profile)
-        await syncProfileToServer({ nickname: profile.nickName, avatarUrl: profile.avatarUrl })
-        this.syncProfile()
-      },
-      fail: () => {
-        wx.showToast({ title: '未完成授权', icon: 'none' })
-      },
-      complete: () => {
-        this.setData({ isSubmittingProfile: false })
-      }
-    })
+    const app = getApp()
+    app.setUserProfile(profile)
+    const result = await syncProfileToServer({ nickname: profile.nickName, avatarUrl: profile.avatarUrl })
+    this.setData({ isSubmittingProfile: false })
+    this.syncProfile()
+    wx.showToast({ title: result ? '资料已保存' : '已本地保存', icon: 'none' })
   },
 
   async logout() {

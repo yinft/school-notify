@@ -42,3 +42,16 @@ def require_current_user(session_token: str = Depends(require_session_token), db
 def ensure_same_user(*, expected_user_id: str, current_user_id: str) -> None:
     if expected_user_id != current_user_id:
         raise HTTPException(status_code=403, detail="forbidden")
+
+
+def require_device_token_for_device(*, expected_device_id: str, authorization: str) -> str:
+    token = authorization.removeprefix("Bearer ").strip()
+    if not token.startswith("device-token:"):
+        raise HTTPException(status_code=401, detail="invalid device token")
+    try:
+        parsed_device_id = parse_session_token(token)
+    except WeChatLoginError as exc:
+        raise HTTPException(status_code=401, detail="invalid device token") from exc
+    if parsed_device_id != expected_device_id:
+        raise HTTPException(status_code=403, detail="forbidden")
+    return parsed_device_id

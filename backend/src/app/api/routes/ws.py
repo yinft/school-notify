@@ -1,7 +1,5 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 
-from app.core.db import SessionLocal
-from app.services.auth_sessions import get_cached_auth_user_id
 from app.services.device_connections import device_connections
 from app.services.redis_service import redis_service
 from app.services.store import store
@@ -12,26 +10,12 @@ router = APIRouter()
 
 
 def _validate_ws_token(token: str) -> str | None:
+    if not token.startswith("device-token:"):
+        return None
     try:
-        parsed_id = parse_session_token(token)
+        return parse_session_token(token)
     except WeChatLoginError:
         return None
-
-    if token.startswith("device-token:"):
-        return parsed_id
-
-    cached_user_id = get_cached_auth_user_id(token)
-    if cached_user_id and cached_user_id == parsed_id:
-        return parsed_id
-
-    from app.services.auth_sessions import get_active_session_by_token
-
-    with SessionLocal() as db:
-        active_session = get_active_session_by_token(db, session_token=token)
-        if active_session and active_session.user.user_id == parsed_id:
-            return parsed_id
-
-    return None
 
 
 @router.websocket("/ws/devices/{device_id}")
@@ -40,9 +24,12 @@ async def device_socket(
     device_id: str,
     token: str = Query(default=""),
 ) -> None:
-    user_id = _validate_ws_token(token)
-    if not user_id:
+    token_device_id = _validate_ws_token(token)
+    if not token_device_id:
         await websocket.close(code=4001, reason="invalid token")
+        return
+    if token_device_id != device_id:
+        await websocket.close(code=4003, reason="forbidden")
         return
 
     await device_connections.connect(device_id=device_id, websocket=websocket)

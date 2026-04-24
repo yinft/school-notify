@@ -11,21 +11,22 @@
       <view class="profile-glow profile-glow-b"></view>
 
       <view class="profile-top">
-        <view class="profile-avatar-wrap" bindtap="authorizeProfile">
+        <button class="profile-avatar-wrap" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
           <image wx:if="{{avatarUrl}}" class="profile-avatar-image" src="{{avatarUrl}}" mode="aspectFill" />
           <view wx:else class="profile-avatar-default">我</view>
-        </view>
-        <view class="profile-info" bindtap="authorizeProfile">
+        </button>
+        <view class="profile-info">
           <view class="hero-overline">账号中心</view>
-          <view class="profile-nick">{{nickName || '点击授权头像和昵称'}}</view>
-          <view class="hero-subtitle">{{isSubmittingProfile ? '授权中，请稍候...' : '当前账号可以管理设备、发送通知并查看触达记录。'}}</view>
+          <input class="profile-nick profile-nick-input" type="nickname" placeholder="请输入微信昵称" value="{{nickName}}" bindinput="onNicknameInput" />
+          <view class="hero-subtitle">{{isSubmittingProfile ? '保存中，请稍候...' : '选择微信头像、填写昵称后保存到当前账号。'}}</view>
         </view>
       </view>
 
       <view class="hero-simple-meta">
         <view class="hero-simple-chip">账号 {{userId || '未分配'}}</view>
-        <view class="hero-simple-chip">点击头像可授权资料</view>
+        <view class="hero-simple-chip">微信资料需手动选择</view>
       </view>
+      <button class="profile-save-button" loading="{{isSubmittingProfile}}" bindtap="saveProfile">保存头像和昵称</button>
     </view>
 
     <view class="card stack-lg">

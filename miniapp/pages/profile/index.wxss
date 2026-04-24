@@ -10,6 +10,15 @@
   border-radius: 50%;
   flex-shrink: 0;
   overflow: hidden;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  line-height: 1;
+}
+
+.profile-avatar-wrap::after {
+  border: none;
 }
 
 .profile-avatar-image {
@@ -133,6 +142,32 @@
   font-size: 28rpx;
   font-weight: 700;
   color: #16324f;
+}
+
+.profile-nick-input {
+  display: block;
+  min-height: 56rpx;
+  padding: 0;
+}
+
+.profile-nick-input::placeholder {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.profile-save-button {
+  margin: 28rpx 0 0;
+  height: 76rpx;
+  border-radius: 24rpx;
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  border: 1rpx solid rgba(255, 255, 255, 0.34);
+  font-size: 27rpx;
+  font-weight: 700;
+  line-height: 76rpx;
+}
+
+.profile-save-button::after {
+  border: none;
 }
 
 .profile-logout-button {

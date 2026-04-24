@@ -35,7 +35,7 @@ function createLoggedOutSession() {
 }
 
 function hasLoginSession(session) {
-  return Boolean(session && session.isLoggedIn && session.currentUserId)
+  return Boolean(session && session.isLoggedIn && session.currentUserId && session.sessionToken)
 }
 
 function shouldAutoLogin(session) {
