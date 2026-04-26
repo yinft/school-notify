@@ -36,6 +36,7 @@ test('createDeviceService fetches and maps user devices', async () => {
           {
             device_id: 'device-001',
             device_name: '值班室电脑',
+            location_label: '高一3班教室',
             client_version: '0.1.0',
             status: 'online',
             last_seen_at: '2026-04-21T08:00:00Z'
@@ -53,6 +54,7 @@ test('createDeviceService fetches and maps user devices', async () => {
     {
       id: 'device-001',
       name: '值班室电脑',
+      locationLabel: '高一3班教室',
       clientVersion: '0.1.0',
       status: 'online',
       lastSeenAt: '2026-04-21T08:00:00Z',
@@ -161,7 +163,33 @@ test('normalizeBindCode trims whitespace and uppercases input', () => {
   assert.equal(normalizeBindCode('  ab12cd  '), 'AB12CD')
 })
 
-test('createBindingService posts current user and normalized code', async () => {
+test('createBindingService fetches bind code device preview', async () => {
+  const calls = []
+  const service = createBindingService({
+    request(options) {
+      calls.push(options)
+      return Promise.resolve({
+        device_id: 'device-001',
+        device_name: 'DESKTOP-ABC123',
+        location_label: '',
+        client_version: '0.1.0'
+      })
+    },
+    currentUserId: 'user-001'
+  })
+
+  const result = await service.fetchBindCodeDevice({ code: ' ab12cd ' })
+
+  assert.deepEqual(calls, [{ url: '/bindings/code/AB12CD/device' }])
+  assert.deepEqual(result, {
+    deviceId: 'device-001',
+    deviceName: 'DESKTOP-ABC123',
+    locationLabel: '',
+    clientVersion: '0.1.0'
+  })
+})
+
+test('createBindingService posts current user and editable device info', async () => {
   const calls = []
   const service = createBindingService({
     request(options) {
@@ -171,7 +199,11 @@ test('createBindingService posts current user and normalized code', async () => 
     currentUserId: 'user-001'
   })
 
-  const result = await service.bindDevice({ code: ' 123456 ' })
+  const result = await service.bindDevice({
+    code: ' 123456 ',
+    deviceName: '三年级一班通知屏',
+    locationLabel: '三年级一班教室'
+  })
 
   assert.deepEqual(calls, [
     {
@@ -179,7 +211,9 @@ test('createBindingService posts current user and normalized code', async () => 
       method: 'POST',
       data: {
         user_id: 'user-001',
-        code: '123456'
+        code: '123456',
+        device_name: '三年级一班通知屏',
+        location_label: '三年级一班教室'
       }
     }
   ])

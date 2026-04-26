@@ -50,12 +50,14 @@ class InMemoryStore:
         *,
         device_id: str,
         device_name: str,
+        location_label: str = "",
         client_version: str,
     ) -> DeviceResponse:
         with SessionLocal() as session:
             existing = session.execute(select(DeviceModel).where(DeviceModel.device_id == device_id)).scalar_one_or_none()
             if existing:
                 existing.device_name = device_name
+                existing.location_label = location_label
                 existing.client_version = client_version
                 existing.status = "online"
                 existing.last_seen_at = self._now()
@@ -67,6 +69,7 @@ class InMemoryStore:
             device = DeviceModel(
                 device_id=device_id,
                 device_name=device_name,
+                location_label=location_label,
                 client_version=client_version,
                 status="online",
                 last_seen_at=self._now(),
@@ -93,6 +96,7 @@ class InMemoryStore:
                     DeviceResponse(
                         device_id=device.device_id,
                         device_name=device.device_name,
+                        location_label=device.location_label,
                         client_version=device.client_version,
                         status=status,
                         last_seen_at=last_seen,
@@ -125,6 +129,14 @@ class InMemoryStore:
                 expires_in_seconds=binding_code.expires_in_seconds,
             )
 
+    def get_device_by_binding_code(self, *, code: str) -> DeviceResponse:
+        with SessionLocal() as session:
+            device_id = self._get_valid_bind_device_id(session, code=code, consume_redis=False)
+            device = session.execute(select(DeviceModel).where(DeviceModel.device_id == device_id)).scalar_one_or_none()
+            if device is None:
+                raise BindingCodeNotFoundError(code)
+            return self._to_device_response(device)
+
     def heartbeat_device(self, *, device_id: str) -> DeviceResponse:
         with SessionLocal() as session:
             device = session.execute(select(DeviceModel).where(DeviceModel.device_id == device_id)).scalar_one_or_none()
@@ -138,25 +150,25 @@ class InMemoryStore:
             redis_service.set_device_online(device_id)
             return self._to_device_response(device, include_token=True)
 
-    def bind_user_to_device(self, *, user_id: str, code: str) -> BindingResponse:
+    def bind_user_to_device(
+        self,
+        *,
+        user_id: str,
+        code: str,
+        device_name: str | None = None,
+        location_label: str | None = None,
+    ) -> BindingResponse:
         with SessionLocal() as session:
-            device_id = redis_service.get_bind_device_id(code)
-
-            if device_id is None:
-                binding_code = session.execute(select(DeviceBindCode).where(DeviceBindCode.code == code)).scalar_one_or_none()
-                if binding_code is None:
-                    raise BindingCodeNotFoundError(code)
-                if binding_code.created_at + timedelta(seconds=binding_code.expires_in_seconds) < self._now():
-                    session.execute(delete(DeviceBindCode).where(DeviceBindCode.code == code))
-                    session.commit()
-                    raise BindingCodeNotFoundError(code)
-                device_id = binding_code.device_id
-            else:
-                redis_service.consume_bind_code(code)
+            device_id = self._get_valid_bind_device_id(session, code=code, consume_redis=True)
 
             device = session.execute(select(DeviceModel).where(DeviceModel.device_id == device_id)).scalar_one_or_none()
             if device is None:
                 raise BindingCodeNotFoundError(code)
+
+            if device_name is not None and device_name.strip():
+                device.device_name = device_name.strip()
+            if location_label is not None:
+                device.location_label = location_label.strip()
 
             session.execute(delete(DeviceBindCode).where(DeviceBindCode.code == code))
 
@@ -377,6 +389,22 @@ class InMemoryStore:
                 raise DeviceNotFoundError(device_id)
             return self._to_device_response(device)
 
+    def _get_valid_bind_device_id(self, session, *, code: str, consume_redis: bool) -> str:
+        device_id = redis_service.get_bind_device_id(code)
+        if device_id is not None:
+            if consume_redis:
+                redis_service.consume_bind_code(code)
+            return device_id
+
+        binding_code = session.execute(select(DeviceBindCode).where(DeviceBindCode.code == code)).scalar_one_or_none()
+        if binding_code is None:
+            raise BindingCodeNotFoundError(code)
+        if binding_code.created_at + timedelta(seconds=binding_code.expires_in_seconds) < self._now():
+            session.execute(delete(DeviceBindCode).where(DeviceBindCode.code == code))
+            session.commit()
+            raise BindingCodeNotFoundError(code)
+        return binding_code.device_id
+
     def _require_binding_code(self, code: str) -> BindingCodeResponse:
         with SessionLocal() as session:
             binding_code = session.execute(select(DeviceBindCode).where(DeviceBindCode.code == code)).scalar_one_or_none()
@@ -393,6 +421,7 @@ class InMemoryStore:
         return DeviceResponse(
             device_id=device.device_id,
             device_name=device.device_name,
+            location_label=device.location_label,
             client_version=device.client_version,
             status=device.status,
             last_seen_at=device.last_seen_at,

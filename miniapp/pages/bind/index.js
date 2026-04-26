@@ -5,7 +5,11 @@ const { request } = require('../../utils/request')
 Page({
   data: {
     code: '',
+    deviceName: '',
+    locationLabel: '',
+    previewDeviceId: '',
     isSubmitting: false,
+    isLoadingPreview: false,
     helperText: '请输入 Windows 客户端展示的 6 位绑定码',
     isLoginRequired: false,
     loginTipText: '',
@@ -28,8 +32,17 @@ Page({
 
   onCodeInput(event) {
     this.setData({
-      code: normalizeBindCode(event.detail.value)
+      code: normalizeBindCode(event.detail.value),
+      previewDeviceId: ''
     })
+  },
+
+  onDeviceNameInput(event) {
+    this.setData({ deviceName: event.detail.value })
+  },
+
+  onLocationLabelInput(event) {
+    this.setData({ locationLabel: event.detail.value })
   },
 
   scanCode() {
@@ -42,7 +55,8 @@ Page({
           return
         }
 
-        this.setData({ code })
+        this.setData({ code, previewDeviceId: '' })
+        this.previewDevice(code)
       },
       fail: () => {
         wx.showToast({ title: '扫码已取消', icon: 'none' })
@@ -51,7 +65,7 @@ Page({
   },
 
   async submit() {
-    const { code, isSubmitting } = this.data
+    const { code, isSubmitting, deviceName, locationLabel } = this.data
     if (isSubmitting) {
       return
     }
@@ -75,10 +89,13 @@ Page({
     this.setData({ isSubmitting: true })
 
     try {
-      const result = await bindingService.bindDevice({ code })
+      const result = await bindingService.bindDevice({ code, deviceName, locationLabel })
       wx.showToast({ title: '绑定成功', icon: 'success' })
       this.setData({
         code: '',
+        deviceName: '',
+        locationLabel: '',
+        previewDeviceId: '',
         helperText: `已绑定设备：${result.device_id}`
       })
       setTimeout(() => {
@@ -91,6 +108,37 @@ Page({
       })
     } finally {
       this.setData({ isSubmitting: false })
+    }
+  },
+
+  async previewDevice(code = this.data.code) {
+    const normalizedCode = normalizeBindCode(code)
+    if (!normalizedCode) {
+      wx.showToast({ title: '请输入绑定码', icon: 'none' })
+      return
+    }
+
+    const app = getApp()
+    const bindingService = createBindingService({
+      request,
+      currentUserId: app.globalData.currentUserId
+    })
+
+    this.setData({ isLoadingPreview: true })
+
+    try {
+      const device = await bindingService.fetchBindCodeDevice({ code: normalizedCode })
+      this.setData({
+        code: normalizedCode,
+        previewDeviceId: device.deviceId,
+        deviceName: device.deviceName || '',
+        locationLabel: device.locationLabel || '',
+        helperText: `已识别设备：${device.deviceId}`
+      })
+    } catch (error) {
+      wx.showToast({ title: error.message || '设备识别失败', icon: 'none' })
+    } finally {
+      this.setData({ isLoadingPreview: false })
     }
   }
 })

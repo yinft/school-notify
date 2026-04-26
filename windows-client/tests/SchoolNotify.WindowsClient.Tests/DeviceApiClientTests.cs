@@ -14,21 +14,23 @@ public class DeviceApiClientTests
     [Fact]
     public async Task RegisterDeviceAsync_PostsRegistrationPayload()
     {
-        var handler = new RecordingHandler("{\"device_id\":\"device-001\",\"device_name\":\"值班室电脑\",\"client_version\":\"0.1.0\",\"status\":\"online\",\"last_seen_at\":\"2026-04-21T08:00:00Z\",\"device_token\":\"device-token-001\"}");
+        var handler = new RecordingHandler("{\"device_id\":\"device-001\",\"device_name\":\"值班室电脑\",\"location_label\":\"高一3班教室\",\"client_version\":\"0.1.0\",\"status\":\"online\",\"last_seen_at\":\"2026-04-21T08:00:00Z\",\"device_token\":\"device-token-001\"}");
         var httpClient = new HttpClient(handler)
         {
             BaseAddress = new System.Uri("http://127.0.0.1:8000")
         };
         var apiClient = new DeviceApiClient(httpClient);
 
-        var response = await apiClient.RegisterDeviceAsync(new DeviceRegistrationRequest("device-001", "值班室电脑", "0.1.0"));
+        var response = await apiClient.RegisterDeviceAsync(new DeviceRegistrationRequest("device-001", "值班室电脑", "高一3班教室", "0.1.0"));
 
         Assert.Equal(HttpMethod.Post, handler.LastRequest!.Method);
         Assert.Equal("http://127.0.0.1:8000/api/devices/register", handler.LastRequest.RequestUri!.ToString());
         Assert.Contains("\"device_id\"", handler.LastRequestBody);
         Assert.Contains("\"device_name\"", handler.LastRequestBody);
+        Assert.Contains("\"location_label\"", handler.LastRequestBody);
         Assert.Contains("\"client_version\"", handler.LastRequestBody);
         Assert.Equal("device-001", response.DeviceId);
+        Assert.Equal("高一3班教室", response.LocationLabel);
         Assert.Equal("device-token-001", response.DeviceToken);
     }
 

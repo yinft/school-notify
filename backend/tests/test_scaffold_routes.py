@@ -158,6 +158,7 @@ def test_device_registration_is_reflected_in_device_list() -> None:
         json={
             "device_id": "device-001",
             "device_name": "值班室电脑",
+            "location_label": "高一3班教室",
             "client_version": "0.1.0",
         },
     )
@@ -166,6 +167,7 @@ def test_device_registration_is_reflected_in_device_list() -> None:
     register_payload = register_response.json()
     assert register_payload["device_id"] == "device-001"
     assert register_payload["device_name"] == "值班室电脑"
+    assert register_payload["location_label"] == "高一3班教室"
     assert register_payload["client_version"] == "0.1.0"
     assert register_payload["status"] == "online"
     assert parse_timestamp(register_payload["last_seen_at"])
@@ -176,6 +178,7 @@ def test_device_registration_is_reflected_in_device_list() -> None:
     list_payload = list_response.json()
     assert len(list_payload["items"]) == 1
     assert list_payload["items"][0]["device_id"] == "device-001"
+    assert list_payload["items"][0]["location_label"] == "高一3班教室"
     assert list_payload["items"][0]["status"] == "online"
     assert parse_timestamp(list_payload["items"][0]["last_seen_at"])
 
@@ -319,6 +322,74 @@ def test_user_can_bind_device_by_code_and_query_bound_devices() -> None:
     payload = devices_response.json()
     assert len(payload["items"]) == 1
     assert payload["items"][0]["device_id"] == "device-001"
+
+
+def test_binding_code_preview_returns_registered_device_info() -> None:
+    client.post(
+        "/api/devices/register",
+        json={
+            "device_id": "device-001",
+            "device_name": "值班室电脑",
+            "client_version": "0.1.0",
+        },
+    )
+    bind_code_response = client.post(
+        "/api/bindings/code",
+        json={"device_id": "device-001"},
+        headers=device_auth_headers("device-001"),
+    )
+
+    response = client.get(
+        f"/api/bindings/code/{bind_code_response.json()['code']}/device",
+        headers=active_auth_headers("user-001"),
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "device_id": "device-001",
+        "device_name": "值班室电脑",
+        "location_label": "",
+        "client_version": "0.1.0",
+        "status": "online",
+        "last_seen_at": response.json()["last_seen_at"],
+        "device_token": "",
+    }
+
+
+def test_binding_can_update_device_name_and_location() -> None:
+    client.post(
+        "/api/devices/register",
+        json={
+            "device_id": "device-001",
+            "device_name": "DESKTOP-ABC123",
+            "client_version": "0.1.0",
+        },
+    )
+    bind_code_response = client.post(
+        "/api/bindings/code",
+        json={"device_id": "device-001"},
+        headers=device_auth_headers("device-001"),
+    )
+
+    bind_response = client.post(
+        "/api/bindings",
+        json={
+            "user_id": "user-001",
+            "code": bind_code_response.json()["code"],
+            "device_name": "三年级一班通知屏",
+            "location_label": "三年级一班教室",
+        },
+        headers=active_auth_headers("user-001"),
+    )
+    devices_response = client.get(
+        "/api/users/user-001/devices",
+        headers=active_auth_headers("user-001"),
+    )
+
+    assert bind_response.status_code == 201
+    assert devices_response.status_code == 200
+    assert devices_response.json()["items"][0]["device_name"] == "三年级一班通知屏"
+    assert devices_response.json()["items"][0]["location_label"] == "三年级一班教室"
 
 
 def test_user_can_unbind_device() -> None:

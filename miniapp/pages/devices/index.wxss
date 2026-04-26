@@ -28,6 +28,12 @@
   color: #16324f;
 }
 
+.device-location {
+  font-size: 24rpx;
+  color: #47657f;
+  margin-bottom: 10rpx;
+}
+
 .device-meta {
   display: flex;
   gap: 16rpx;

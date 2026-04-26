@@ -5,6 +5,7 @@ from app.schemas.binding import (
     BindingCodeCreateRequest,
     BindingCodeResponse,
     BindingCreateRequest,
+    BindingDevicePreviewResponse,
     BindingResponse,
 )
 from app.services.store import BindingCodeNotFoundError, DeviceNotBoundError, DeviceNotFoundError, store
@@ -27,6 +28,19 @@ def create_binding_code(payload: BindingCodeCreateRequest, authorization: str = 
         raise HTTPException(status_code=404, detail="device not found") from exc
 
 
+@router.get(
+    "/code/{code}/device",
+    summary="查询绑定码对应设备",
+    description="【小程序端】根据绑定码预览待绑定设备信息，用于在绑定前确认并补全名称、位置。",
+    responses={401: {"description": "未认证"}, 404: {"description": "绑定码不存在或已过期"}},
+)
+def get_binding_code_device(code: str, current_user_id: str = Depends(require_current_user)) -> BindingDevicePreviewResponse:
+    try:
+        return store.get_device_by_binding_code(code=code)
+    except BindingCodeNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="binding code not found") from exc
+
+
 @router.post(
     "",
     status_code=status.HTTP_201_CREATED,
@@ -42,7 +56,12 @@ def create_binding_code(payload: BindingCodeCreateRequest, authorization: str = 
 def create_binding(payload: BindingCreateRequest, current_user_id: str = Depends(require_current_user)) -> BindingResponse:
     ensure_same_user(expected_user_id=payload.user_id, current_user_id=current_user_id)
     try:
-        return store.bind_user_to_device(user_id=payload.user_id, code=payload.code)
+        return store.bind_user_to_device(
+            user_id=payload.user_id,
+            code=payload.code,
+            device_name=payload.device_name,
+            location_label=payload.location_label,
+        )
     except BindingCodeNotFoundError as exc:
         raise HTTPException(status_code=404, detail="binding code not found") from exc
 

@@ -5,11 +5,13 @@ namespace SchoolNotify.WindowsClient.Models;
 public sealed record DeviceRegistrationRequest(
     [property: JsonPropertyName("device_id")] string DeviceId,
     [property: JsonPropertyName("device_name")] string DeviceName,
+    [property: JsonPropertyName("location_label")] string LocationLabel,
     [property: JsonPropertyName("client_version")] string ClientVersion);
 
 public sealed record DeviceResponse(
     [property: JsonPropertyName("device_id")] string DeviceId,
     [property: JsonPropertyName("device_name")] string DeviceName,
+    [property: JsonPropertyName("location_label")] string LocationLabel,
     [property: JsonPropertyName("client_version")] string ClientVersion,
     [property: JsonPropertyName("status")] string Status,
     [property: JsonPropertyName("last_seen_at")] System.DateTimeOffset LastSeenAt,

@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 
+from app.schemas.device import DeviceResponse
+
 
 class BindingCodeCreateRequest(BaseModel):
     device_id: str = Field(..., description="设备 ID，由设备端发起绑定码生成")
@@ -14,8 +16,14 @@ class BindingCodeResponse(BaseModel):
 class BindingCreateRequest(BaseModel):
     user_id: str = Field(..., description="用户 ID")
     code: str = Field(..., description="绑定码，由设备端生成")
+    device_name: str | None = Field(None, description="绑定时设置的设备名称")
+    location_label: str | None = Field(None, description="绑定时设置的位置或班级描述")
 
 
 class BindingResponse(BaseModel):
     user_id: str = Field(..., description="用户 ID")
     device_id: str = Field(..., description="设备 ID")
+
+
+class BindingDevicePreviewResponse(DeviceResponse):
+    pass

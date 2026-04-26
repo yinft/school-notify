@@ -1,0 +1,26 @@
+.bind-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16rpx;
+}
+
+.bind-preview-card {
+  margin-top: 20rpx;
+  margin-bottom: 20rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 22rpx;
+  background: #f5f9ff;
+  border: 1rpx solid #d8e8fb;
+}
+
+.bind-preview-eyebrow {
+  font-size: 22rpx;
+  color: #6c86a1;
+  margin-bottom: 6rpx;
+}
+
+.bind-preview-id {
+  font-size: 25rpx;
+  font-weight: 700;
+  color: #183a59;
+}

@@ -11,6 +11,7 @@ function mapDevice(device) {
   return {
     id: device.device_id,
     name: device.device_name,
+    locationLabel: device.location_label || '',
     clientVersion: device.client_version,
     status: device.status,
     lastSeenAt: device.last_seen_at,

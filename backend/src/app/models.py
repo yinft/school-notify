@@ -42,6 +42,7 @@ class Device(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     device_id: Mapped[str] = mapped_column(String(128), unique=True, index=True)
     device_name: Mapped[str] = mapped_column(String(128))
+    location_label: Mapped[str] = mapped_column(String(128), default="")
     client_version: Mapped[str] = mapped_column(String(64))
     status: Mapped[str] = mapped_column(String(32), default="online")
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))

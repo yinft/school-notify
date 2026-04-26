@@ -59,6 +59,7 @@
         <view wx:for="{{devices}}" wx:key="id" class="device-row">
           <view class="device-info">
             <view class="device-name">{{item.name}}</view>
+            <view wx:if="{{item.locationLabel}}" class="device-location">{{item.locationLabel}}</view>
             <view class="device-meta">
               <view class="device-meta-item">{{item.lastSeenText}}</view>
               <view class="device-meta-item">客户端 {{item.clientVersion}}</view>

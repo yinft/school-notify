@@ -35,7 +35,37 @@
       />
       <view class="field-helper">支持手动输入或扫码识别，输入时会自动规范化为大写格式。</view>
 
-      <view class="button-secondary stack-lg" bindtap="scanCode">扫码识别绑定码</view>
+      <view class="bind-actions stack-lg">
+        <view class="button-secondary" bindtap="scanCode">扫码识别绑定码</view>
+        <view class="button-secondary {{isLoadingPreview ? 'button-disabled' : ''}}" bindtap="previewDevice">
+          {{isLoadingPreview ? '识别中...' : '识别设备'}}
+        </view>
+      </view>
+
+      <view wx:if="{{previewDeviceId}}" class="bind-preview-card">
+        <view class="bind-preview-eyebrow">待绑定设备</view>
+        <view class="bind-preview-id">{{previewDeviceId}}</view>
+      </view>
+
+      <view class="field-label">设备名称</view>
+      <input
+        class="field-input field-input-single"
+        placeholder-class="field-input-placeholder"
+        placeholder="默认使用客户端注册名称，可自行修改"
+        maxlength="64"
+        bindinput="onDeviceNameInput"
+        value="{{deviceName}}"
+      />
+
+      <view class="field-label">位置/班级</view>
+      <input
+        class="field-input field-input-single"
+        placeholder-class="field-input-placeholder"
+        placeholder="例如：三年级一班教室"
+        maxlength="64"
+        bindinput="onLocationLabelInput"
+        value="{{locationLabel}}"
+      />
 
       <view class="button-primary {{isSubmitting ? 'button-disabled' : ''}} stack-lg" bindtap="submit">
         {{isSubmitting ? '绑定中...' : '立即绑定'}}
