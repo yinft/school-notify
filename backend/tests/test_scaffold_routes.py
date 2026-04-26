@@ -5,10 +5,6 @@ from fastapi.testclient import TestClient
 from sqlalchemy import delete
 from starlette.websockets import WebSocketDisconnect
 
-from app.core import settings as app_settings
-
-app_settings.settings.database_url = "postgresql+psycopg://postgres:tao1236987456@localhost:5432/school_notify"
-
 from app.api.deps import auth as auth_deps
 from app.api.routes import auth as auth_route
 from app.core.db import Base, SessionLocal, engine
@@ -95,7 +91,7 @@ def test_auth_login_returns_bad_gateway_when_openid_missing(monkeypatch) -> None
 
 
 def test_auth_whoami_rejects_signed_but_unknown_session() -> None:
-    response = client.get("/api/auth/whoami", headers=auth_headers("wx-openid-001"))
+    response = client.get("/api/auth/current_user", headers=auth_headers("wx-openid-001"))
 
     assert response.status_code == 401
     assert response.json() == {"detail": "invalid session token"}
@@ -113,7 +109,7 @@ def test_auth_whoami_returns_current_user_from_active_session(monkeypatch) -> No
     login_response = client.post("/api/auth/login", json={"code": "wx-code-001"})
 
     response = client.get(
-        "/api/auth/whoami",
+        "/api/auth/current_user",
         headers={"Authorization": f"Bearer {login_response.json()['session_token']}"},
     )
 
@@ -138,7 +134,7 @@ def test_auth_logout_revokes_current_session(monkeypatch) -> None:
     token = login_response.json()["session_token"]
 
     logout_response = client.post("/api/auth/logout", headers={"Authorization": f"Bearer {token}"})
-    whoami_response = client.get("/api/auth/whoami", headers={"Authorization": f"Bearer {token}"})
+    whoami_response = client.get("/api/auth/current_user", headers={"Authorization": f"Bearer {token}"})
 
     assert logout_response.status_code == 204
     assert whoami_response.status_code == 401
@@ -158,7 +154,6 @@ def test_device_registration_is_reflected_in_device_list() -> None:
         json={
             "device_id": "device-001",
             "device_name": "值班室电脑",
-            "location_label": "高一3班教室",
             "client_version": "0.1.0",
         },
     )
@@ -167,7 +162,7 @@ def test_device_registration_is_reflected_in_device_list() -> None:
     register_payload = register_response.json()
     assert register_payload["device_id"] == "device-001"
     assert register_payload["device_name"] == "值班室电脑"
-    assert register_payload["location_label"] == "高一3班教室"
+    assert register_payload["location_label"] == ""
     assert register_payload["client_version"] == "0.1.0"
     assert register_payload["status"] == "online"
     assert parse_timestamp(register_payload["last_seen_at"])
@@ -178,7 +173,7 @@ def test_device_registration_is_reflected_in_device_list() -> None:
     list_payload = list_response.json()
     assert len(list_payload["items"]) == 1
     assert list_payload["items"][0]["device_id"] == "device-001"
-    assert list_payload["items"][0]["location_label"] == "高一3班教室"
+    assert list_payload["items"][0]["location_label"] == ""
     assert list_payload["items"][0]["status"] == "online"
     assert parse_timestamp(list_payload["items"][0]["last_seen_at"])
 
@@ -232,6 +227,32 @@ def test_binding_code_returns_generated_code() -> None:
     assert payload["expires_in_seconds"] == 300
     assert len(payload["code"]) == 6
     assert payload["code"].isdigit()
+
+
+def test_binding_code_reuses_unexpired_code_for_same_device() -> None:
+    client.post(
+        "/api/devices/register",
+        json={
+            "device_id": "device-001",
+            "device_name": "值班室电脑",
+            "client_version": "0.1.0",
+        },
+    )
+
+    first = client.post(
+        "/api/bindings/code",
+        json={"device_id": "device-001"},
+        headers=device_auth_headers("device-001"),
+    )
+    second = client.post(
+        "/api/bindings/code",
+        json={"device_id": "device-001"},
+        headers=device_auth_headers("device-001"),
+    )
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert second.json()["code"] == first.json()["code"]
 
 
 def test_binding_code_returns_not_found_for_unknown_device() -> None:
@@ -328,25 +349,25 @@ def test_binding_code_preview_returns_registered_device_info() -> None:
     client.post(
         "/api/devices/register",
         json={
-            "device_id": "device-001",
+            "device_id": "preview-device-001",
             "device_name": "值班室电脑",
             "client_version": "0.1.0",
         },
     )
     bind_code_response = client.post(
         "/api/bindings/code",
-        json={"device_id": "device-001"},
-        headers=device_auth_headers("device-001"),
+        json={"device_id": "preview-device-001"},
+        headers=device_auth_headers("preview-device-001"),
     )
 
     response = client.get(
         f"/api/bindings/code/{bind_code_response.json()['code']}/device",
-        headers=active_auth_headers("user-001"),
+        headers=active_auth_headers("preview-user-001"),
     )
 
     assert response.status_code == 200
     assert response.json() == {
-        "device_id": "device-001",
+        "device_id": "preview-device-001",
         "device_name": "值班室电脑",
         "location_label": "",
         "client_version": "0.1.0",
@@ -360,30 +381,30 @@ def test_binding_can_update_device_name_and_location() -> None:
     client.post(
         "/api/devices/register",
         json={
-            "device_id": "device-001",
+            "device_id": "metadata-device-001",
             "device_name": "DESKTOP-ABC123",
             "client_version": "0.1.0",
         },
     )
     bind_code_response = client.post(
         "/api/bindings/code",
-        json={"device_id": "device-001"},
-        headers=device_auth_headers("device-001"),
+        json={"device_id": "metadata-device-001"},
+        headers=device_auth_headers("metadata-device-001"),
     )
 
     bind_response = client.post(
         "/api/bindings",
         json={
-            "user_id": "user-001",
+            "user_id": "metadata-user-001",
             "code": bind_code_response.json()["code"],
             "device_name": "三年级一班通知屏",
             "location_label": "三年级一班教室",
         },
-        headers=active_auth_headers("user-001"),
+        headers=active_auth_headers("metadata-user-001"),
     )
     devices_response = client.get(
-        "/api/users/user-001/devices",
-        headers=active_auth_headers("user-001"),
+        "/api/users/metadata-user-001/devices",
+        headers=active_auth_headers("metadata-user-001"),
     )
 
     assert bind_response.status_code == 201
@@ -1097,7 +1118,7 @@ def test_auth_session_cached_in_redis(monkeypatch) -> None:
         session.commit()
 
     response = client.get(
-        "/api/auth/whoami",
+        "/api/auth/current_user",
         headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 200
@@ -1169,7 +1190,7 @@ def test_auth_whoami_refreshes_cached_session_ttl(monkeypatch) -> None:
     monkeypatch.setattr(auth_deps, "get_active_session_by_token", fail_db_lookup)
 
     response = client.get(
-        "/api/auth/whoami",
+        "/api/auth/current_user",
         headers={"Authorization": f"Bearer {token}"},
     )
 

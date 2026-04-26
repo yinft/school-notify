@@ -101,7 +101,7 @@ public partial class MainWindow : Window
             _autoStartService.EnableForCurrentUser("SchoolNotifyWindowsClient", Environment.ProcessPath ?? string.Empty);
 
             var registeredDevice = await _apiClient.RegisterDeviceAsync(
-                new DeviceRegistrationRequest(_currentSession.DeviceId, _currentSession.DeviceName, string.Empty, _currentSession.ClientVersion));
+                new DeviceRegistrationRequest(_currentSession.DeviceId, _currentSession.DeviceName, _currentSession.ClientVersion));
             _deviceToken = registeredDevice.DeviceToken;
             if (string.IsNullOrEmpty(_deviceToken))
             {

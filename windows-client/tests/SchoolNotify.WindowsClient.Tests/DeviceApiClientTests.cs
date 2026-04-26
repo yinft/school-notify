@@ -21,13 +21,13 @@ public class DeviceApiClientTests
         };
         var apiClient = new DeviceApiClient(httpClient);
 
-        var response = await apiClient.RegisterDeviceAsync(new DeviceRegistrationRequest("device-001", "值班室电脑", "高一3班教室", "0.1.0"));
+        var response = await apiClient.RegisterDeviceAsync(new DeviceRegistrationRequest("device-001", "值班室电脑", "0.1.0"));
 
         Assert.Equal(HttpMethod.Post, handler.LastRequest!.Method);
         Assert.Equal("http://127.0.0.1:8000/api/devices/register", handler.LastRequest.RequestUri!.ToString());
         Assert.Contains("\"device_id\"", handler.LastRequestBody);
         Assert.Contains("\"device_name\"", handler.LastRequestBody);
-        Assert.Contains("\"location_label\"", handler.LastRequestBody);
+        Assert.DoesNotContain("\"location_label\"", handler.LastRequestBody);
         Assert.Contains("\"client_version\"", handler.LastRequestBody);
         Assert.Equal("device-001", response.DeviceId);
         Assert.Equal("高一3班教室", response.LocationLabel);

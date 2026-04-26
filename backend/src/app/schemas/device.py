@@ -6,7 +6,6 @@ from pydantic import BaseModel, Field
 class DeviceRegistrationRequest(BaseModel):
     device_id: str = Field(..., description="设备唯一标识，由客户端生成")
     device_name: str = Field(..., description="设备名称，如「教室广播终端 A」")
-    location_label: str = Field("", description="设备位置描述，如「高一3班教室」")
     client_version: str = Field(..., description="客户端版本号，如 1.0.0")
 
 

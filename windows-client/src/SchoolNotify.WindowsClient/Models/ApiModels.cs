@@ -5,7 +5,6 @@ namespace SchoolNotify.WindowsClient.Models;
 public sealed record DeviceRegistrationRequest(
     [property: JsonPropertyName("device_id")] string DeviceId,
     [property: JsonPropertyName("device_name")] string DeviceName,
-    [property: JsonPropertyName("location_label")] string LocationLabel,
     [property: JsonPropertyName("client_version")] string ClientVersion);
 
 public sealed record DeviceResponse(

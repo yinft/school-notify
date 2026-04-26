@@ -27,7 +27,6 @@ def register_device(payload: DeviceRegistrationRequest) -> DeviceResponse:
     return store.register_device(
         device_id=payload.device_id,
         device_name=payload.device_name,
-        location_label=payload.location_label,
         client_version=payload.client_version,
     )
 
