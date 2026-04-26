@@ -10,23 +10,19 @@
       <view class="profile-glow profile-glow-a"></view>
       <view class="profile-glow profile-glow-b"></view>
 
+      <view class="hero-overline">账号中心</view>
       <view class="profile-top">
         <button class="profile-avatar-wrap" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
-          <image wx:if="{{avatarUrl}}" class="profile-avatar-image" src="{{avatarUrl}}" mode="aspectFill" />
-          <view wx:else class="profile-avatar-default">我</view>
+          <view class="profile-avatar-inner">
+            <image wx:if="{{avatarUrl}}" class="profile-avatar-image" src="{{avatarUrl}}" mode="aspectFill" />
+            <view wx:else class="profile-avatar-default">微</view>
+          </view>
         </button>
         <view class="profile-info">
-          <view class="hero-overline">账号中心</view>
-          <input class="profile-nick profile-nick-input" type="nickname" placeholder="请输入微信昵称" value="{{nickName}}" bindinput="onNicknameInput" />
-          <view class="hero-subtitle">{{isSubmittingProfile ? '保存中，请稍候...' : '选择微信头像、填写昵称后保存到当前账号。'}}</view>
+          <view class="profile-nick-text">{{nickName || '微信用户'}}</view>
+          <view class="hero-subtitle">{{isSubmittingProfile ? '保存中，请稍候...' : '点击头像更新微信头像。'}}</view>
         </view>
       </view>
-
-      <view class="hero-simple-meta">
-        <view class="hero-simple-chip">账号 {{userId || '未分配'}}</view>
-        <view class="hero-simple-chip">微信资料需手动选择</view>
-      </view>
-      <button class="profile-save-button" loading="{{isSubmittingProfile}}" bindtap="saveProfile">保存头像和昵称</button>
     </view>
 
     <view class="card stack-lg">
@@ -39,7 +35,7 @@
         <view class="menu-icon">绑</view>
         <view class="menu-text-group">
           <view class="menu-text">绑定新设备</view>
-          <view class="menu-desc">添加新的 Windows 客户端到当前账号</view>
+          <view class="menu-desc">添加 Windows 客户端</view>
         </view>
         <view class="menu-arrow">›</view>
       </view>
@@ -47,7 +43,7 @@
         <view class="menu-icon">记</view>
         <view class="menu-text-group">
           <view class="menu-text">发送记录</view>
-          <view class="menu-desc">查看最近通知的发送和展示状态</view>
+          <view class="menu-desc">查看通知发送状态</view>
         </view>
         <view class="menu-arrow">›</view>
       </view>

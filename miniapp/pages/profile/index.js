@@ -31,7 +31,7 @@ Page({
     this.setData({
       userId: app.globalData.currentUserId,
       avatarUrl: profile.avatarUrl || '',
-      nickName: profile.nickName || ''
+      nickName: profile.nickName || '微信用户'
     })
   },
 
@@ -46,41 +46,23 @@ Page({
     }
   },
 
-  onChooseAvatar(event) {
+  async onChooseAvatar(event) {
     if (this.data.isLoginRequired || this.data.isSubmittingProfile) {
       return
     }
 
-    this.setData({ avatarUrl: event.detail.avatarUrl || '' })
-  },
+    const avatarUrl = event.detail.avatarUrl || ''
+    this.setData({ avatarUrl })
 
-  onNicknameInput(event) {
-    this.setData({ nickName: event.detail.value || '' })
-  },
-
-  async saveProfile() {
-    if (this.data.isLoginRequired || this.data.isSubmittingProfile) {
-      return
-    }
-
-    const profile = createUserProfile({
-      avatarUrl: this.data.avatarUrl,
-      nickName: this.data.nickName
-    })
-
-    if (!profile.avatarUrl || !profile.nickName) {
-      wx.showToast({ title: '请选择头像并填写昵称', icon: 'none' })
-      return
-    }
+    if (!avatarUrl) return
 
     this.setData({ isSubmittingProfile: true })
-
+    const profile = createUserProfile({ avatarUrl, nickName: this.data.nickName || '微信用户' })
     const app = getApp()
     app.setUserProfile(profile)
-    const result = await syncProfileToServer({ nickname: profile.nickName, avatarUrl: profile.avatarUrl })
+    await syncProfileToServer({ nickname: profile.nickName, avatarUrl })
     this.setData({ isSubmittingProfile: false })
-    this.syncProfile()
-    wx.showToast({ title: result ? '资料已保存' : '已本地保存', icon: 'none' })
+    wx.showToast({ title: '头像已更新', icon: 'none' })
   },
 
   async logout() {
@@ -89,7 +71,6 @@ Page({
     this.setData({
       userId: '',
       avatarUrl: '',
-      nickName: '',
       isLoginRequired: true,
       loginTipText: getLoginRequiredMessage('我的'),
       loginGate: createLoginGateModel('我的')
