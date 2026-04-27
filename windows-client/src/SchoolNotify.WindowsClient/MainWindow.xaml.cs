@@ -1,7 +1,9 @@
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Globalization;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Forms = System.Windows.Forms;
@@ -15,7 +17,11 @@ public partial class MainWindow : Window
 {
     private readonly DeviceApiClient _apiClient;
 
+    private readonly DeviceAuthenticationCoordinator _deviceAuthenticationCoordinator;
+
     private readonly ClientSessionStore _clientSessionStore = new();
+
+    private readonly ClientSettingsStore _clientSettingsStore = new();
 
     private readonly BannerSettingsStore _bannerSettingsStore = new();
 
@@ -31,11 +37,15 @@ public partial class MainWindow : Window
 
     private readonly DispatcherTimer _reconnectTimer;
 
+    private readonly DispatcherTimer _bindingCodeRefreshTimer;
+
     private readonly CancellationTokenSource _cancellationTokenSource = new();
 
     private readonly Forms.NotifyIcon _notifyIcon;
 
     private readonly BannerOverlayWindow _bannerOverlay = new();
+
+    private readonly BindingCodeRefreshController _bindingCodeRefreshController = new();
 
     private ClientSession? _currentSession;
 
@@ -43,11 +53,17 @@ public partial class MainWindow : Window
 
     private BannerSettings _bannerSettings = BannerSettings.Default;
 
+    private ClientSettings _clientSettings = ClientSettings.Default;
+
     private int _reconnectAttempt;
 
     private bool _isExplicitExitRequested;
 
     private bool _isLoadingBannerSettings;
+
+    private bool _isLoadingClientSettings;
+
+    private bool _isRefreshingBindingCode;
 
     public MainWindow()
     {
@@ -59,6 +75,7 @@ public partial class MainWindow : Window
         };
 
         _apiClient = new DeviceApiClient(httpClient);
+        _deviceAuthenticationCoordinator = new DeviceAuthenticationCoordinator(_apiClient.RegisterDeviceAsync);
         _webSocketClient = new DeviceWebSocketClient(httpClient.BaseAddress!);
         _heartbeatTimer = new DispatcherTimer
         {
@@ -69,9 +86,14 @@ public partial class MainWindow : Window
             Interval = TimeSpan.FromSeconds(10)
         };
         _reconnectTimer = new DispatcherTimer();
+        _bindingCodeRefreshTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(1)
+        };
         _heartbeatTimer.Tick += HeartbeatTimerOnTick;
         _bannerHideTimer.Tick += BannerHideTimerOnTick;
         _reconnectTimer.Tick += ReconnectTimerOnTick;
+        _bindingCodeRefreshTimer.Tick += BindingCodeRefreshTimerOnTick;
 
         _notifyIcon = new Forms.NotifyIcon
         {
@@ -98,19 +120,29 @@ public partial class MainWindow : Window
             _currentSession = await _clientSessionStore.LoadOrCreateAsync();
             DeviceNameTextBlock.Text = $"设备名称：{_currentSession.DeviceName}";
             DeviceIdTextBlock.Text = $"设备 ID：{_currentSession.DeviceId}";
-            _autoStartService.EnableForCurrentUser("SchoolNotifyWindowsClient", Environment.ProcessPath ?? string.Empty);
 
-            var registeredDevice = await _apiClient.RegisterDeviceAsync(
-                new DeviceRegistrationRequest(_currentSession.DeviceId, _currentSession.DeviceName, _currentSession.ClientVersion));
-            _deviceToken = registeredDevice.DeviceToken;
+            _clientSettings = await _clientSettingsStore.LoadAsync(_cancellationTokenSource.Token);
+            ApplyClientSettingsToControls(_clientSettings);
+            ApplyAutoStartSetting(_clientSettings);
+
+            var authResult = await _deviceAuthenticationCoordinator.EnsureRegisteredAsync(_currentSession, _cancellationTokenSource.Token);
+            await ApplyAuthenticationResultAsync(authResult);
             if (string.IsNullOrEmpty(_deviceToken))
             {
                 throw new InvalidOperationException("服务端未返回设备令牌");
             }
-            ApplyDeviceState(registeredDevice, "注册成功，等待小程序绑定");
 
-            var bindingCode = await _apiClient.RequestBindingCodeAsync(_currentSession.DeviceId, _deviceToken);
-            ApplyBindingCode(bindingCode.Code);
+            if (authResult.RegisteredDevice is not null)
+            {
+                ApplyDeviceState(authResult.RegisteredDevice, DeviceStatusText.RegisteredWaitingForBinding);
+            }
+            else
+            {
+                StatusSummaryTextBlock.Text = DeviceStatusText.RestoredTokenWaitingForConnection;
+            }
+
+            await RefreshBindingCodeAsync();
+            _bindingCodeRefreshTimer.Start();
 
             _bannerSettings = await _bannerSettingsStore.LoadAsync(_cancellationTokenSource.Token);
             ApplyBannerSettingsToControls(_bannerSettings);
@@ -120,10 +152,13 @@ public partial class MainWindow : Window
             _heartbeatTimer.Start();
             ReconnectStatusTextBlock.Text = "重连状态：托盘和开机自启已启用";
         }
+        catch (Exception exception) when (IsDeviceAuthFailure(exception))
+        {
+            ShowDeviceAuthFailure();
+        }
         catch (Exception exception)
         {
-            StatusSummaryTextBlock.Text = $"初始化失败：{exception.Message}";
-            ConnectionStatusTextBlock.Text = "连接状态：异常";
+            ShowOperationalFailure($"初始化失败：{exception.Message}", "连接状态：异常");
         }
     }
 
@@ -136,19 +171,29 @@ public partial class MainWindow : Window
 
         try
         {
-            var heartbeat = await _apiClient.SendHeartbeatAsync(_currentSession.DeviceId, _deviceToken);
-            ApplyDeviceState(heartbeat, "心跳正常，客户端在线");
+            var heartbeat = await _apiClient.SendHeartbeatAsync(_currentSession.DeviceId, _deviceToken, _cancellationTokenSource.Token);
+            ApplyDeviceState(heartbeat, DeviceStatusText.HeartbeatHealthy);
+        }
+        catch (HttpRequestException exception) when (IsDeviceAuthFailure(exception))
+        {
+            ShowDeviceAuthFailure();
         }
         catch (Exception exception)
         {
-            StatusSummaryTextBlock.Text = $"心跳失败：{exception.Message}";
-            ConnectionStatusTextBlock.Text = "连接状态：心跳失败";
+            ShowOperationalFailure($"心跳失败：{exception.Message}", "连接状态：心跳失败");
         }
     }
 
     private async Task ConnectWebSocketAsync()
     {
-        if (_currentSession is null || string.IsNullOrEmpty(_deviceToken))
+        if (_currentSession is null)
+        {
+            return;
+        }
+
+        var authResult = await _deviceAuthenticationCoordinator.EnsureRegisteredAsync(_currentSession, _cancellationTokenSource.Token);
+        await ApplyAuthenticationResultAsync(authResult);
+        if (string.IsNullOrEmpty(_deviceToken))
         {
             return;
         }
@@ -163,7 +208,7 @@ public partial class MainWindow : Window
         _reconnectAttempt = 0;
         _heartbeatTimer.Start();
         ReconnectStatusTextBlock.Text = "重连状态：WebSocket 已连接";
-        ConnectionStatusTextBlock.Text = "连接状态：在线";
+        ApplyConnectionStatus("online");
     }
 
     private Task HandleWebSocketDisconnectedAsync(Exception? exception)
@@ -171,7 +216,13 @@ public partial class MainWindow : Window
         return Dispatcher.InvokeAsync(() =>
         {
             _heartbeatTimer.Stop();
-            ConnectionStatusTextBlock.Text = "连接状态：WebSocket 已断开";
+            if (IsDeviceAuthFailure(exception))
+            {
+                ShowDeviceAuthFailure();
+                return;
+            }
+
+            ApplyConnectionStatus("offline");
             ScheduleReconnect(exception?.Message);
         }).Task;
     }
@@ -197,6 +248,10 @@ public partial class MainWindow : Window
         {
             await ConnectWebSocketAsync();
         }
+        catch (HttpRequestException exception) when (IsDeviceAuthFailure(exception))
+        {
+            ShowDeviceAuthFailure();
+        }
         catch (Exception exception)
         {
             ScheduleReconnect(exception.Message);
@@ -207,6 +262,23 @@ public partial class MainWindow : Window
     {
         _bannerOverlay.HideNotification();
         _bannerHideTimer.Stop();
+    }
+
+    private async void BindingCodeRefreshTimerOnTick(object? sender, EventArgs e)
+    {
+        if (_isRefreshingBindingCode)
+        {
+            return;
+        }
+
+        var shouldRefresh = _bindingCodeRefreshController.Tick();
+        UpdateBindingCodeCountdownText();
+        if (!shouldRefresh)
+        {
+            return;
+        }
+
+        await RefreshBindingCodeAsync();
     }
 
     private async Task HandleNotificationAsync(DeviceNotificationMessage message)
@@ -273,12 +345,15 @@ public partial class MainWindow : Window
         _heartbeatTimer.Stop();
         _bannerHideTimer.Stop();
         _reconnectTimer.Stop();
+        _bindingCodeRefreshTimer.Stop();
         _bannerOverlay.HideNotification();
         _cancellationTokenSource.Cancel();
         await _webSocketClient.DisconnectAsync(CancellationToken.None);
+        _bannerOverlay.Close();
         _notifyIcon.Visible = false;
         _notifyIcon.Dispose();
         _cancellationTokenSource.Dispose();
+        System.Windows.Application.Current.Shutdown();
     }
 
     private Forms.ContextMenuStrip BuildTrayMenu()
@@ -302,19 +377,125 @@ public partial class MainWindow : Window
         Close();
     }
 
+    private void SettingsButtonClicked(object sender, RoutedEventArgs e)
+    {
+        SettingsPanel.BringIntoView();
+        MainScrollViewer.ScrollToEnd();
+    }
+
     private void ApplyDeviceState(DeviceResponse device, string summary)
     {
         StatusSummaryTextBlock.Text = summary;
-        ConnectionStatusTextBlock.Text = $"连接状态：{device.Status}";
-        LastHeartbeatTextBlock.Text = $"最后心跳：{device.LastSeenAt:yyyy-MM-dd HH:mm:ss}";
+        ApplyConnectionStatus(device.Status);
+        LastHeartbeatTextBlock.Text = DeviceStatusText.FormatLastHeartbeat(device.LastSeenAt);
     }
 
-    private void ApplyBindingCode(string code)
+    private void ApplyBindingCode(string code, int expiresInSeconds)
     {
         var payload = $"school-notify://bind?code={code}";
+        _bindingCodeRefreshController.ApplyBindingCode(code, expiresInSeconds);
         BindingCodeTextBlock.Text = $"绑定码：{code}";
+        UpdateBindingCodeCountdownText();
         BindingPayloadTextBlock.Text = $"扫码内容：{payload}";
         QrImage.Source = CreateQrImage(payload);
+    }
+
+    private void ApplyConnectionStatus(string status)
+    {
+        var presentation = DeviceStatusText.BuildConnectionStatus(status);
+        ConnectionStatusTextBlock.Text = presentation.Text;
+        ConnectionStatusTextBlock.Foreground = ResolveTextBrush(presentation.ColorName);
+    }
+
+    private async Task RefreshBindingCodeAsync()
+    {
+        if (_currentSession is null || string.IsNullOrEmpty(_deviceToken))
+        {
+            return;
+        }
+
+        _isRefreshingBindingCode = true;
+        BindingCodeCountdownTextBlock.Text = "二维码有效期：刷新中...";
+
+        try
+        {
+            var bindingCode = await _apiClient.RequestBindingCodeAsync(_currentSession.DeviceId, _deviceToken, _cancellationTokenSource.Token);
+            ApplyBindingCode(bindingCode.Code, bindingCode.ExpiresInSeconds);
+        }
+        catch (HttpRequestException exception) when (IsDeviceAuthFailure(exception))
+        {
+            BindingCodeCountdownTextBlock.Text = "二维码有效期：认证异常";
+            ShowDeviceAuthFailure();
+        }
+        catch (Exception exception)
+        {
+            BindingCodeCountdownTextBlock.Text = "二维码有效期：刷新失败";
+            ShowOperationalFailure($"绑定码刷新失败：{exception.Message}", null);
+        }
+        finally
+        {
+            _isRefreshingBindingCode = false;
+        }
+    }
+
+    private void UpdateBindingCodeCountdownText()
+    {
+        BindingCodeCountdownTextBlock.Text = $"二维码有效期：{_bindingCodeRefreshController.RemainingSeconds} 秒";
+    }
+
+    private async Task ApplyAuthenticationResultAsync(DeviceAuthenticationResult result)
+    {
+        var hasChanged = _currentSession is null || _currentSession != result.Session;
+        _currentSession = result.Session;
+        _deviceToken = result.Session.DeviceToken;
+        if (hasChanged)
+        {
+            await _clientSessionStore.SaveAsync(result.Session, _cancellationTokenSource.Token);
+        }
+    }
+
+    private static bool IsDeviceAuthFailure(Exception? exception)
+    {
+        if (exception is HttpRequestException httpException)
+        {
+            return httpException.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden;
+        }
+
+        var message = exception?.Message;
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return false;
+        }
+
+        return message.Contains("401", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("403", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("unauthorized", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("forbidden", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void ShowDeviceAuthFailure()
+    {
+        ShowOperationalFailure(DeviceStatusText.AuthFailureSummary, DeviceStatusText.AuthFailureConnectionStatus);
+        ConnectionStatusTextBlock.Foreground = System.Windows.Media.Brushes.Crimson;
+    }
+
+    private void ShowOperationalFailure(string summary, string? connectionStatus)
+    {
+        StatusSummaryTextBlock.Text = summary;
+        if (!string.IsNullOrWhiteSpace(connectionStatus))
+        {
+            ConnectionStatusTextBlock.Text = connectionStatus;
+        }
+    }
+
+    private static System.Windows.Media.Brush ResolveTextBrush(string colorName)
+    {
+        return colorName switch
+        {
+            "SeaGreen" => System.Windows.Media.Brushes.SeaGreen,
+            "Crimson" => System.Windows.Media.Brushes.Crimson,
+            _ => System.Windows.Media.Brushes.SlateGray,
+        };
     }
 
     private static string FormatBannerMessage(string title, string content)
@@ -362,6 +543,39 @@ public partial class MainWindow : Window
         StatusSummaryTextBlock.Text = "横幅设置已更新";
     }
 
+    private async void ClientSettingsControlChanged(object sender, RoutedEventArgs e)
+    {
+        if (_isLoadingClientSettings || !IsLoaded)
+        {
+            return;
+        }
+
+        _clientSettings = ReadClientSettingsFromControls();
+        ApplyAutoStartSetting(_clientSettings);
+        await _clientSettingsStore.SaveAsync(_clientSettings, _cancellationTokenSource.Token);
+        StatusSummaryTextBlock.Text = _clientSettings.AutoStartEnabled ? "开机自启动已开启" : "开机自启动已关闭";
+    }
+
+    private void ApplyClientSettingsToControls(ClientSettings settings)
+    {
+        _isLoadingClientSettings = true;
+        AutoStartCheckBox.IsChecked = settings.AutoStartEnabled;
+        _isLoadingClientSettings = false;
+    }
+
+    private ClientSettings ReadClientSettingsFromControls()
+    {
+        return new ClientSettings(AutoStartEnabled: AutoStartCheckBox.IsChecked == true);
+    }
+
+    private void ApplyAutoStartSetting(ClientSettings settings)
+    {
+        _autoStartService.ApplyForCurrentUser(
+            "SchoolNotifyWindowsClient",
+            Environment.ProcessPath ?? string.Empty,
+            settings.AutoStartEnabled);
+    }
+
     private void ApplyBannerSettingsToControls(BannerSettings settings)
     {
         _isLoadingBannerSettings = true;
@@ -371,6 +585,7 @@ public partial class MainWindow : Window
         SelectComboBoxItemByTag(BannerImportantColorComboBox, settings.ImportantColorName);
         SelectComboBoxItemByTag(BannerUrgentColorComboBox, settings.UrgentColorName);
         SelectComboBoxItemByTag(BannerDurationComboBox, settings.DisplayDurationSeconds.ToString(CultureInfo.InvariantCulture));
+        SelectComboBoxItemByTag(BannerDisplayModeComboBox, settings.DisplayMode);
         UpdateBannerSettingsSummary(settings);
         _isLoadingBannerSettings = false;
     }
@@ -395,7 +610,8 @@ public partial class MainWindow : Window
             NormalColorName: ReadSelectedTag(BannerNormalColorComboBox, BannerSettings.Default.NormalColorName),
             ImportantColorName: ReadSelectedTag(BannerImportantColorComboBox, BannerSettings.Default.ImportantColorName),
             UrgentColorName: ReadSelectedTag(BannerUrgentColorComboBox, BannerSettings.Default.UrgentColorName),
-            DisplayDurationSeconds: duration);
+            DisplayDurationSeconds: duration,
+            DisplayMode: ReadSelectedTag(BannerDisplayModeComboBox, BannerSettings.Default.DisplayMode));
     }
 
     private void UpdateBannerSettingsSummary(BannerSettings settings)

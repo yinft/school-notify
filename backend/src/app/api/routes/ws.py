@@ -50,5 +50,4 @@ async def device_socket(
             if event and notification_id:
                 store.register_receipt(device_id=device_id, notification_id=notification_id, event=event)
     except WebSocketDisconnect:
-        device_connections.disconnect(device_id=device_id)
-        redis_service.set_device_offline(device_id)
+        device_connections.mark_offline(device_id=device_id)

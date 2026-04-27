@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 
 import pytest
@@ -12,6 +13,7 @@ from app.main import app
 from app.models import AuthSession, User
 from app.services.auth_sessions import create_auth_session, get_or_create_user_by_openid
 from app.services import store as store_module
+from app.services.device_connections import device_connections
 from app.services.store import store
 from app.services.wechat_auth import build_device_token, build_session_token
 
@@ -1255,3 +1257,46 @@ def test_websocket_disconnect_sets_device_offline(monkeypatch) -> None:
         pass
 
     assert offline_called["flag"]
+    assert store.list_devices()[0].status == "offline"
+
+
+def test_stale_websocket_send_marks_device_offline_and_failed(monkeypatch) -> None:
+    monkeypatch.setattr(store_module.redis_service, "set_device_online", lambda device_id, ttl=90: None)
+    monkeypatch.setattr(store_module.redis_service, "set_device_offline", lambda device_id: None)
+
+    client.post(
+        "/api/devices/register",
+        json={
+            "device_id": "device-stale",
+            "device_name": "??????",
+            "client_version": "0.1.0",
+        },
+    )
+
+    class FailingWebSocket:
+        async def accept(self):
+            return None
+
+        async def send_json(self, payload):
+            raise RuntimeError("socket disconnected")
+
+    asyncio.run(device_connections.connect(device_id="device-stale", websocket=FailingWebSocket()))
+
+    failed_device_ids = asyncio.run(
+        device_connections.send_notifications(
+            deliveries=[
+                {
+                    "device_id": "device-stale",
+                    "payload": {
+                        "notification_id": "notification-stale",
+                        "title": "Test",
+                        "content": "Hello",
+                        "level": "normal",
+                    },
+                }
+            ]
+        )
+    )
+
+    assert failed_device_ids == ["device-stale"]
+    assert store.list_devices()[0].status == "offline"

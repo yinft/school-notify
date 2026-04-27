@@ -5,6 +5,7 @@
         Height="520"
         Width="860"
         Background="#F8FAFC">
+    <ScrollViewer x:Name="MainScrollViewer" VerticalScrollBarVisibility="Auto">
     <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -14,10 +15,19 @@
         </Grid.RowDefinitions>
 
         <Border Padding="20" Background="#0F172A" CornerRadius="16">
-            <StackPanel>
-                <TextBlock FontSize="28" FontWeight="Bold" Foreground="White" Text="校园通知屏客户端" />
-                <TextBlock x:Name="StatusSummaryTextBlock" Margin="0,8,0,0" Foreground="#CBD5E1" Text="正在初始化客户端..." TextWrapping="Wrap" />
-            </StackPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel>
+                    <TextBlock FontSize="28" FontWeight="Bold" Foreground="White" Text="校园通知屏客户端" />
+                    <TextBlock x:Name="StatusSummaryTextBlock" Margin="0,8,0,0" Foreground="#CBD5E1" Text="正在初始化客户端..." TextWrapping="Wrap" />
+                </StackPanel>
+
+                <Button Grid.Column="1" MinWidth="72" Padding="12,8" VerticalAlignment="Top" Content="设置" Click="SettingsButtonClicked" />
+            </Grid>
         </Border>
 
         <Grid Grid.Row="2">
@@ -32,7 +42,7 @@
                     <TextBlock FontSize="18" FontWeight="SemiBold" Text="设备信息" />
                     <TextBlock x:Name="DeviceNameTextBlock" Margin="0,12,0,0" Text="设备名称：-" />
                     <TextBlock x:Name="DeviceIdTextBlock" Margin="0,8,0,0" Text="设备 ID：-" />
-                    <TextBlock x:Name="ConnectionStatusTextBlock" Margin="0,8,0,0" Text="连接状态：未连接" />
+                    <TextBlock x:Name="ConnectionStatusTextBlock" Margin="0,8,0,0" Foreground="#475569" Text="连接状态：未连接" />
                     <TextBlock x:Name="LastHeartbeatTextBlock" Margin="0,8,0,0" Text="最后心跳：-" />
                     <TextBlock x:Name="ReconnectStatusTextBlock" Margin="0,8,0,0" Text="重连状态：未启动" />
                 </StackPanel>
@@ -41,8 +51,9 @@
             <Border Grid.Column="2" Padding="16" Background="White" CornerRadius="16">
                 <StackPanel>
                     <TextBlock FontSize="18" FontWeight="SemiBold" Text="绑定信息" />
-                    <TextBlock x:Name="BindingCodeTextBlock" Margin="0,12,0,0" Text="绑定码：-" />
-                    <TextBlock x:Name="BindingPayloadTextBlock" Margin="0,8,0,0" Foreground="#475569" Text="扫码内容：-" TextWrapping="Wrap" />
+                    <TextBlock x:Name="BindingCodeTextBlock" Margin="0,12,0,0" FontSize="32" FontWeight="Bold" Foreground="#0F172A" Text="绑定码：-" />
+                    <TextBlock x:Name="BindingCodeCountdownTextBlock" Margin="0,8,0,0" Foreground="#475569" Text="二维码有效期：-" />
+                    <TextBlock x:Name="BindingPayloadTextBlock" Visibility="Collapsed" Margin="0,8,0,0" Foreground="#475569" Text="扫码内容：-" TextWrapping="Wrap" />
                     <Border Width="180" Height="180" Margin="0,16,0,0" Background="#E2E8F0" CornerRadius="12">
                         <Image x:Name="QrImage" Stretch="Uniform" />
                     </Border>
@@ -59,59 +70,70 @@
 
             <Border Padding="16" Background="White" CornerRadius="16">
                 <StackPanel>
-                    <TextBlock FontSize="18" FontWeight="SemiBold" Text="后续开发入口" />
-                    <TextBlock Margin="0,12,0,0" Text="1. 设备注册与令牌管理" />
-                    <TextBlock Margin="0,6,0,0" Text="2. WebSocket 在线与心跳" />
-                    <TextBlock Margin="0,6,0,0" Text="3. 顶部滚动横幅与短卡片提醒" />
-                    <TextBlock Margin="0,6,0,0" Text="4. 系统托盘、开机自启与 TTS" />
+                    <TextBlock FontSize="18" FontWeight="SemiBold" Text="客户端说明" />
+                    <TextBlock Margin="0,12,0,0" Text="1. 在线状态使用中文和颜色标识" />
+                    <TextBlock Margin="0,6,0,0" Text="2. 绑定码和二维码用于小程序绑定" />
+                    <TextBlock Margin="0,6,0,0" Text="3. 通知显示方式可在右侧设置" />
+                    <TextBlock Margin="0,6,0,0" Text="4. 时间按北京时间显示" />
                 </StackPanel>
             </Border>
 
-            <Border Grid.Column="2" Padding="16" Background="White" CornerRadius="16">
-                <StackPanel>
-                    <TextBlock FontSize="18" FontWeight="SemiBold" Text="横幅设置" />
-                    <TextBlock Margin="0,12,0,0" Text="滚动速度" />
-                    <Slider x:Name="BannerSpeedSlider" Minimum="80" Maximum="320" TickFrequency="20" IsSnapToTickEnabled="True" ValueChanged="BannerSettingsControlChanged" />
-                    <TextBlock x:Name="BannerSpeedValueTextBlock" Margin="0,4,0,0" Foreground="#475569" Text="160 px/s" />
+            <Border x:Name="SettingsPanel" Grid.Column="2" Padding="16" Background="White" CornerRadius="16">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock FontSize="18" FontWeight="SemiBold" Text="通知显示设置" />
+                        <CheckBox x:Name="AutoStartCheckBox" Margin="0,12,0,0" Content="开机自动启动" IsChecked="True" Checked="ClientSettingsControlChanged" Unchecked="ClientSettingsControlChanged" />
 
-                    <TextBlock Margin="0,12,0,0" Text="字体大小" />
-                    <Slider x:Name="BannerFontSizeSlider" Minimum="18" Maximum="40" TickFrequency="2" IsSnapToTickEnabled="True" ValueChanged="BannerSettingsControlChanged" />
-                    <TextBlock x:Name="BannerFontSizeValueTextBlock" Margin="0,4,0,0" Foreground="#475569" Text="24 px" />
+                        <TextBlock Margin="0,12,0,0" Text="通知显示方式" />
+                        <ComboBox x:Name="BannerDisplayModeComboBox" SelectionChanged="BannerSettingsControlChanged">
+                            <ComboBoxItem Content="顶端横幅" Tag="TopBanner" />
+                            <ComboBoxItem Content="全屏覆盖" Tag="FullScreen" />
+                        </ComboBox>
 
-                    <TextBlock Margin="0,12,0,0" Text="普通通知颜色" />
-                    <ComboBox x:Name="BannerNormalColorComboBox" SelectionChanged="BannerSettingsControlChanged">
-                        <ComboBoxItem Content="蓝色" Tag="SteelBlue" />
-                        <ComboBoxItem Content="绿色" Tag="SeaGreen" />
-                        <ComboBoxItem Content="紫色" Tag="MediumPurple" />
-                        <ComboBoxItem Content="深灰" Tag="SlateGray" />
-                    </ComboBox>
+                        <TextBlock Margin="0,12,0,0" Text="滚动速度" />
+                        <Slider x:Name="BannerSpeedSlider" Minimum="80" Maximum="320" TickFrequency="20" IsSnapToTickEnabled="True" ValueChanged="BannerSettingsControlChanged" />
+                        <TextBlock x:Name="BannerSpeedValueTextBlock" Margin="0,4,0,0" Foreground="#475569" Text="160 px/s" />
 
-                    <TextBlock Margin="0,12,0,0" Text="重要通知颜色" />
-                    <ComboBox x:Name="BannerImportantColorComboBox" SelectionChanged="BannerSettingsControlChanged">
-                        <ComboBoxItem Content="橙色" Tag="Orange" />
-                        <ComboBoxItem Content="金色" Tag="Gold" />
-                        <ComboBoxItem Content="珊瑚色" Tag="Coral" />
-                        <ComboBoxItem Content="番茄红" Tag="Tomato" />
-                    </ComboBox>
+                        <TextBlock Margin="0,12,0,0" Text="字体大小" />
+                        <Slider x:Name="BannerFontSizeSlider" Minimum="18" Maximum="40" TickFrequency="2" IsSnapToTickEnabled="True" ValueChanged="BannerSettingsControlChanged" />
+                        <TextBlock x:Name="BannerFontSizeValueTextBlock" Margin="0,4,0,0" Foreground="#475569" Text="24 px" />
 
-                    <TextBlock Margin="0,12,0,0" Text="紧急通知颜色" />
-                    <ComboBox x:Name="BannerUrgentColorComboBox" SelectionChanged="BannerSettingsControlChanged">
-                        <ComboBoxItem Content="红色" Tag="Red" />
-                        <ComboBoxItem Content="深红" Tag="DarkRed" />
-                        <ComboBoxItem Content="橙红" Tag="OrangeRed" />
-                        <ComboBoxItem Content="绯红" Tag="Crimson" />
-                    </ComboBox>
+                        <TextBlock Margin="0,12,0,0" Text="普通通知颜色" />
+                        <ComboBox x:Name="BannerNormalColorComboBox" SelectionChanged="BannerSettingsControlChanged">
+                            <ComboBoxItem Content="蓝色" Tag="SteelBlue" />
+                            <ComboBoxItem Content="绿色" Tag="SeaGreen" />
+                            <ComboBoxItem Content="紫色" Tag="MediumPurple" />
+                            <ComboBoxItem Content="深灰" Tag="SlateGray" />
+                        </ComboBox>
 
-                    <TextBlock Margin="0,12,0,0" Text="默认停留时长（通知未指定时生效）" />
-                    <ComboBox x:Name="BannerDurationComboBox" SelectionChanged="BannerSettingsControlChanged">
-                        <ComboBoxItem Content="10 秒" Tag="10" />
-                        <ComboBoxItem Content="30 秒" Tag="30" />
-                        <ComboBoxItem Content="60 秒" Tag="60" />
-                    </ComboBox>
+                        <TextBlock Margin="0,12,0,0" Text="重要通知颜色" />
+                        <ComboBox x:Name="BannerImportantColorComboBox" SelectionChanged="BannerSettingsControlChanged">
+                            <ComboBoxItem Content="橙色" Tag="Orange" />
+                            <ComboBoxItem Content="金色" Tag="Gold" />
+                            <ComboBoxItem Content="珊瑚色" Tag="Coral" />
+                            <ComboBoxItem Content="番茄红" Tag="Tomato" />
+                        </ComboBox>
 
-                    <Button Margin="0,16,0,0" Padding="8,6" Content="恢复默认" Click="BannerResetToDefaultClicked" />
-                </StackPanel>
+                        <TextBlock Margin="0,12,0,0" Text="紧急通知颜色" />
+                        <ComboBox x:Name="BannerUrgentColorComboBox" SelectionChanged="BannerSettingsControlChanged">
+                            <ComboBoxItem Content="红色" Tag="Red" />
+                            <ComboBoxItem Content="深红" Tag="DarkRed" />
+                            <ComboBoxItem Content="橙红" Tag="OrangeRed" />
+                            <ComboBoxItem Content="绯红" Tag="Crimson" />
+                        </ComboBox>
+
+                        <TextBlock Margin="0,12,0,0" Text="默认停留时长（通知未指定时生效）" />
+                        <ComboBox x:Name="BannerDurationComboBox" SelectionChanged="BannerSettingsControlChanged">
+                            <ComboBoxItem Content="10 秒" Tag="10" />
+                            <ComboBoxItem Content="30 秒" Tag="30" />
+                            <ComboBoxItem Content="60 秒" Tag="60" />
+                        </ComboBox>
+
+                        <Button Margin="0,16,0,0" Padding="8,6" Content="恢复默认" Click="BannerResetToDefaultClicked" />
+                    </StackPanel>
+                </ScrollViewer>
             </Border>
         </Grid>
     </Grid>
+    </ScrollViewer>
 </Window>
