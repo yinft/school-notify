@@ -226,7 +226,7 @@ def test_binding_code_returns_generated_code() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["device_id"] == "device-001"
-    assert payload["expires_in_seconds"] == 30
+    assert payload["expires_in_seconds"] == 60
     assert len(payload["code"]) == 6
     assert payload["code"].isdigit()
 
