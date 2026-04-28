@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:16
+    command: ["postgres", "-c", "timezone=${POSTGRES_TIMEZONE:-Asia/Shanghai}"]
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-school_notify}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d school_notify"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      SCHOOL_NOTIFY_DATABASE_URL: ${SCHOOL_NOTIFY_DATABASE_URL}
+      SCHOOL_NOTIFY_REDIS_URL: ${SCHOOL_NOTIFY_REDIS_URL}
+      SCHOOL_NOTIFY_REDIS_PASSWORD: ${SCHOOL_NOTIFY_REDIS_PASSWORD:-}
+      SCHOOL_NOTIFY_REDIS_KEY_PREFIX: ${SCHOOL_NOTIFY_REDIS_KEY_PREFIX:-school-notify}
+      SCHOOL_NOTIFY_AUTH_SESSION_CACHE_TTL_SECONDS: ${SCHOOL_NOTIFY_AUTH_SESSION_CACHE_TTL_SECONDS:-7200}
+      SCHOOL_NOTIFY_DEVICE_ONLINE_TTL_SECONDS: ${SCHOOL_NOTIFY_DEVICE_ONLINE_TTL_SECONDS:-90}
+      SCHOOL_NOTIFY_WECHAT_APP_ID: ${SCHOOL_NOTIFY_WECHAT_APP_ID}
+      SCHOOL_NOTIFY_WECHAT_APP_SECRET: ${SCHOOL_NOTIFY_WECHAT_APP_SECRET}
+      SCHOOL_NOTIFY_SESSION_SIGNING_SECRET: ${SCHOOL_NOTIFY_SESSION_SIGNING_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+volumes:
+  postgres_data:
+  redis_data:
