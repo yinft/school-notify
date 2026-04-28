@@ -2,10 +2,15 @@ const { createNotificationService } = require('../../services/notification')
 const { ensurePageLogin } = require('../../utils/page-auth')
 const { request } = require('../../utils/request')
 
+const PAGE_SIZE = 10
+
 Page({
   data: {
     records: [],
     isLoading: false,
+    isLoadingMore: false,
+    hasMore: false,
+    totalRecords: 0,
     errorText: '',
     displayedCount: 0,
     isLoginRequired: false,
@@ -35,36 +40,53 @@ Page({
     }
   },
 
-  async loadRecords() {
+  async loadRecords(options = {}) {
+    const append = options.append === true
+    if ((append && (this.data.isLoadingMore || !this.data.hasMore)) || (!append && this.data.isLoading)) {
+      return
+    }
+
     const app = getApp()
     const notificationService = createNotificationService({
       request,
       currentUserId: app.globalData.currentUserId
     })
 
-    this.setData({ isLoading: true, errorText: '' })
+    this.setData(append ? { isLoadingMore: true } : { isLoading: true, errorText: '', hasMore: false })
 
     try {
-      const { records: rawRecords } = await notificationService.fetchNotificationRecords()
-      const records = rawRecords.map((record) => ({
+      const { records: rawRecords, total } = await notificationService.fetchNotificationRecords({
+        limit: PAGE_SIZE,
+        offset: append ? this.data.records.length : 0
+      })
+      const nextRecords = rawRecords.map((record) => ({
         ...record,
         levelText: this.getLevelText(record.level),
         createdAtText: this.formatCreatedAt(record.createdAt)
       }))
+      const records = append ? this.data.records.concat(nextRecords) : nextRecords
       this.setData({
         records,
+        totalRecords: total,
+        hasMore: records.length < total,
         displayedCount: records.reduce(
           (total, record) => total + record.deliveries.filter((delivery) => delivery.displayed).length,
           0
         )
       })
     } catch (error) {
-      this.setData({
-        errorText: error.message || '记录加载失败',
-        displayedCount: 0
-      })
+      if (append) {
+        wx.showToast({ title: error.message || '加载更多失败', icon: 'none' })
+      } else {
+        this.setData({
+          errorText: error.message || '记录加载失败',
+          displayedCount: 0,
+          totalRecords: 0,
+          hasMore: false
+        })
+      }
     } finally {
-      this.setData({ isLoading: false })
+      this.setData(append ? { isLoadingMore: false } : { isLoading: false })
     }
   },
 
@@ -97,8 +119,16 @@ Page({
       return
     }
 
-    this.loadRecords().then(() => {
+    this.loadRecords({ append: false }).then(() => {
       wx.stopPullDownRefresh()
     })
+  },
+
+  onReachBottom() {
+    if (this.data.isLoginRequired) {
+      return
+    }
+
+    this.loadRecords({ append: true })
   }
 })

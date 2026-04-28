@@ -12,7 +12,11 @@ Page({
     loginTipText: '',
     loginGate: null,
     isAuthorizingLogin: false,
-    isUnbinding: false
+    isUnbinding: false,
+    isSavingDevice: false,
+    editingDeviceId: '',
+    editDeviceName: '',
+    editLocationLabel: ''
   },
 
   async onShow() {
@@ -60,6 +64,59 @@ Page({
 
   goToBind() {
     wx.navigateTo({ url: '/pages/bind/index' })
+  },
+
+  startEditDevice(event) {
+    const { deviceId, deviceName, locationLabel } = event.currentTarget.dataset
+    this.setData({
+      editingDeviceId: deviceId,
+      editDeviceName: deviceName || '',
+      editLocationLabel: locationLabel || ''
+    })
+  },
+
+  cancelEditDevice() {
+    this.setData({ editingDeviceId: '', editDeviceName: '', editLocationLabel: '' })
+  },
+
+  onEditDeviceNameInput(event) {
+    this.setData({ editDeviceName: event.detail.value })
+  },
+
+  onEditLocationInput(event) {
+    this.setData({ editLocationLabel: event.detail.value })
+  },
+
+  async saveDeviceEdit() {
+    if (this.data.isSavingDevice) {
+      return
+    }
+
+    const deviceName = this.data.editDeviceName.trim()
+    const locationLabel = this.data.editLocationLabel.trim()
+    if (!deviceName) {
+      wx.showToast({ title: '设备名称不能为空', icon: 'none' })
+      return
+    }
+
+    const app = getApp()
+    const deviceService = createDeviceService({ request, currentUserId: app.globalData.currentUserId })
+    this.setData({ isSavingDevice: true })
+
+    try {
+      await deviceService.updateDevice({
+        deviceId: this.data.editingDeviceId,
+        deviceName,
+        locationLabel
+      })
+      wx.showToast({ title: '设备信息已更新', icon: 'success' })
+      this.cancelEditDevice()
+      await this.loadDevices()
+    } catch (error) {
+      wx.showToast({ title: error.message || '保存失败', icon: 'none' })
+    } finally {
+      this.setData({ isSavingDevice: false })
+    }
   },
 
   async unbindDevice(event) {

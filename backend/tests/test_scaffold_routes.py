@@ -45,8 +45,8 @@ def device_auth_headers(device_id: str) -> dict[str, str]:
 
 
 def setup_function() -> None:
-    store.reset()
     Base.metadata.create_all(bind=engine)
+    store.reset()
     with SessionLocal() as session:
         session.execute(delete(AuthSession))
         session.execute(delete(User))
@@ -226,12 +226,12 @@ def test_binding_code_returns_generated_code() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["device_id"] == "device-001"
-    assert payload["expires_in_seconds"] == 300
+    assert payload["expires_in_seconds"] == 30
     assert len(payload["code"]) == 6
     assert payload["code"].isdigit()
 
 
-def test_binding_code_reuses_unexpired_code_for_same_device() -> None:
+def test_binding_code_rotates_immediately_for_same_device() -> None:
     client.post(
         "/api/devices/register",
         json={
@@ -254,7 +254,40 @@ def test_binding_code_reuses_unexpired_code_for_same_device() -> None:
 
     assert first.status_code == 200
     assert second.status_code == 200
-    assert second.json()["code"] == first.json()["code"]
+    assert second.json()["code"] != first.json()["code"]
+
+
+def test_previous_binding_code_becomes_invalid_after_rotation() -> None:
+    client.post(
+        "/api/devices/register",
+        json={
+            "device_id": "device-001",
+            "device_name": "值班室电脑",
+            "client_version": "0.1.0",
+        },
+    )
+
+    first = client.post(
+        "/api/bindings/code",
+        json={"device_id": "device-001"},
+        headers=device_auth_headers("device-001"),
+    )
+    second = client.post(
+        "/api/bindings/code",
+        json={"device_id": "device-001"},
+        headers=device_auth_headers("device-001"),
+    )
+
+    response = client.get(
+        f"/api/bindings/code/{first.json()['code']}/device",
+        headers=active_auth_headers("user-001"),
+    )
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert first.json()["code"] != second.json()["code"]
+    assert response.status_code == 404
+    assert response.json() == {"detail": "binding code not found"}
 
 
 def test_binding_code_returns_not_found_for_unknown_device() -> None:
@@ -345,6 +378,57 @@ def test_user_can_bind_device_by_code_and_query_bound_devices() -> None:
     payload = devices_response.json()
     assert len(payload["items"]) == 1
     assert payload["items"][0]["device_id"] == "device-001"
+
+
+def test_user_can_update_bound_device_name_and_location() -> None:
+    client.post(
+        "/api/devices/register",
+        json={
+            "device_id": "editable-device-001",
+            "device_name": "DESKTOP-ABC123",
+            "client_version": "0.1.0",
+        },
+    )
+    bind_code_response = client.post(
+        "/api/bindings/code",
+        json={"device_id": "editable-device-001"},
+        headers=device_auth_headers("editable-device-001"),
+    )
+    client.post(
+        "/api/bindings",
+        json={
+            "user_id": "editable-user-001",
+            "code": bind_code_response.json()["code"],
+        },
+        headers=active_auth_headers("editable-user-001"),
+    )
+
+    response = client.patch(
+        "/api/users/editable-user-001/devices/editable-device-001",
+        json={"device_name": "三年级一班通知屏", "location_label": "三年级一班教室"},
+        headers=active_auth_headers("editable-user-001"),
+    )
+    devices_response = client.get(
+        "/api/users/editable-user-001/devices",
+        headers=active_auth_headers("editable-user-001"),
+    )
+
+    assert response.status_code == 200
+    assert response.json()["device_name"] == "三年级一班通知屏"
+    assert response.json()["location_label"] == "三年级一班教室"
+    assert devices_response.json()["items"][0]["device_name"] == "三年级一班通知屏"
+    assert devices_response.json()["items"][0]["location_label"] == "三年级一班教室"
+
+
+def test_user_device_update_forbids_cross_user_access() -> None:
+    response = client.patch(
+        "/api/users/user-001/devices/device-001",
+        json={"device_name": "新名称"},
+        headers=active_auth_headers("another-user"),
+    )
+
+    assert response.status_code == 403
+    assert response.json() == {"detail": "forbidden"}
 
 
 def test_binding_code_preview_returns_registered_device_info() -> None:
@@ -1092,6 +1176,8 @@ def test_notifications_query_returns_records_and_receipts(monkeypatch) -> None:
     assert payload["items"][0]["deliveries"] == [
         {
             "device_id": "device-001",
+            "device_name": "值班室电脑",
+            "location_label": "",
             "received": False,
             "displayed": True,
             "spoken": False,
@@ -1268,7 +1354,7 @@ def test_stale_websocket_send_marks_device_offline_and_failed(monkeypatch) -> No
         "/api/devices/register",
         json={
             "device_id": "device-stale",
-            "device_name": "??????",
+            "device_name": "失效连接设备",
             "client_version": "0.1.0",
         },
     )

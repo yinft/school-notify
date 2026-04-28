@@ -148,12 +148,38 @@
 
 .timeline-delivery-device {
   flex: 1;
-  font-size: 24rpx;
-  color: #6f88a4;
+  min-width: 0;
+}
+
+.timeline-delivery-name {
+  font-size: 25rpx;
+  font-weight: 700;
+  color: #294866;
+  line-height: 1.35;
+}
+
+.timeline-delivery-meta {
+  margin-top: 4rpx;
+  font-size: 21rpx;
+  color: #8da4be;
+  line-height: 1.35;
 }
 
 .timeline-delivery-status {
   font-size: 24rpx;
   font-weight: 600;
   color: #16324f;
+  flex-shrink: 0;
+}
+
+.timeline-more-state {
+  margin-top: 18rpx;
+  padding: 18rpx 0 4rpx;
+  text-align: center;
+  color: #6f88a4;
+  font-size: 23rpx;
+}
+
+.timeline-more-state-end {
+  color: #9fb0c2;
 }

@@ -11,4 +11,21 @@ public sealed class AutoStartService
         using var key = Registry.CurrentUser.CreateSubKey(RunKeyPath);
         key?.SetValue(appName, AutoStartCommandBuilder.Build(executablePath));
     }
+
+    public void DisableForCurrentUser(string appName)
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable: true);
+        key?.DeleteValue(appName, throwOnMissingValue: false);
+    }
+
+    public void ApplyForCurrentUser(string appName, string executablePath, bool enabled)
+    {
+        if (enabled)
+        {
+            EnableForCurrentUser(appName, executablePath);
+            return;
+        }
+
+        DisableForCurrentUser(appName);
+    }
 }

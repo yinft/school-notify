@@ -1,3 +1,3 @@
 namespace SchoolNotify.WindowsClient.Models;
 
-public sealed record ClientSession(string DeviceId, string DeviceName, string ClientVersion);
+public sealed record ClientSession(string DeviceId, string DeviceName, string ClientVersion, string DeviceToken = "");

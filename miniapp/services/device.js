@@ -32,6 +32,17 @@ function createDeviceService({ request, currentUserId }) {
         url: `/bindings/${encodeURIComponent(deviceId)}?user_id=${encodeURIComponent(currentUserId)}`,
         method: 'DELETE'
       })
+    },
+
+    updateDevice({ deviceId, deviceName, locationLabel }) {
+      return request({
+        url: `/users/${encodeURIComponent(currentUserId)}/devices/${encodeURIComponent(deviceId)}`,
+        method: 'PATCH',
+        data: {
+          device_name: deviceName.trim(),
+          location_label: locationLabel.trim()
+        }
+      })
     }
   }
 }

@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     app_name: str = "school-notify-backend"
     debug: bool = False
     database_url: str = "postgresql+psycopg://postgres:123@localhost:5432/school"
-    bind_code_expires_seconds: int = 300
+    bind_code_expires_seconds: int = 30
     wechat_app_id: str = ""
     wechat_app_secret: str = ""
     wechat_code2session_url: str = "https://api.weixin.qq.com/sns/jscode2session"

@@ -8,9 +8,16 @@ public sealed class ClientSessionStore
 {
     private const string CurrentVersion = "0.1.0";
 
+    private readonly string _sessionPath;
+
+    public ClientSessionStore(string? sessionPath = null)
+    {
+        _sessionPath = string.IsNullOrWhiteSpace(sessionPath) ? GetDefaultSessionPath() : sessionPath;
+    }
+
     public async Task<ClientSession> LoadOrCreateAsync(CancellationToken cancellationToken = default)
     {
-        var sessionPath = GetSessionPath();
+        var sessionPath = _sessionPath;
         var directoryPath = Path.GetDirectoryName(sessionPath)!;
         Directory.CreateDirectory(directoryPath);
 
@@ -34,7 +41,15 @@ public sealed class ClientSessionStore
         return session;
     }
 
-    private static string GetSessionPath()
+    public async Task SaveAsync(ClientSession session, CancellationToken cancellationToken = default)
+    {
+        var directoryPath = Path.GetDirectoryName(_sessionPath)!;
+        Directory.CreateDirectory(directoryPath);
+        await using var stream = File.Create(_sessionPath);
+        await JsonSerializer.SerializeAsync(stream, session, cancellationToken: cancellationToken);
+    }
+
+    private static string GetDefaultSessionPath()
     {
         return Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

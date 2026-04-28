@@ -19,6 +19,8 @@ class NotificationCreateResponse(BaseModel):
 
 class NotificationDeliveryRecord(BaseModel):
     device_id: str = Field(..., description="设备 ID")
+    device_name: str = Field("", description="设备名称")
+    location_label: str = Field("", description="设备位置描述")
     received: bool = Field(..., description="设备是否已收到通知")
     displayed: bool = Field(..., description="设备是否已展示通知")
     spoken: bool = Field(..., description="设备是否已语音播报通知")

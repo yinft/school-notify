@@ -113,6 +113,30 @@ public class NotificationRuntimeTests
     }
 
     [Fact]
+    public void BannerScrollMetrics_UsesDesiredTextWidthWhenActualTextWidthIsNotReady()
+    {
+        var metrics = BannerScrollMetrics.Resolve(
+            viewportWidth: 1280d,
+            actualTextWidth: 0d,
+            desiredTextWidth: 720d);
+
+        Assert.NotNull(metrics);
+        Assert.Equal(1280d, metrics.Value.ViewportWidth);
+        Assert.Equal(720d, metrics.Value.ContentWidth);
+    }
+
+    [Fact]
+    public void BannerScrollMetrics_WaitsWhenViewportWidthIsNotReady()
+    {
+        var metrics = BannerScrollMetrics.Resolve(
+            viewportWidth: 0d,
+            actualTextWidth: 720d,
+            desiredTextWidth: 720d);
+
+        Assert.Null(metrics);
+    }
+
+    [Fact]
     public void BannerOverlayWindow_ExistsInAssemblyWithExpectedProperties()
     {
         var assembly = typeof(ReconnectPolicy).Assembly;

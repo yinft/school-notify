@@ -12,10 +12,13 @@
         Height="64"
         Background="Transparent"
         Visibility="Collapsed">
-    <Grid x:Name="BannerViewport" ClipToBounds="True" Margin="0">
-        <Border x:Name="BannerBorder" CornerRadius="0" Padding="0">
+    <Grid Margin="0">
+        <Border x:Name="BannerBorder" CornerRadius="0" Padding="0" />
+        <Grid x:Name="BannerViewport" ClipToBounds="True" Margin="0,0,56,0">
             <TextBlock x:Name="MarqueeTextBlock"
-                       VerticalAlignment="Center"
+                        VerticalAlignment="Center"
+                       HorizontalAlignment="Left"
+                       TextAlignment="Left"
                        FontSize="24"
                        FontWeight="Bold"
                        Foreground="White"
@@ -25,6 +28,20 @@
                     <TranslateTransform x:Name="MarqueeTransform" />
                 </TextBlock.RenderTransform>
             </TextBlock>
-        </Border>
+        </Grid>
+        <Button x:Name="CloseButton"
+                Width="40"
+                Height="40"
+                Margin="0,0,10,0"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Click="CloseButtonClicked"
+                Content="×"
+                FontSize="22"
+                FontWeight="Bold"
+                Foreground="White"
+                Background="#33000000"
+                BorderBrush="#55FFFFFF"
+                Cursor="Hand" />
     </Grid>
 </Window>

@@ -12,10 +12,10 @@
       <view class="hero-subtitle">按时间倒序查看每次通知的送达结果，快速回顾设备展示状态。</view>
       <view class="hero-simple-emphasis-row hero-simple-emphasis-row-left">
         <view class="hero-simple-emphasis-label">历史摘要</view>
-        <view class="hero-simple-emphasis-value">{{records.length}} 条记录</view>
+        <view class="hero-simple-emphasis-value">{{totalRecords}} 条记录</view>
       </view>
       <view class="hero-simple-meta">
-        <view class="hero-simple-chip">已展示 {{displayedCount}} 台</view>
+        <view class="hero-simple-chip">已展示 {{displayedCount}} 条</view>
         <view class="hero-simple-chip">时间线视角</view>
       </view>
     </view>
@@ -23,7 +23,7 @@
     <view class="records-board stack-lg">
       <view class="section-header">
         <view class="section-title">通知时间线</view>
-        <view class="section-meta">按发送时间倒序</view>
+        <view class="section-meta">已加载 {{records.length}} / {{totalRecords}}</view>
       </view>
 
       <view wx:if="{{isLoading}}" class="state-panel">
@@ -70,12 +70,19 @@
             <view wx:if="{{item.deliveries.length}}" class="timeline-deliveries">
               <view wx:for="{{item.deliveries}}" wx:key="deviceId" class="timeline-delivery-row">
                 <view class="timeline-delivery-dot {{item.displayed ? 'timeline-delivery-dot-done' : ''}}"></view>
-                <view class="timeline-delivery-device">{{item.deviceId}}</view>
+                <view class="timeline-delivery-device">
+                  <view class="timeline-delivery-name">{{item.displayName}}</view>
+                  <view wx:if="{{item.displayMeta}}" class="timeline-delivery-meta">{{item.displayMeta}}</view>
+                </view>
                 <view class="timeline-delivery-status">{{item.statusText}}</view>
               </view>
             </view>
           </view>
         </view>
+        <view wx:if="{{hasMore || isLoadingMore}}" class="timeline-more-state">
+          {{isLoadingMore ? '正在加载更多记录...' : '上滑加载更多记录'}}
+        </view>
+        <view wx:elif="{{records.length}}" class="timeline-more-state timeline-more-state-end">已展示全部记录</view>
       </view>
     </view>
   </block>

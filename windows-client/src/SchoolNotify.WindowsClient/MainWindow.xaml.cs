@@ -581,11 +581,11 @@ public partial class MainWindow : Window
         _isLoadingBannerSettings = true;
         BannerSpeedSlider.Value = settings.ScrollSpeed;
         BannerFontSizeSlider.Value = settings.FontSize;
-        SelectComboBoxItemByTag(BannerNormalColorComboBox, settings.NormalColorName);
-        SelectComboBoxItemByTag(BannerImportantColorComboBox, settings.ImportantColorName);
-        SelectComboBoxItemByTag(BannerUrgentColorComboBox, settings.UrgentColorName);
-        SelectComboBoxItemByTag(BannerDurationComboBox, settings.DisplayDurationSeconds.ToString(CultureInfo.InvariantCulture));
-        SelectComboBoxItemByTag(BannerDisplayModeComboBox, settings.DisplayMode);
+        SelectRadioButtonByTag(settings.NormalColorName, NormalSteelBlueRadioButton, NormalSeaGreenRadioButton, NormalMediumPurpleRadioButton, NormalSlateGrayRadioButton);
+        SelectRadioButtonByTag(settings.ImportantColorName, ImportantOrangeRadioButton, ImportantGoldRadioButton, ImportantCoralRadioButton, ImportantTomatoRadioButton);
+        SelectRadioButtonByTag(settings.UrgentColorName, UrgentRedRadioButton, UrgentDarkRedRadioButton, UrgentOrangeRedRadioButton, UrgentCrimsonRadioButton);
+        SelectRadioButtonByTag(settings.DisplayDurationSeconds.ToString(CultureInfo.InvariantCulture), Duration10RadioButton, Duration30RadioButton, Duration60RadioButton);
+        SelectRadioButtonByTag(settings.DisplayMode, DisplayModeTopBannerRadioButton, DisplayModeFullScreenRadioButton);
         UpdateBannerSettingsSummary(settings);
         _isLoadingBannerSettings = false;
     }
@@ -598,7 +598,7 @@ public partial class MainWindow : Window
 
     private BannerSettings ReadBannerSettingsFromControls()
     {
-        var durationTag = ReadSelectedTag(BannerDurationComboBox, BannerSettings.Default.DisplayDurationSeconds.ToString(CultureInfo.InvariantCulture));
+        var durationTag = ReadSelectedRadioTag(BannerSettings.Default.DisplayDurationSeconds.ToString(CultureInfo.InvariantCulture), Duration10RadioButton, Duration30RadioButton, Duration60RadioButton);
         if (!int.TryParse(durationTag, CultureInfo.InvariantCulture, out var duration))
         {
             duration = BannerSettings.Default.DisplayDurationSeconds;
@@ -607,11 +607,11 @@ public partial class MainWindow : Window
         return new BannerSettings(
             ScrollSpeed: BannerSpeedSlider.Value,
             FontSize: BannerFontSizeSlider.Value,
-            NormalColorName: ReadSelectedTag(BannerNormalColorComboBox, BannerSettings.Default.NormalColorName),
-            ImportantColorName: ReadSelectedTag(BannerImportantColorComboBox, BannerSettings.Default.ImportantColorName),
-            UrgentColorName: ReadSelectedTag(BannerUrgentColorComboBox, BannerSettings.Default.UrgentColorName),
+            NormalColorName: ReadSelectedRadioTag(BannerSettings.Default.NormalColorName, NormalSteelBlueRadioButton, NormalSeaGreenRadioButton, NormalMediumPurpleRadioButton, NormalSlateGrayRadioButton),
+            ImportantColorName: ReadSelectedRadioTag(BannerSettings.Default.ImportantColorName, ImportantOrangeRadioButton, ImportantGoldRadioButton, ImportantCoralRadioButton, ImportantTomatoRadioButton),
+            UrgentColorName: ReadSelectedRadioTag(BannerSettings.Default.UrgentColorName, UrgentRedRadioButton, UrgentDarkRedRadioButton, UrgentOrangeRedRadioButton, UrgentCrimsonRadioButton),
             DisplayDurationSeconds: duration,
-            DisplayMode: ReadSelectedTag(BannerDisplayModeComboBox, BannerSettings.Default.DisplayMode));
+            DisplayMode: ReadSelectedRadioTag(BannerSettings.Default.DisplayMode, DisplayModeTopBannerRadioButton, DisplayModeFullScreenRadioButton));
     }
 
     private void UpdateBannerSettingsSummary(BannerSettings settings)
@@ -620,26 +620,34 @@ public partial class MainWindow : Window
         BannerFontSizeValueTextBlock.Text = $"{settings.FontSize:0} px";
     }
 
-    private static void SelectComboBoxItemByTag(System.Windows.Controls.ComboBox comboBox, string tag)
+    private static void SelectRadioButtonByTag(string tag, params System.Windows.Controls.RadioButton[] radioButtons)
     {
-        foreach (System.Windows.Controls.ComboBoxItem item in comboBox.Items)
+        foreach (var radioButton in radioButtons)
         {
-            if (string.Equals(item.Tag?.ToString(), tag, StringComparison.Ordinal))
+            if (string.Equals(radioButton.Tag?.ToString(), tag, StringComparison.Ordinal))
             {
-                comboBox.SelectedItem = item;
+                radioButton.IsChecked = true;
                 return;
             }
         }
 
-        if (comboBox.Items.Count > 0)
+        if (radioButtons.Length > 0)
         {
-            comboBox.SelectedIndex = 0;
+            radioButtons[0].IsChecked = true;
         }
     }
 
-    private static string ReadSelectedTag(System.Windows.Controls.ComboBox comboBox, string fallback)
+    private static string ReadSelectedRadioTag(string fallback, params System.Windows.Controls.RadioButton[] radioButtons)
     {
-        return (comboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag?.ToString() ?? fallback;
+        foreach (var radioButton in radioButtons)
+        {
+            if (radioButton.IsChecked == true)
+            {
+                return radioButton.Tag?.ToString() ?? fallback;
+            }
+        }
+
+        return fallback;
     }
 
     private async void BannerResetToDefaultClicked(object sender, RoutedEventArgs e)

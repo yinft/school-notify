@@ -35,6 +35,9 @@ class InMemoryStore:
         pass
 
     def reset(self) -> None:
+        if not settings.database_url.startswith("sqlite:///"):
+            raise RuntimeError("Refusing to reset non-SQLite database")
+
         with SessionLocal() as session:
             session.execute(delete(NotificationDelivery))
             session.execute(delete(NotificationModel))
@@ -108,17 +111,8 @@ class InMemoryStore:
                 raise DeviceNotFoundError(device_id)
 
             existing = session.execute(select(DeviceBindCode).where(DeviceBindCode.device_id == device_id)).scalar_one_or_none()
-            if existing and existing.created_at + timedelta(seconds=existing.expires_in_seconds) >= self._now():
-                redis_service.cache_bind_code(
-                    code=existing.code,
-                    device_id=device_id,
-                    ttl_seconds=existing.expires_in_seconds,
-                )
-                return BindingCodeResponse(
-                    device_id=device_id,
-                    code=existing.code,
-                    expires_in_seconds=existing.expires_in_seconds,
-                )
+            if existing is not None:
+                redis_service.consume_bind_code(existing.code)
 
             session.execute(delete(DeviceBindCode).where(DeviceBindCode.device_id == device_id))
             binding_code = DeviceBindCode(
@@ -216,6 +210,34 @@ class InMemoryStore:
             session.commit()
 
             return BindingResponse(user_id=user_id, device_id=device_id)
+
+    def update_bound_device(
+        self,
+        *,
+        user_id: str,
+        device_id: str,
+        device_name: str | None = None,
+        location_label: str | None = None,
+    ) -> DeviceResponse:
+        with SessionLocal() as session:
+            device = session.execute(select(DeviceModel).where(DeviceModel.device_id == device_id)).scalar_one_or_none()
+            if device is None:
+                raise DeviceNotFoundError(device_id)
+
+            binding = session.execute(
+                select(UserDevice).where(UserDevice.user_id == user_id, UserDevice.device_id == device_id)
+            ).scalar_one_or_none()
+            if binding is None:
+                raise DeviceNotBoundError(device_id)
+
+            if device_name is not None and device_name.strip():
+                device.device_name = device_name.strip()
+            if location_label is not None:
+                device.location_label = location_label.strip()
+
+            session.commit()
+            session.refresh(device)
+            return self._to_device_response(device)
 
     def create_notification(
         self,
@@ -364,9 +386,18 @@ class InMemoryStore:
                 deliveries_db = session.execute(
                     select(NotificationDelivery).where(NotificationDelivery.notification_id == record.notification_id)
                 ).scalars().all()
+                delivery_device_ids = [delivery.device_id for delivery in deliveries_db]
+                devices_by_id = {
+                    device.device_id: device
+                    for device in session.execute(
+                        select(DeviceModel).where(DeviceModel.device_id.in_(delivery_device_ids))
+                    ).scalars().all()
+                }
                 deliveries = [
                     NotificationDeliveryRecord(
                         device_id=delivery.device_id,
+                        device_name=devices_by_id[delivery.device_id].device_name if delivery.device_id in devices_by_id else "",
+                        location_label=devices_by_id[delivery.device_id].location_label if delivery.device_id in devices_by_id else "",
                         received=delivery.received,
                         displayed=delivery.displayed,
                         spoken=delivery.spoken,
@@ -406,7 +437,7 @@ class InMemoryStore:
             if binding_code is None:
                 redis_service.consume_bind_code(code)
                 raise BindingCodeNotFoundError(code)
-            if binding_code.created_at + timedelta(seconds=binding_code.expires_in_seconds) < self._now():
+            if self._is_binding_code_expired(binding_code):
                 redis_service.consume_bind_code(code)
                 session.execute(delete(DeviceBindCode).where(DeviceBindCode.code == code))
                 session.commit()
@@ -418,7 +449,7 @@ class InMemoryStore:
         binding_code = session.execute(select(DeviceBindCode).where(DeviceBindCode.code == code)).scalar_one_or_none()
         if binding_code is None:
             raise BindingCodeNotFoundError(code)
-        if binding_code.created_at + timedelta(seconds=binding_code.expires_in_seconds) < self._now():
+        if self._is_binding_code_expired(binding_code):
             session.execute(delete(DeviceBindCode).where(DeviceBindCode.code == code))
             session.commit()
             raise BindingCodeNotFoundError(code)
@@ -450,6 +481,12 @@ class InMemoryStore:
     @staticmethod
     def _now() -> datetime:
         return datetime.now(UTC)
+
+    def _is_binding_code_expired(self, binding_code: DeviceBindCode) -> bool:
+        created_at = binding_code.created_at
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=UTC)
+        return created_at + timedelta(seconds=binding_code.expires_in_seconds) < self._now()
 
 
 store = InMemoryStore()

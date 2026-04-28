@@ -19,5 +19,10 @@ class DeviceResponse(BaseModel):
     device_token: str = Field("", description="设备专用令牌，用于 WebSocket 鉴权")
 
 
+class DeviceUpdateRequest(BaseModel):
+    device_name: str | None = Field(None, description="设备名称")
+    location_label: str | None = Field(None, description="设备位置描述")
+
+
 class DeviceListResponse(BaseModel):
     items: list[DeviceResponse] = Field(..., description="设备列表")

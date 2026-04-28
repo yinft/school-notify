@@ -47,6 +47,9 @@
 
 .device-actions {
   margin-top: 16rpx;
+  display: flex;
+  gap: 12rpx;
+  flex-wrap: wrap;
 }
 
 .device-action-link {
@@ -59,4 +62,28 @@
   color: #d64545;
   font-size: 22rpx;
   font-weight: 600;
+}
+
+.device-action-link-edit {
+  background: #eef6ff;
+  color: #2f80ff;
+}
+
+.device-edit-panel {
+  margin-top: 18rpx;
+  padding: 18rpx;
+  border: 1rpx solid #dceaff;
+  border-radius: 20rpx;
+  background: linear-gradient(135deg, #f8fbff 0%, #ffffff 100%);
+}
+
+.device-edit-actions {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 16rpx;
+}
+
+.button-inline-muted {
+  background: #f4f7fb;
+  color: #6f88a4;
 }

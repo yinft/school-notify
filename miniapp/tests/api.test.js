@@ -120,6 +120,8 @@ test('createNotificationService fetches and maps notification records', async ()
             deliveries: [
               {
                 device_id: 'device-001',
+                device_name: '三年级一班通知屏',
+                location_label: '三年级一班教室',
                 received: true,
                 displayed: true,
                 spoken: false
@@ -147,6 +149,10 @@ test('createNotificationService fetches and maps notification records', async ()
       deliveries: [
         {
           deviceId: 'device-001',
+          deviceName: '三年级一班通知屏',
+          locationLabel: '三年级一班教室',
+          displayName: '三年级一班通知屏',
+          displayMeta: '三年级一班教室',
           received: true,
           displayed: true,
           spoken: false,
@@ -157,6 +163,55 @@ test('createNotificationService fetches and maps notification records', async ()
       ]
     }
   ])
+})
+
+test('createNotificationService requests paged notification records', async () => {
+  const calls = []
+  const service = createNotificationService({
+    request(options) {
+      calls.push(options)
+      return Promise.resolve({ items: [], total: 25 })
+    },
+    currentUserId: 'user-001'
+  })
+
+  const result = await service.fetchNotificationRecords({ limit: 10, offset: 20 })
+
+  assert.deepEqual(calls, [{ url: '/notifications?sender_user_id=user-001&limit=10&offset=20' }])
+  assert.deepEqual(result, { records: [], total: 25 })
+})
+
+test('createNotificationService falls back to shortened device id when device name is missing', async () => {
+  const service = createNotificationService({
+    request() {
+      return Promise.resolve({
+        items: [
+          {
+            notification_id: 'notification-1',
+            title: '通知',
+            content: '内容',
+            level: 'normal',
+            target_count: 1,
+            deliveries: [
+              {
+                device_id: '1234567890abcdef',
+                received: false,
+                displayed: false,
+                spoken: false
+              }
+            ]
+          }
+        ],
+        total: 1
+      })
+    },
+    currentUserId: 'user-001'
+  })
+
+  const { records } = await service.fetchNotificationRecords()
+
+  assert.equal(records[0].deliveries[0].displayName, '设备 12345678')
+  assert.equal(records[0].deliveries[0].displayMeta, 'ID 1234567890abcdef')
 })
 
 test('normalizeBindCode trims whitespace and uppercases input', () => {
@@ -390,6 +445,35 @@ test('createDeviceService deletes user binding for a device', async () => {
     }
   ])
   assert.deepEqual(result, { user_id: 'user-001', device_id: 'device-001' })
+})
+
+test('createDeviceService patches editable device info', async () => {
+  const calls = []
+  const service = createDeviceService({
+    request(options) {
+      calls.push(options)
+      return Promise.resolve({ device_id: 'device-001', device_name: '三年级一班通知屏', location_label: '三年级一班教室' })
+    },
+    currentUserId: 'user-001'
+  })
+
+  const result = await service.updateDevice({
+    deviceId: 'device-001',
+    deviceName: ' 三年级一班通知屏 ',
+    locationLabel: ' 三年级一班教室 '
+  })
+
+  assert.deepEqual(calls, [
+    {
+      url: '/users/user-001/devices/device-001',
+      method: 'PATCH',
+      data: {
+        device_name: '三年级一班通知屏',
+        location_label: '三年级一班教室'
+      }
+    }
+  ])
+  assert.deepEqual(result, { device_id: 'device-001', device_name: '三年级一班通知屏', location_label: '三年级一班教室' })
 })
 
 test('buildRequestOptions adds bearer token when logged in', () => {

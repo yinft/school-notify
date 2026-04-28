@@ -37,7 +37,7 @@ public class DeviceApiClientTests
     [Fact]
     public async Task RequestBindingCodeAsync_PostsDeviceIdAndReturnsCode()
     {
-        var handler = new RecordingHandler("{\"device_id\":\"device-001\",\"code\":\"123456\",\"expires_in_seconds\":300}");
+        var handler = new RecordingHandler("{\"device_id\":\"device-001\",\"code\":\"123456\",\"expires_in_seconds\":30}");
         var httpClient = new HttpClient(handler)
         {
             BaseAddress = new System.Uri("http://127.0.0.1:8000")
@@ -48,7 +48,7 @@ public class DeviceApiClientTests
 
         Assert.Equal("123456", response.Code);
         Assert.Equal("device-001", response.DeviceId);
-        Assert.Equal(300, response.ExpiresInSeconds);
+        Assert.Equal(30, response.ExpiresInSeconds);
         Assert.Contains("\"device_id\"", handler.LastRequestBody);
         Assert.Equal("Bearer", handler.LastRequest!.Headers.Authorization!.Scheme);
         Assert.Equal("device-token-001", handler.LastRequest.Headers.Authorization.Parameter);

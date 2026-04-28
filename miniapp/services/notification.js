@@ -25,15 +25,7 @@ function createNotificationService({ request, currentUserId }) {
       const response = await request({ url })
 
       const records = (response.items || []).map((item) => {
-        const deliveries = (item.deliveries || []).map((delivery) => ({
-          deviceId: delivery.device_id,
-          received: delivery.received,
-          displayed: delivery.displayed,
-          spoken: delivery.spoken,
-          failed: Boolean(delivery.failed),
-          errorMessage: delivery.error_message || '',
-          statusText: delivery.failed ? '投递失败' : delivery.spoken ? '已播报' : delivery.displayed ? '已展示' : delivery.received ? '已接收' : '待送达'
-        }))
+        const deliveries = (item.deliveries || []).map(mapDelivery)
         const displayedCount = deliveries.filter((delivery) => delivery.displayed).length
 
         return {
@@ -50,6 +42,26 @@ function createNotificationService({ request, currentUserId }) {
 
       return { records, total: response.total || 0 }
     }
+  }
+}
+
+function mapDelivery(delivery) {
+  const deviceId = delivery.device_id || ''
+  const deviceName = delivery.device_name || ''
+  const locationLabel = delivery.location_label || ''
+
+  return {
+    deviceId,
+    deviceName,
+    locationLabel,
+    displayName: deviceName || `设备 ${deviceId.slice(0, 8)}`,
+    displayMeta: locationLabel || (deviceId ? `ID ${deviceId}` : ''),
+    received: delivery.received,
+    displayed: delivery.displayed,
+    spoken: delivery.spoken,
+    failed: Boolean(delivery.failed),
+    errorMessage: delivery.error_message || '',
+    statusText: delivery.failed ? '投递失败' : delivery.spoken ? '已播报' : delivery.displayed ? '已展示' : delivery.received ? '已接收' : '待送达'
   }
 }
 
