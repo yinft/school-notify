@@ -6,6 +6,30 @@
   box-shadow: 0 10rpx 30rpx rgba(28, 77, 147, 0.08);
 }
 
+.records-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  margin-bottom: 22rpx;
+}
+
+.records-filter-picker {
+  min-width: 240rpx;
+  padding: 18rpx 24rpx;
+  border-radius: 18rpx;
+  background: #f4f8ff;
+  border: 1rpx solid #dbe8ff;
+  color: #2a588d;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.records-filter-clear {
+  padding: 14rpx 18rpx;
+  color: #6f88a4;
+  font-size: 23rpx;
+}
+
 .timeline {
   display: flex;
   flex-direction: column;

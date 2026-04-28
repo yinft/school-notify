@@ -125,6 +125,10 @@ public partial class MainWindow : Window
             ApplyClientSettingsToControls(_clientSettings);
             ApplyAutoStartSetting(_clientSettings);
 
+            _bannerSettings = await _bannerSettingsStore.LoadAsync(_cancellationTokenSource.Token);
+            ApplyBannerSettingsToControls(_bannerSettings);
+            ApplyBannerSettingsToBanner(_bannerSettings);
+
             var authResult = await _deviceAuthenticationCoordinator.EnsureRegisteredAsync(_currentSession, _cancellationTokenSource.Token);
             await ApplyAuthenticationResultAsync(authResult);
             if (string.IsNullOrEmpty(_deviceToken))
@@ -143,10 +147,6 @@ public partial class MainWindow : Window
 
             await RefreshBindingCodeAsync();
             _bindingCodeRefreshTimer.Start();
-
-            _bannerSettings = await _bannerSettingsStore.LoadAsync(_cancellationTokenSource.Token);
-            ApplyBannerSettingsToControls(_bannerSettings);
-            ApplyBannerSettingsToBanner(_bannerSettings);
 
             await ConnectWebSocketAsync();
             _heartbeatTimer.Start();

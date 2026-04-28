@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.deps.auth import ensure_same_user, require_current_user
 from app.schemas.notification import NotificationCreateRequest, NotificationCreateResponse, NotificationRecordListResponse
@@ -19,10 +21,24 @@ def list_notifications(
     sender_user_id: str,
     limit: int = 20,
     offset: int = 0,
+    start_at: str | None = Query(default=None),
+    end_at: str | None = Query(default=None),
     current_user_id: str = Depends(require_current_user),
 ) -> NotificationRecordListResponse:
     ensure_same_user(expected_user_id=sender_user_id, current_user_id=current_user_id)
-    items, total = store.list_notifications_for_user(sender_user_id=sender_user_id, limit=limit, offset=offset)
+    try:
+        parsed_start_at = datetime.fromisoformat(start_at) if start_at else None
+        parsed_end_at = datetime.fromisoformat(end_at) if end_at else None
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="invalid datetime range") from exc
+
+    items, total = store.list_notifications_for_user(
+        sender_user_id=sender_user_id,
+        limit=limit,
+        offset=offset,
+        start_at=parsed_start_at,
+        end_at=parsed_end_at,
+    )
     return NotificationRecordListResponse(items=items, total=total)
 
 

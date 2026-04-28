@@ -1,9 +1,9 @@
 import asyncio
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 from starlette.websockets import WebSocketDisconnect
 
 from app.api.deps import auth as auth_deps
@@ -1076,6 +1076,65 @@ def test_notification_list_supports_pagination() -> None:
     )
     assert page3.status_code == 200
     assert len(page3.json()["items"]) == 1
+
+
+def test_notification_list_supports_created_at_range_filter() -> None:
+    client.post(
+        "/api/devices/register",
+        json={
+            "device_id": "device-001",
+            "device_name": "值班室电脑",
+            "client_version": "0.1.0",
+        },
+    )
+    bind_code_response = client.post(
+        "/api/bindings/code",
+        json={"device_id": "device-001"},
+        headers=device_auth_headers("device-001"),
+    )
+    client.post(
+        "/api/bindings",
+        json={
+            "user_id": "user-001",
+            "code": bind_code_response.json()["code"],
+        },
+        headers=active_auth_headers("user-001"),
+    )
+
+    for i in range(3):
+        client.post(
+            "/api/notifications",
+            json={
+                "sender_user_id": "user-001",
+                "title": f"通知{i}",
+                "content": "内容",
+                "level": "normal",
+                "device_ids": ["device-001"],
+            },
+            headers=active_auth_headers("user-001"),
+        )
+
+    with SessionLocal() as session:
+        notifications = session.execute(select(store_module.NotificationModel).order_by(store_module.NotificationModel.id)).scalars().all()
+        notifications[0].created_at = datetime(2026, 4, 27, 16, 30, tzinfo=UTC)
+        notifications[1].created_at = datetime(2026, 4, 28, 1, 30, tzinfo=UTC)
+        notifications[2].created_at = datetime(2026, 4, 28, 16, 30, tzinfo=UTC)
+        session.commit()
+
+    response = client.get(
+        "/api/notifications",
+        params={
+            "sender_user_id": "user-001",
+            "start_at": "2026-04-27T16:00:00+00:00",
+            "end_at": "2026-04-28T16:00:00+00:00",
+        },
+        headers=active_auth_headers("user-001"),
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 2
+    assert [item["title"] for item in payload["items"]] == ["通知1", "通知0"]
 
 
 def test_user_can_update_profile() -> None:

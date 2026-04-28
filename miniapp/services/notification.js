@@ -17,10 +17,12 @@ function createNotificationService({ request, currentUserId }) {
       })
     },
 
-    async fetchNotificationRecords({ limit, offset } = {}) {
+    async fetchNotificationRecords({ limit, offset, startAt, endAt } = {}) {
       let url = `/notifications?sender_user_id=${encodeURIComponent(currentUserId)}`
       if (limit !== undefined) url += `&limit=${limit}`
       if (offset !== undefined) url += `&offset=${offset}`
+      if (startAt) url += `&start_at=${encodeURIComponent(startAt)}`
+      if (endAt) url += `&end_at=${encodeURIComponent(endAt)}`
 
       const response = await request({ url })
 

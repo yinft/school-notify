@@ -26,6 +26,13 @@
         <view class="section-meta">已加载 {{records.length}} / {{totalRecords}}</view>
       </view>
 
+      <view class="records-filter-bar">
+        <picker mode="date" value="{{selectedDate}}" bindchange="onDateChange">
+          <view class="records-filter-picker">{{selectedDate || '选择日期筛选'}}</view>
+        </picker>
+        <view wx:if="{{selectedDate}}" class="records-filter-clear" bindtap="clearDateFilter">清除</view>
+      </view>
+
       <view wx:if="{{isLoading}}" class="state-panel">
         <view class="state-loading" aria-label="加载中">
           <view class="state-loading-dot state-loading-dot-1"></view>
@@ -45,8 +52,8 @@
       </view>
       <view wx:elif="{{!records.length}}" class="state-panel">
         <view class="state-icon">#</view>
-        <view class="state-title">还没有发送记录</view>
-        <view class="state-text">发送过通知后，这里会展示每次任务的触达情况。</view>
+        <view class="state-title">{{selectedDate ? '当天没有发送记录' : '还没有发送记录'}}</view>
+        <view class="state-text">{{selectedDate ? '换个日期试试，或清除筛选查看全部记录。' : '发送过通知后，这里会展示每次任务的触达情况。'}}</view>
       </view>
 
       <view wx:else class="timeline">

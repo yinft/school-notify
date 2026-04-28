@@ -13,6 +13,7 @@ Page({
     totalRecords: 0,
     errorText: '',
     displayedCount: 0,
+    selectedDate: '',
     isLoginRequired: false,
     loginTipText: '',
     loginGate: null,
@@ -57,7 +58,8 @@ Page({
     try {
       const { records: rawRecords, total } = await notificationService.fetchNotificationRecords({
         limit: PAGE_SIZE,
-        offset: append ? this.data.records.length : 0
+        offset: append ? this.data.records.length : 0,
+        ...this.getSelectedDateRange()
       })
       const nextRecords = rawRecords.map((record) => ({
         ...record,
@@ -111,6 +113,39 @@ Page({
     const pad = (value) => String(value).padStart(2, '0')
 
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+  },
+
+  getSelectedDateRange() {
+    const selectedDate = this.data.selectedDate
+    if (!selectedDate) {
+      return {}
+    }
+
+    const parts = selectedDate.split('-').map((value) => Number(value))
+    if (parts.length !== 3 || parts.some((value) => Number.isNaN(value))) {
+      return {}
+    }
+
+    const [year, month, day] = parts
+    return {
+      startAt: new Date(year, month - 1, day, 0, 0, 0, 0).toISOString(),
+      endAt: new Date(year, month - 1, day + 1, 0, 0, 0, 0).toISOString()
+    }
+  },
+
+  onDateChange(event) {
+    const selectedDate = event.detail.value || ''
+    this.setData({ selectedDate })
+    this.loadRecords()
+  },
+
+  clearDateFilter() {
+    if (!this.data.selectedDate) {
+      return
+    }
+
+    this.setData({ selectedDate: '' })
+    this.loadRecords()
   },
 
   onPullDownRefresh() {

@@ -366,20 +366,34 @@ class InMemoryStore:
             delivery.error_message = error_message
             session.commit()
 
-    def list_notifications_for_user(self, *, sender_user_id: str, limit: int = 20, offset: int = 0) -> tuple[list[NotificationRecord], int]:
+    def list_notifications_for_user(
+        self,
+        *,
+        sender_user_id: str,
+        limit: int = 20,
+        offset: int = 0,
+        start_at: datetime | None = None,
+        end_at: datetime | None = None,
+    ) -> tuple[list[NotificationRecord], int]:
         with SessionLocal() as session:
-            total = session.execute(
-                select(NotificationModel.id).where(NotificationModel.sender_user_id == sender_user_id)
-            ).scalars().all()
-            total_count = len(total)
-
+            normalized_start_at = self._normalize_filter_datetime(start_at)
+            normalized_end_at = self._normalize_filter_datetime(end_at)
             notifications = session.execute(
                 select(NotificationModel)
                 .where(NotificationModel.sender_user_id == sender_user_id)
                 .order_by(NotificationModel.id.desc())
-                .offset(offset)
-                .limit(limit)
             ).scalars().all()
+            filtered_notifications = [
+                notification
+                for notification in notifications
+                if self._matches_notification_range(
+                    notification.created_at,
+                    start_at=normalized_start_at,
+                    end_at=normalized_end_at,
+                )
+            ]
+            total_count = len(filtered_notifications)
+            notifications = filtered_notifications[offset : offset + limit]
 
             items: list[NotificationRecord] = []
             for record in notifications:
@@ -422,6 +436,25 @@ class InMemoryStore:
                     )
                 )
             return items, total_count
+
+    def _normalize_filter_datetime(self, value: datetime | None) -> datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            return value
+
+        normalized = value.astimezone(UTC)
+        if settings.database_url.startswith("sqlite:///"):
+            return normalized.replace(tzinfo=None)
+        return normalized
+
+    def _matches_notification_range(self, created_at: datetime, *, start_at: datetime | None, end_at: datetime | None) -> bool:
+        normalized_created_at = self._normalize_filter_datetime(created_at)
+        if start_at is not None and normalized_created_at < start_at:
+            return False
+        if end_at is not None and normalized_created_at >= end_at:
+            return False
+        return True
 
     def _require_device(self, device_id: str) -> DeviceResponse:
         with SessionLocal() as session:

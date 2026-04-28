@@ -181,6 +181,29 @@ test('createNotificationService requests paged notification records', async () =
   assert.deepEqual(result, { records: [], total: 25 })
 })
 
+test('createNotificationService requests notification records within selected date range', async () => {
+  const calls = []
+  const service = createNotificationService({
+    request(options) {
+      calls.push(options)
+      return Promise.resolve({ items: [], total: 0 })
+    },
+    currentUserId: 'user-001'
+  })
+
+  const result = await service.fetchNotificationRecords({
+    limit: 10,
+    offset: 0,
+    startAt: '2026-04-27T16:00:00.000Z',
+    endAt: '2026-04-28T16:00:00.000Z'
+  })
+
+  assert.deepEqual(calls, [{
+    url: '/notifications?sender_user_id=user-001&limit=10&offset=0&start_at=2026-04-27T16%3A00%3A00.000Z&end_at=2026-04-28T16%3A00%3A00.000Z'
+  }])
+  assert.deepEqual(result, { records: [], total: 0 })
+})
+
 test('createNotificationService falls back to shortened device id when device name is missing', async () => {
   const service = createNotificationService({
     request() {
