@@ -83,5 +83,13 @@ Page({
 
   goToRecords() {
     wx.switchTab({ url: '/pages/records/index' })
+  },
+
+  copyWechat() {
+    wx.setClipboardData({ data: 'Y840013505' })
+  },
+
+  copyEmail() {
+    wx.setClipboardData({ data: '840013505@qq.com' })
   }
 })

@@ -52,6 +52,21 @@
 
     <view class="card stack-lg">
       <view class="section-header">
+        <view class="section-title">联系开发者</view>
+        <view class="section-meta">点击复制</view>
+      </view>
+      <view class="version-row contact-row" bindtap="copyWechat">
+        <view class="version-label">💬 微信</view>
+        <view class="version-value">Y840013505</view>
+      </view>
+      <view class="version-row contact-row" bindtap="copyEmail">
+        <view class="version-label">📧 邮箱</view>
+        <view class="version-value">840013505@qq.com</view>
+      </view>
+    </view>
+
+    <view class="card stack-lg">
+      <view class="section-header">
         <view class="section-title">版本信息</view>
         <view class="section-meta">稳定运行</view>
       </view>

@@ -1,14 +1,15 @@
-const ENV = 'dev'
+const { envVersion } = wx.getAccountInfoSync().miniProgram
 
 const CONFIGS = {
-  dev: {
+  develop: {
     apiBaseUrl: 'http://127.0.0.1:8000/api'
   },
-  prod: {
-    apiBaseUrl: 'https://your-domain.com/api'
+  trial: {
+    apiBaseUrl: 'https://www.schoolhelper.cn/api'
+  },
+  release: {
+    apiBaseUrl: 'https://www.schoolhelper.cn/api'
   }
 }
 
-const config = CONFIGS[ENV]
-
-module.exports = config
+module.exports = CONFIGS[envVersion]
