@@ -69,9 +69,11 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
+        var serverConfig = new ServerConfigStore().LoadAsync().GetAwaiter().GetResult();
+
         var httpClient = new HttpClient
         {
-            BaseAddress = new Uri("http://127.0.0.1:8000")
+            BaseAddress = new Uri(serverConfig.BaseUrl)
         };
 
         _apiClient = new DeviceApiClient(httpClient);
