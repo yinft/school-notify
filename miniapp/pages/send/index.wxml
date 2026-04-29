@@ -11,7 +11,7 @@
       <view class="hero-send-lite-row">
         <view class="hero-simple-main">
           <view class="send-hero-title">把通知快速送到在线设备</view>
-          <view class="hero-subtitle">默认全选在线设备，也可以按场景立即调整这次发送目标。</view>
+          <view class="hero-subtitle">点击设备卡片选中目标，或使用快捷操作批量调整。</view>
         </view>
         <view class="hero-send-lite-focus">
           <view class="hero-simple-emphasis-label">本次目标</view>
@@ -61,9 +61,11 @@
           <view class="button-inline" bindtap="goToBind">去绑定</view>
         </view>
       </view>
-      <view wx:else>
-        <view wx:for="{{devices}}" wx:key="id" class="device-option" data-id="{{item.id}}" bindtap="toggleDeviceSelection">
-          <checkbox checked="{{selectedDeviceIds.indexOf(item.id) !== -1}}" color="#2f80ff" />
+      <view wx:else class="device-list">
+        <view wx:for="{{devices}}" wx:key="id" class="device-option" bindtap="toggleDevice" data-index="{{index}}">
+          <view class="device-toggle {{item.selected ? 'device-toggle-on' : ''}}">
+            <view class="device-toggle-check"></view>
+          </view>
           <view class="device-option-body">
             <view class="device-option-name">{{item.name}}</view>
             <view class="device-option-meta">{{item.lastSeenText}}</view>

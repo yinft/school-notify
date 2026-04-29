@@ -20,6 +20,10 @@
   justify-content: center;
 }
 
+.device-list {
+  overflow: hidden;
+}
+
 .device-option {
   display: flex;
   align-items: center;
@@ -30,6 +34,41 @@
 
 .device-option:last-child {
   border-bottom: none;
+}
+
+.device-option:active {
+  background: rgba(47, 128, 255, 0.06);
+}
+
+.device-toggle {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 8rpx;
+  border: 2rpx solid #c8d6e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.device-toggle-on {
+  background: #2f80ff;
+  border-color: #2f80ff;
+}
+
+.device-toggle-on .device-toggle-check {
+  opacity: 1;
+}
+
+.device-toggle-check {
+  width: 20rpx;
+  height: 12rpx;
+  border-left: 4rpx solid #fff;
+  border-bottom: 4rpx solid #fff;
+  transform: rotate(-45deg) translateY(-2rpx);
+  opacity: 0;
+  transition: opacity 0.15s ease;
 }
 
 .device-option-body {

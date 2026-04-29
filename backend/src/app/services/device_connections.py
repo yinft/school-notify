@@ -13,7 +13,10 @@ class DeviceConnectionManager:
         await websocket.accept()
         self._connections[device_id] = websocket
 
-    def disconnect(self, *, device_id: str) -> None:
+    def disconnect(self, *, device_id: str, websocket: WebSocket | None = None) -> None:
+        if websocket is not None:
+            if self._connections.get(device_id) is not websocket:
+                return
         self._connections.pop(device_id, None)
 
     async def send_notifications(self, *, deliveries: Iterable[dict[str, object]]) -> list[str]:
@@ -34,11 +37,14 @@ class DeviceConnectionManager:
                     }
                 )
             except Exception:
-                self.mark_offline(device_id=device_id)
+                self.mark_offline(device_id=device_id, websocket=websocket)
                 failed_device_ids.append(device_id)
         return failed_device_ids
 
-    def mark_offline(self, *, device_id: str) -> None:
+    def mark_offline(self, *, device_id: str, websocket: WebSocket | None = None) -> None:
+        if websocket is not None:
+            if self._connections.get(device_id) is not websocket:
+                return
         self.disconnect(device_id=device_id)
         redis_service.set_device_offline(device_id)
         from app.services.store import DeviceNotFoundError, store

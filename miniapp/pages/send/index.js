@@ -3,7 +3,6 @@ const { createNotificationService } = require('../../services/notification')
 const { ensurePageLogin } = require('../../utils/page-auth')
 const { request } = require('../../utils/request')
 const { getDurationSeconds, isCustomDurationSelected, CUSTOM_DURATION_INDEX } = require('./duration')
-const { toggleSelectedDevice } = require('./device-selection')
 
 Page({
   data: {
@@ -30,6 +29,7 @@ Page({
   },
 
   async onShow() {
+    wx.setNavigationBarTitle({ title: '发送' })
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 1 })
     }
@@ -61,10 +61,10 @@ Page({
 
     try {
       const devices = await deviceService.fetchUserDevices()
-      const onlineDevices = devices.filter((device) => device.status === 'online')
+      const onlineDevices = devices.filter((device) => device.status === 'online').map((device) => ({ ...device, selected: false }))
       this.setData({
         devices: onlineDevices,
-        selectedDeviceIds: onlineDevices.map((device) => device.id),
+        selectedDeviceIds: [],
         errorText: ''
       })
       this.syncSubmitState()
@@ -108,23 +108,32 @@ Page({
     this.setData({ ttsEnabled: Boolean(event.detail.value) })
   },
 
-  toggleDeviceSelection(event) {
-    const deviceId = event.currentTarget.dataset.id || ''
-    this.setData({
-      selectedDeviceIds: toggleSelectedDevice(this.data.selectedDeviceIds, deviceId)
-    })
+  toggleDevice(event) {
+    const idx = event.currentTarget.dataset.index
+    const key = `devices[${idx}].selected`
+    const device = this.data.devices[idx]
+    const nowSelected = !device.selected
+    this.setData({ [key]: nowSelected })
+    const selectedDeviceIds = this.data.devices.filter((d) => d.selected).map((d) => d.id)
+    this.setData({ selectedDeviceIds })
     this.syncSubmitState()
   },
 
   selectAllDevices() {
+    const devices = this.data.devices.map((device) => ({ ...device, selected: true }))
     this.setData({
-      selectedDeviceIds: this.data.devices.map((device) => device.id)
+      devices,
+      selectedDeviceIds: devices.map((d) => d.id)
     })
     this.syncSubmitState()
   },
 
   clearSelectedDevices() {
-    this.setData({ selectedDeviceIds: [] })
+    const devices = this.data.devices.map((device) => ({ ...device, selected: false }))
+    this.setData({
+      devices,
+      selectedDeviceIds: []
+    })
     this.syncSubmitState()
   },
 

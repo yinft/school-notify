@@ -83,26 +83,7 @@ class InMemoryStore:
     def list_devices(self) -> list[DeviceResponse]:
         with SessionLocal() as session:
             devices = session.execute(select(DeviceModel)).scalars().all()
-            results: list[DeviceResponse] = []
-            for device in devices:
-                if redis_service.is_enabled() and redis_service.is_device_online(device.device_id):
-                    status = "online"
-                    last_seen_str = redis_service.get_device_last_seen(device.device_id)
-                    last_seen = datetime.fromisoformat(last_seen_str) if last_seen_str else device.last_seen_at
-                else:
-                    status = device.status if not redis_service.is_enabled() else "offline"
-                    last_seen = device.last_seen_at
-                results.append(
-                    DeviceResponse(
-                        device_id=device.device_id,
-                        device_name=device.device_name,
-                        location_label=device.location_label,
-                        client_version=device.client_version,
-                        status=status,
-                        last_seen_at=last_seen,
-                    )
-                )
-            return results
+            return [self._device_response_with_online_status(device) for device in devices]
 
     def create_binding_code(self, *, device_id: str) -> BindingCodeResponse:
         with SessionLocal() as session:
@@ -192,7 +173,7 @@ class InMemoryStore:
             if not device_ids:
                 return []
             devices = session.execute(select(DeviceModel).where(DeviceModel.device_id.in_(device_ids))).scalars().all()
-            return [self._to_device_response(device) for device in devices]
+            return [self._device_response_with_online_status(device) for device in devices]
 
     def unbind_user_from_device(self, *, user_id: str, device_id: str) -> BindingResponse:
         with SessionLocal() as session:
@@ -509,6 +490,23 @@ class InMemoryStore:
             status=device.status,
             last_seen_at=device.last_seen_at,
             device_token=build_device_token(device.device_id) if include_token else "",
+        )
+
+    def _device_response_with_online_status(self, device: DeviceModel) -> DeviceResponse:
+        if redis_service.is_enabled() and redis_service.is_device_online(device.device_id):
+            status = "online"
+            last_seen_str = redis_service.get_device_last_seen(device.device_id)
+            last_seen = datetime.fromisoformat(last_seen_str) if last_seen_str else device.last_seen_at
+        else:
+            status = device.status if not redis_service.is_enabled() else "offline"
+            last_seen = device.last_seen_at
+        return DeviceResponse(
+            device_id=device.device_id,
+            device_name=device.device_name,
+            location_label=device.location_label,
+            client_version=device.client_version,
+            status=status,
+            last_seen_at=last_seen,
         )
 
     @staticmethod

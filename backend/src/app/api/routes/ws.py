@@ -2,7 +2,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 
 from app.services.device_connections import device_connections
 from app.services.redis_service import redis_service
-from app.services.store import store
+from app.services.store import DeviceNotFoundError, store
 from app.services.wechat_auth import WeChatLoginError, parse_session_token
 
 
@@ -34,6 +34,10 @@ async def device_socket(
 
     await device_connections.connect(device_id=device_id, websocket=websocket)
     redis_service.set_device_online(device_id)
+    try:
+        store.set_device_status(device_id=device_id, status="online")
+    except DeviceNotFoundError:
+        pass
     await websocket.send_json(
         {
             "event": "connected",
@@ -50,4 +54,4 @@ async def device_socket(
             if event and notification_id:
                 store.register_receipt(device_id=device_id, notification_id=notification_id, event=event)
     except WebSocketDisconnect:
-        device_connections.mark_offline(device_id=device_id)
+        device_connections.mark_offline(device_id=device_id, websocket=websocket)

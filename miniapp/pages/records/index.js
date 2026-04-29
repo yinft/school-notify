@@ -21,6 +21,7 @@ Page({
   },
 
   async onShow() {
+    wx.setNavigationBarTitle({ title: '记录' })
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 2 })
     }

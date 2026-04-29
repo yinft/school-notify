@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     redis_password: str = ""
     redis_key_prefix: str = "school-notify"
     auth_session_cache_ttl_seconds: int = 7200
-    device_online_ttl_seconds: int = 90
+    device_online_ttl_seconds: int = 60
 
     model_config = SettingsConfigDict(
         env_prefix="SCHOOL_NOTIFY_",

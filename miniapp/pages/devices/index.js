@@ -20,6 +20,7 @@ Page({
   },
 
   async onShow() {
+    wx.setNavigationBarTitle({ title: '设备' })
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 0 })
     }
