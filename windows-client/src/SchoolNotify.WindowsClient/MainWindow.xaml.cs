@@ -69,7 +69,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
-        var serverConfig = new ServerConfigStore().LoadAsync().GetAwaiter().GetResult();
+        var serverConfig = new ServerConfigStore().Load();
 
         var httpClient = new HttpClient
         {

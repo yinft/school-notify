@@ -6,6 +6,7 @@ const { createBindingService, extractBindCodeFromScan, normalizeBindCode } = req
 const { createNotificationService } = require('../services/notification')
 const { createAuthService } = require('../services/auth')
 const { getDurationSeconds, isCustomDurationSelected } = require('../pages/send/duration')
+const { toggleSelectedDevice } = require('../pages/send/device-selection')
 const { createLoginGateModel } = require('../utils/login-gate')
 const { buildRequestOptions, getErrorMessage } = require('../utils/request')
 const { createUserProfile, hasAuthorizedProfile } = require('../utils/user-profile')
@@ -348,6 +349,11 @@ test('getDurationSeconds uses custom duration in seconds', () => {
 test('isCustomDurationSelected identifies custom option', () => {
   assert.equal(isCustomDurationSelected(5), true)
   assert.equal(isCustomDurationSelected(2), false)
+})
+
+test('toggleSelectedDevice removes selected device and adds unselected device', () => {
+  assert.deepEqual(toggleSelectedDevice(['device-001', 'device-002'], 'device-001'), ['device-002'])
+  assert.deepEqual(toggleSelectedDevice(['device-001'], 'device-002'), ['device-001', 'device-002'])
 })
 
 test('hasAuthorizedProfile requires avatar and nickname', () => {

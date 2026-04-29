@@ -61,15 +61,15 @@
           <view class="button-inline" bindtap="goToBind">去绑定</view>
         </view>
       </view>
-      <checkbox-group wx:else bindchange="onDeviceSelectionChange">
-        <label wx:for="{{devices}}" wx:key="id" class="device-option">
-          <checkbox value="{{item.id}}" checked="{{selectedDeviceIds.indexOf(item.id) !== -1}}" color="#2f80ff" />
+      <view wx:else>
+        <view wx:for="{{devices}}" wx:key="id" class="device-option" data-id="{{item.id}}" bindtap="toggleDeviceSelection">
+          <checkbox checked="{{selectedDeviceIds.indexOf(item.id) !== -1}}" color="#2f80ff" />
           <view class="device-option-body">
             <view class="device-option-name">{{item.name}}</view>
             <view class="device-option-meta">{{item.lastSeenText}}</view>
           </view>
-        </label>
-      </checkbox-group>
+        </view>
+      </view>
     </view>
 
     <view class="card stack-lg">

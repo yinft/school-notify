@@ -3,6 +3,7 @@ const { createNotificationService } = require('../../services/notification')
 const { ensurePageLogin } = require('../../utils/page-auth')
 const { request } = require('../../utils/request')
 const { getDurationSeconds, isCustomDurationSelected, CUSTOM_DURATION_INDEX } = require('./duration')
+const { toggleSelectedDevice } = require('./device-selection')
 
 Page({
   data: {
@@ -107,8 +108,11 @@ Page({
     this.setData({ ttsEnabled: Boolean(event.detail.value) })
   },
 
-  onDeviceSelectionChange(event) {
-    this.setData({ selectedDeviceIds: event.detail.value })
+  toggleDeviceSelection(event) {
+    const deviceId = event.currentTarget.dataset.id || ''
+    this.setData({
+      selectedDeviceIds: toggleSelectedDevice(this.data.selectedDeviceIds, deviceId)
+    })
     this.syncSubmitState()
   },
 

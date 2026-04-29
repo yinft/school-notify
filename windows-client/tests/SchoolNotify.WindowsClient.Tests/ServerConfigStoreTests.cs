@@ -41,4 +41,27 @@ public sealed class ServerConfigStoreTests
             }
         }
     }
+
+    [Fact]
+    public async Task ServerConfigStore_LoadsConfiguredBaseUrl_Synchronously_WhenFileExists()
+    {
+        var filePath = Path.Combine(Path.GetTempPath(), $"school-notify-server-config-{Guid.NewGuid():N}.json");
+
+        try
+        {
+            await File.WriteAllTextAsync(filePath, "{" + Environment.NewLine + "  \"BaseUrl\": \"http://8.136.61.23:8000\"" + Environment.NewLine + "}");
+            var store = new ServerConfigStore(filePath);
+
+            var config = store.Load();
+
+            Assert.Equal("http://8.136.61.23:8000", config.BaseUrl);
+        }
+        finally
+        {
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+        }
+    }
 }

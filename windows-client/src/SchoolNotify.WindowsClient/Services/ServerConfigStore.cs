@@ -14,6 +14,23 @@ public sealed class ServerConfigStore
         _configPath = configPath ?? Path.Combine(AppContext.BaseDirectory, "server-config.json");
     }
 
+    public ServerConfig Load()
+    {
+        if (!File.Exists(_configPath))
+        {
+            return new ServerConfig(DefaultBaseUrl);
+        }
+
+        using var stream = File.OpenRead(_configPath);
+        var config = JsonSerializer.Deserialize<ServerConfig>(stream);
+        if (config is null || string.IsNullOrWhiteSpace(config.BaseUrl))
+        {
+            return new ServerConfig(DefaultBaseUrl);
+        }
+
+        return new ServerConfig(config.BaseUrl.Trim().TrimEnd('/'));
+    }
+
     public async Task<ServerConfig> LoadAsync(CancellationToken cancellationToken = default)
     {
         if (!File.Exists(_configPath))
