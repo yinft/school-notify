@@ -1,8 +1,11 @@
 FROM python:3.12-slim
 
+ARG PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    PIP_INDEX_URL=${PIP_INDEX_URL}
 
 WORKDIR /app
 
@@ -11,7 +14,8 @@ COPY src ./src
 COPY alembic.ini ./
 COPY alembic ./alembic
 
-RUN pip install .
+RUN pip install --upgrade pip setuptools wheel \
+    && pip install .
 
 EXPOSE 8000
 
