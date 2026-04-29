@@ -27,6 +27,7 @@ Important values:
 
 - `POSTGRES_PASSWORD`
 - `POSTGRES_TIMEZONE`
+- `BACKEND_TIMEZONE`
 - `SCHOOL_NOTIFY_DATABASE_URL`
 - `SCHOOL_NOTIFY_SESSION_SIGNING_SECRET`
 - `SCHOOL_NOTIFY_WECHAT_APP_ID`
@@ -48,6 +49,12 @@ PostgreSQL defaults to `Asia/Shanghai` in this compose file. You can change it b
 
 ```dotenv
 POSTGRES_TIMEZONE=Asia/Shanghai
+```
+
+Backend container logs default to Beijing time through the container timezone setting:
+
+```dotenv
+BACKEND_TIMEZONE=CST-8
 ```
 
 ## Start Services
