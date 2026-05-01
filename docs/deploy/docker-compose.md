@@ -5,6 +5,7 @@
 This deployment starts the backend, PostgreSQL, and Redis on a single server with `docker compose`.
 
 Only the backend is exposed publicly on port `8000`.
+PostgreSQL and Redis are published on `127.0.0.1` only for server-local access and SSH tunnels.
 
 ## Prerequisites
 
@@ -29,6 +30,7 @@ Important values:
 - `POSTGRES_TIMEZONE`
 - `BACKEND_TIMEZONE`
 - `SCHOOL_NOTIFY_DATABASE_URL`
+- `SCHOOL_NOTIFY_REDIS_PASSWORD`
 - `SCHOOL_NOTIFY_SESSION_SIGNING_SECRET`
 - `SCHOOL_NOTIFY_WECHAT_APP_ID`
 - `SCHOOL_NOTIFY_WECHAT_APP_SECRET`
@@ -37,6 +39,13 @@ Important values:
 
 ```dotenv
 SCHOOL_NOTIFY_DATABASE_URL=postgresql+psycopg://postgres:your_password@postgres:5432/school_notify
+```
+
+`SCHOOL_NOTIFY_REDIS_URL` must keep `redis` as the host for the backend container, and Redis now requires a password:
+
+```dotenv
+SCHOOL_NOTIFY_REDIS_URL=redis://redis:6379/0
+SCHOOL_NOTIFY_REDIS_PASSWORD=replace_with_strong_redis_password
 ```
 
 All `docker compose` commands below must load that env file explicitly:
@@ -97,6 +106,26 @@ You can also verify from another machine:
 curl http://YOUR_SERVER_IP:8000/health
 ```
 
+## Access PostgreSQL And Redis Over SSH
+
+This compose setup publishes PostgreSQL and Redis only on the server loopback interface:
+
+- PostgreSQL: `127.0.0.1:5432`
+- Redis: `127.0.0.1:6379`
+
+They are not directly reachable from the public network. To connect from your local machine, open SSH tunnels:
+
+```bash
+ssh -L 5432:127.0.0.1:5432 -L 6379:127.0.0.1:6379 user@YOUR_SERVER_IP
+```
+
+Then connect locally:
+
+```bash
+psql postgresql://postgres:YOUR_POSTGRES_PASSWORD@127.0.0.1:5432/school_notify
+redis-cli -a YOUR_REDIS_PASSWORD -h 127.0.0.1 -p 6379
+```
+
 ## Stop Services
 
 Stop containers without removing data:
@@ -118,6 +147,7 @@ docker compose --env-file deploy/backend.env up -d --build
 
 - PostgreSQL data is stored in the `postgres_data` volume.
 - Redis data is stored in the `redis_data` volume.
-- PostgreSQL and Redis are not exposed to the public network.
+- PostgreSQL and Redis are bound to `127.0.0.1` and are not exposed to the public network.
+- Redis requires `SCHOOL_NOTIFY_REDIS_PASSWORD` for both the backend and operator access.
 - PostgreSQL runs with timezone `Asia/Shanghai` by default.
 - The backend runs `alembic upgrade head` before starting Uvicorn.

@@ -9,6 +9,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d school_notify"]
       interval: 10s
@@ -17,11 +19,16 @@ services:
 
   redis:
     image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${SCHOOL_NOTIFY_REDIS_PASSWORD}"]
     restart: unless-stopped
+    environment:
+      SCHOOL_NOTIFY_REDIS_PASSWORD: ${SCHOOL_NOTIFY_REDIS_PASSWORD}
     volumes:
       - redis_data:/data
+    ports:
+      - "127.0.0.1:6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$${SCHOOL_NOTIFY_REDIS_PASSWORD}\" ping"]
       interval: 10s
       timeout: 5s
       retries: 5
