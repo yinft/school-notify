@@ -43,7 +43,7 @@
         <view class="menu-icon">记</view>
         <view class="menu-text-group">
           <view class="menu-text">发送记录</view>
-          <view class="menu-desc">查看通知发送状态</view>
+          <view class="menu-desc">查看提醒发送状态</view>
         </view>
         <view class="menu-arrow">›</view>
       </view>

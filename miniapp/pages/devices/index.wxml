@@ -11,7 +11,7 @@
       <view class="hero-simple-row">
         <view class="hero-simple-main">
           <view class="hero-title">设备状态一目了然</view>
-          <view class="hero-subtitle">优先查看在线设备，快速确认通知屏当前是否可用。</view>
+          <view class="hero-subtitle">优先查看在线设备，快速确认桌面提醒设备当前是否可用。</view>
         </view>
         <view class="hero-simple-highlight">
           <view class="hero-simple-highlight-value">{{onlineCount}}</view>
@@ -70,9 +70,9 @@
             </view>
             <view wx:if="{{editingDeviceId === item.id}}" class="device-edit-panel">
               <view class="field-label">设备名称</view>
-              <input class="field-input field-input-single" placeholder-class="field-input-placeholder" placeholder="例如：三年级一班通知屏" value="{{editDeviceName}}" bindinput="onEditDeviceNameInput" />
+              <input class="field-input field-input-single" placeholder-class="field-input-placeholder" placeholder="例如：办公室提醒屏" value="{{editDeviceName}}" bindinput="onEditDeviceNameInput" />
               <view class="field-label">设备位置</view>
-              <input class="field-input field-input-single" placeholder-class="field-input-placeholder" placeholder="例如：三年级一班教室" value="{{editLocationLabel}}" bindinput="onEditLocationInput" />
+              <input class="field-input field-input-single" placeholder-class="field-input-placeholder" placeholder="例如：办公室" value="{{editLocationLabel}}" bindinput="onEditLocationInput" />
               <view class="device-edit-actions">
                 <view class="button-inline" bindtap="saveDeviceEdit">{{isSavingDevice ? '保存中' : '保存'}}</view>
                 <view class="button-inline button-inline-muted" bindtap="cancelEditDevice">取消</view>

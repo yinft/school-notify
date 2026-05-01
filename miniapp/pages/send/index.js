@@ -20,7 +20,7 @@ Page({
     isSubmitting: false,
     isLoadingDevices: false,
     errorText: '',
-    submitHint: '请选择至少一台在线设备，并填写完整通知内容。',
+    submitHint: '请选择至少一台在线设备，并填写完整提醒内容。',
     isSubmitDisabled: true,
     isLoginRequired: false,
     loginTipText: '',
@@ -33,7 +33,7 @@ Page({
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 1 })
     }
-    if (!(await ensurePageLogin(this, '发送通知'))) {
+    if (!(await ensurePageLogin(this, '发送提醒'))) {
       return
     }
     this.loadDevices()
@@ -45,7 +45,7 @@ Page({
     }
 
     this.setData({ isAuthorizingLogin: true })
-    if (await ensurePageLogin(this, '发送通知', { manual: true })) {
+    if (await ensurePageLogin(this, '发送提醒', { manual: true })) {
       this.loadDevices()
     }
   },
@@ -147,7 +147,7 @@ Page({
 
   syncSubmitState() {
     const { title, content, selectedDeviceIds, isSubmitting, durationIndex, customDurationValue } = this.data
-    let submitHint = '请选择至少一台在线设备，并填写完整通知内容。'
+    let submitHint = '请选择至少一台在线设备，并填写完整提醒内容。'
     const requiresCustomDuration = isCustomDurationSelected(durationIndex)
 
     if (!selectedDeviceIds.length) {
@@ -157,7 +157,7 @@ Page({
     } else if (requiresCustomDuration && !customDurationValue) {
       submitHint = '请输入自定义时长，单位为秒。'
     } else if (isSubmitting) {
-      submitHint = '通知正在发送，请稍候。'
+      submitHint = '提醒正在发送，请稍候。'
     } else {
       submitHint = `本次将发送到 ${selectedDeviceIds.length} 台在线设备。`
     }

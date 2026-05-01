@@ -9,6 +9,8 @@ const { getDurationSeconds, isCustomDurationSelected } = require('../pages/send/
 const { createLoginGateModel } = require('../utils/login-gate')
 const { buildRequestOptions, getErrorMessage } = require('../utils/request')
 const { createUserProfile, hasAuthorizedProfile } = require('../utils/user-profile')
+const fs = require('node:fs')
+const path = require('node:path')
 const {
   DEFAULT_USER_ID,
   createLoggedInSession,
@@ -36,7 +38,7 @@ test('createDeviceService fetches and maps user devices', async () => {
           {
             device_id: 'device-001',
             device_name: '值班室电脑',
-            location_label: '高一3班教室',
+            location_label: '会议室',
             client_version: '0.1.0',
             status: 'online',
             last_seen_at: '2026-04-21T08:00:00Z'
@@ -54,7 +56,7 @@ test('createDeviceService fetches and maps user devices', async () => {
     {
       id: 'device-001',
       name: '值班室电脑',
-      locationLabel: '高一3班教室',
+      locationLabel: '会议室',
       clientVersion: '0.1.0',
       status: 'online',
       lastSeenAt: '2026-04-21T08:00:00Z',
@@ -75,7 +77,7 @@ test('createNotificationService sends current user id and selected devices', asy
   })
 
   const result = await service.sendNotification({
-    title: '紧急通知',
+    title: '紧急提醒',
     content: '请立即到场',
     level: 'urgent',
     deviceIds: ['device-001', 'device-002'],
@@ -90,7 +92,7 @@ test('createNotificationService sends current user id and selected devices', asy
       method: 'POST',
       data: {
         sender_user_id: 'user-001',
-        title: '紧急通知',
+        title: '紧急提醒',
         content: '请立即到场',
         level: 'urgent',
         device_ids: ['device-001', 'device-002'],
@@ -113,15 +115,15 @@ test('createNotificationService fetches and maps notification records', async ()
           {
             notification_id: 'notification-1',
             sender_user_id: 'user-001',
-            title: '紧急通知',
+            title: '紧急提醒',
             content: '请立即集合',
             level: 'urgent',
             target_count: 1,
             deliveries: [
               {
                 device_id: 'device-001',
-                device_name: '三年级一班通知屏',
-                location_label: '三年级一班教室',
+                device_name: '办公室提醒屏',
+                location_label: '办公室',
                 received: true,
                 displayed: true,
                 spoken: false
@@ -141,7 +143,7 @@ test('createNotificationService fetches and maps notification records', async ()
   assert.deepEqual(records, [
     {
       id: 'notification-1',
-      title: '紧急通知',
+      title: '紧急提醒',
       content: '请立即集合',
       level: 'urgent',
       targetCount: 1,
@@ -149,10 +151,10 @@ test('createNotificationService fetches and maps notification records', async ()
       deliveries: [
         {
           deviceId: 'device-001',
-          deviceName: '三年级一班通知屏',
-          locationLabel: '三年级一班教室',
-          displayName: '三年级一班通知屏',
-          displayMeta: '三年级一班教室',
+          deviceName: '办公室提醒屏',
+          locationLabel: '办公室',
+          displayName: '办公室提醒屏',
+          displayMeta: '办公室',
           received: true,
           displayed: true,
           spoken: false,
@@ -279,8 +281,8 @@ test('createBindingService posts current user and editable device info', async (
 
   const result = await service.bindDevice({
     code: ' 123456 ',
-    deviceName: '三年级一班通知屏',
-    locationLabel: '三年级一班教室'
+    deviceName: '办公室提醒屏',
+    locationLabel: '办公室'
   })
 
   assert.deepEqual(calls, [
@@ -290,8 +292,8 @@ test('createBindingService posts current user and editable device info', async (
       data: {
         user_id: 'user-001',
         code: '123456',
-        device_name: '三年级一班通知屏',
-        location_label: '三年级一班教室'
+        device_name: '办公室提醒屏',
+        location_label: '办公室'
       }
     }
   ])
@@ -359,9 +361,44 @@ test('hasAuthorizedProfile requires avatar and nickname', () => {
 
 test('createUserProfile trims WeChat nickname and avatar values', () => {
   assert.deepEqual(
-    createUserProfile({ avatarUrl: '  wxfile://avatar.png  ', nickName: ' 张老师 ' }),
-    { avatarUrl: 'wxfile://avatar.png', nickName: '张老师' }
+    createUserProfile({ avatarUrl: '  wxfile://avatar.png  ', nickName: ' 小张 ' }),
+    { avatarUrl: 'wxfile://avatar.png', nickName: '小张' }
   )
+})
+
+test('miniapp user-facing copy avoids campus and education positioning', () => {
+  const miniappRoot = path.resolve(__dirname, '..')
+  const files = [
+    'app.json',
+    'pages/devices/index.wxml',
+    'pages/send/index.wxml',
+    'pages/bind/index.wxml',
+    'pages/profile/index.wxml',
+    'utils/login-gate.js'
+  ]
+  const blockedTerms = ['校园', '学校', '班级', '老师', '学生', '教室', '班委', '校务', '公告屏', '通知屏']
+
+  const violations = []
+  for (const file of files) {
+    const content = fs.readFileSync(path.join(miniappRoot, file), 'utf8')
+    for (const term of blockedTerms) {
+      if (content.includes(term)) {
+        violations.push(`${file}: ${term}`)
+      }
+    }
+  }
+
+  assert.deepEqual(violations, [])
+})
+
+test('custom tab bar keeps safe area outside fixed content height', () => {
+  const tabBarStyle = fs.readFileSync(path.resolve(__dirname, '../custom-tab-bar/index.wxss'), 'utf8')
+  const tabBarRule = tabBarStyle.match(/\.tab-bar\s*\{[\s\S]*?\n\}/)?.[0] || ''
+
+  assert.match(tabBarRule, /height:\s*100rpx;/)
+  assert.match(tabBarRule, /bottom:\s*18rpx;/)
+  assert.doesNotMatch(tabBarRule, /bottom:\s*calc\([^;]*safe-area-inset-bottom[^;]*\);/)
+  assert.doesNotMatch(tabBarRule, /padding-bottom:\s*calc\([^;]*safe-area-inset-bottom[^;]*\);/)
 })
 
 test('createLoggedInSession keeps stable default user id', () => {
@@ -475,15 +512,15 @@ test('createDeviceService patches editable device info', async () => {
   const service = createDeviceService({
     request(options) {
       calls.push(options)
-      return Promise.resolve({ device_id: 'device-001', device_name: '三年级一班通知屏', location_label: '三年级一班教室' })
+      return Promise.resolve({ device_id: 'device-001', device_name: '办公室提醒屏', location_label: '办公室' })
     },
     currentUserId: 'user-001'
   })
 
   const result = await service.updateDevice({
     deviceId: 'device-001',
-    deviceName: ' 三年级一班通知屏 ',
-    locationLabel: ' 三年级一班教室 '
+    deviceName: ' 办公室提醒屏 ',
+    locationLabel: ' 办公室 '
   })
 
   assert.deepEqual(calls, [
@@ -491,12 +528,12 @@ test('createDeviceService patches editable device info', async () => {
       url: '/users/user-001/devices/device-001',
       method: 'PATCH',
       data: {
-        device_name: '三年级一班通知屏',
-        location_label: '三年级一班教室'
+        device_name: '办公室提醒屏',
+        location_label: '办公室'
       }
     }
   ])
-  assert.deepEqual(result, { device_id: 'device-001', device_name: '三年级一班通知屏', location_label: '三年级一班教室' })
+  assert.deepEqual(result, { device_id: 'device-001', device_name: '办公室提醒屏', location_label: '办公室' })
 })
 
 test('buildRequestOptions adds bearer token when logged in', () => {

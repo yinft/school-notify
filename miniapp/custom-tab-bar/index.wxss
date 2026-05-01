@@ -9,7 +9,6 @@
   border: 1rpx solid #dce9ff;
   border-radius: 999rpx;
   padding: 10rpx;
-  padding-bottom: calc(10rpx + env(safe-area-inset-bottom));
   box-shadow: 0 12rpx 28rpx rgba(41, 97, 173, 0.14);
   z-index: 999;
 }

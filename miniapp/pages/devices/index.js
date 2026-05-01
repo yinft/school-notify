@@ -151,7 +151,7 @@ Page({
     return new Promise((resolve) => {
       wx.showModal({
         title: '确认解绑设备',
-        content: `解绑后，你将无法继续向“${deviceName}”发送通知。是否继续？`,
+        content: `解绑后，你将无法继续向“${deviceName}”发送提醒。是否继续？`,
         confirmColor: '#d64545',
         success: resolve,
         fail: () => resolve({ confirm: false })

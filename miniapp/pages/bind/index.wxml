@@ -57,11 +57,11 @@
         value="{{deviceName}}"
       />
 
-      <view class="field-label">位置/班级</view>
+      <view class="field-label">位置备注</view>
       <input
         class="field-input field-input-single"
         placeholder-class="field-input-placeholder"
-        placeholder="例如：三年级一班教室"
+        placeholder="例如：办公室"
         maxlength="64"
         bindinput="onLocationLabelInput"
         value="{{locationLabel}}"
