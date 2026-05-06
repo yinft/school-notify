@@ -1,0 +1,3 @@
+Placeholder for the Windows client release archive.
+
+Before production launch, replace this file with the real ZIP artifact and update the SHA256 value in app/data/site-content.js.

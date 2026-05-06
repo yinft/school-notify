@@ -1,0 +1,19 @@
+{
+  "name": "school-notify-website",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@nuxtjs/seo": "latest",
+    "@takumi-rs/core": "latest",
+    "aos": "^2.3.4",
+    "nuxt": "latest",
+    "vue": "latest"
+  }
+}
