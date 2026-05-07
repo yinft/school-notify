@@ -1,0 +1,23 @@
+.custom-nav {
+  box-sizing: border-box;
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.custom-nav-row {
+  position: relative;
+  box-sizing: border-box;
+}
+
+.custom-nav-title {
+  position: absolute;
+  left: 180rpx;
+  right: 180rpx;
+  top: 0;
+  bottom: 0;
+  text-align: center;
+  font-size: 28rpx;
+  font-weight: 600;
+  line-height: inherit;
+  overflow: visible;
+}

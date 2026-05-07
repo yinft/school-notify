@@ -1,0 +1,5 @@
+<view class="custom-nav" style="height: {{navHeight}}px; padding-top: {{statusBarHeight}}px;">
+  <view class="custom-nav-row" style="height: {{menuButtonHeight}}px; line-height: {{menuButtonHeight}}px; margin-top: {{menuButtonTopGap}}px;">
+    <view class="custom-nav-title">{{title}}</view>
+  </view>
+</view>

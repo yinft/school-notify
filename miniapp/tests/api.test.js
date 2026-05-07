@@ -25,7 +25,7 @@ test('formatLastSeenText formats missing timestamps', () => {
 })
 
 test('formatLastSeenText formats local timestamps', () => {
-  assert.equal(formatLastSeenText('2026-04-21T16:00:00'), '最后在线：2026-04-21 16:00')
+  assert.equal(formatLastSeenText('2026-04-21T16:00:00'), '最后在线：2026-04-21 16:00:00')
 })
 
 test('createDeviceService fetches and maps user devices', async () => {
@@ -60,7 +60,7 @@ test('createDeviceService fetches and maps user devices', async () => {
       clientVersion: '0.1.0',
       status: 'online',
       lastSeenAt: '2026-04-21T16:00:00',
-      lastSeenText: '最后在线：2026-04-21 16:00',
+      lastSeenText: '最后在线：2026-04-21 16:00:00',
       statusText: '在线'
     }
   ])
@@ -410,6 +410,56 @@ test('custom tab bar keeps safe area outside fixed content height', () => {
   assert.match(tabBarRule, /bottom:\s*18rpx;/)
   assert.doesNotMatch(tabBarRule, /bottom:\s*calc\([^;]*safe-area-inset-bottom[^;]*\);/)
   assert.doesNotMatch(tabBarRule, /padding-bottom:\s*calc\([^;]*safe-area-inset-bottom[^;]*\);/)
+})
+
+test('hero titles leave enough line box room for Huawei font rendering', () => {
+  const appStyle = fs.readFileSync(path.resolve(__dirname, '../app.wxss'), 'utf8')
+  const sendStyle = fs.readFileSync(path.resolve(__dirname, '../pages/send/index.wxss'), 'utf8')
+  const pageRule = appStyle.match(/\.page\s*\{[\s\S]*?\n\}/)?.[0] || ''
+  const heroTitleRule = appStyle.match(/\.hero-title\s*\{[\s\S]*?\n\}/)?.[0] || ''
+  const sendTitleRule = sendStyle.match(/\.send-hero-title\s*\{[\s\S]*?\n\}/)?.[0] || ''
+  const heroContentLayerRule = appStyle.match(/\.hero-simple-main,\n\.hero-overline,\n\.hero-title,\n\.hero-subtitle\s*\{[\s\S]*?\n\}/)?.[0] || ''
+
+  assert.match(pageRule, /padding:\s*24rpx\s+28rpx\s+calc\(132rpx \+ env\(safe-area-inset-bottom\)\);/)
+  assert.match(heroTitleRule, /line-height:\s*1\.38;/)
+  assert.match(heroTitleRule, /padding-bottom:\s*8rpx;/)
+  assert.match(sendTitleRule, /line-height:\s*1\.38;/)
+  assert.match(sendTitleRule, /padding-bottom:\s*8rpx;/)
+  assert.match(heroContentLayerRule, /position:\s*relative;/)
+  assert.match(heroContentLayerRule, /z-index:\s*2;/)
+})
+
+test('miniapp uses custom navigation to avoid Huawei native title clipping', () => {
+  const appConfig = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../app.json'), 'utf8'))
+  const componentMarkup = fs.readFileSync(path.resolve(__dirname, '../components/native-title-bar/index.wxml'), 'utf8')
+  const componentScript = fs.readFileSync(path.resolve(__dirname, '../components/native-title-bar/index.js'), 'utf8')
+  const componentStyle = fs.readFileSync(path.resolve(__dirname, '../components/native-title-bar/index.wxss'), 'utf8')
+  const pages = new Map([
+    ['pages/devices/index', '设备'],
+    ['pages/bind/index', '绑定设备'],
+    ['pages/send/index', '发送'],
+    ['pages/records/index', '记录'],
+    ['pages/profile/index', '我的']
+  ])
+
+  assert.equal(appConfig.window.navigationStyle, 'custom')
+  assert.equal(appConfig.usingComponents['native-title-bar'], '/components/native-title-bar/index')
+  assert.match(componentMarkup, /custom-nav-title/)
+  assert.match(componentMarkup, /margin-top:\s*\{\{menuButtonTopGap\}\}px;/)
+  assert.match(componentScript, /getMenuButtonBoundingClientRect/)
+  assert.match(componentScript, /const menuButtonTopGap = Math\.max\(menuButton\.top - statusBarHeight, 0\)/)
+  assert.match(componentScript, /const navHeight = menuButton\.bottom/)
+  assert.match(componentStyle, /font-size:\s*28rpx;/)
+  assert.doesNotMatch(componentStyle, /min-height:\s*88px;/)
+  for (const [pagePath, title] of pages) {
+    const config = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', `${pagePath}.json`), 'utf8'))
+    const markup = fs.readFileSync(path.resolve(__dirname, '..', `${pagePath}.wxml`), 'utf8')
+    const script = fs.readFileSync(path.resolve(__dirname, '..', `${pagePath}.js`), 'utf8')
+    assert.equal(config.navigationBarTitleText, title)
+    assert.match(markup, new RegExp(`<native-title-bar title="${title}"`))
+    assert.doesNotMatch(markup, /page-native-title-offset/)
+    assert.doesNotMatch(script, /setNavigationBarTitle/)
+  }
 })
 
 test('createLoggedInSession keeps stable default user id', () => {

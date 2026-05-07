@@ -7,11 +7,15 @@
     "pages/profile/index"
   ],
   "window": {
-    "navigationBarTitleText": "桌面提醒助手",
+    "navigationStyle": "custom",
+    "navigationBarTitleText": "",
     "navigationBarBackgroundColor": "#0F172A",
     "navigationBarTextStyle": "white",
     "backgroundColor": "#F8FAFC",
     "backgroundTextStyle": "light"
+  },
+  "usingComponents": {
+    "native-title-bar": "/components/native-title-bar/index"
   },
   "tabBar": {
     "custom": true,

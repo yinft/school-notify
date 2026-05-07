@@ -7,7 +7,7 @@ page {
 
 .page {
   min-height: 100vh;
-  padding: 28rpx 28rpx calc(132rpx + env(safe-area-inset-bottom));
+  padding: 24rpx 28rpx calc(132rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
@@ -73,10 +73,13 @@ page {
 }
 
 .hero-title {
+  display: block;
   margin-top: 12rpx;
   font-size: 42rpx;
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1.38;
+  padding-bottom: 8rpx;
+  box-sizing: border-box;
 }
 
 .hero-subtitle {
@@ -146,6 +149,14 @@ page {
 
 .hero-simple-main {
   flex: 1;
+}
+
+.hero-simple-main,
+.hero-overline,
+.hero-title,
+.hero-subtitle {
+  position: relative;
+  z-index: 2;
 }
 
 .hero-card-devices .hero-title,
