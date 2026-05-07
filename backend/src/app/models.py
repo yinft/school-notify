@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -14,11 +14,11 @@ class User(Base):
     openid: Mapped[str] = mapped_column(String(128), unique=True, index=True)
     nickname: Mapped[str | None] = mapped_column(String(128), nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
+        default=lambda: datetime.now(),
+        onupdate=lambda: datetime.now(),
     )
 
     auth_sessions: Mapped[list["AuthSession"]] = relationship(back_populates="user")
@@ -30,7 +30,7 @@ class AuthSession(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     session_token: Mapped[str] = mapped_column(String(512), unique=True, index=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now())
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     user: Mapped[User] = relationship(back_populates="auth_sessions")
@@ -45,8 +45,8 @@ class Device(Base):
     location_label: Mapped[str] = mapped_column(String(128), default="")
     client_version: Mapped[str] = mapped_column(String(64))
     status: Mapped[str] = mapped_column(String(32), default="online")
-    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now())
 
 
 class DeviceBindCode(Base):
@@ -56,7 +56,7 @@ class DeviceBindCode(Base):
     device_id: Mapped[str] = mapped_column(String(128), index=True)
     code: Mapped[str] = mapped_column(String(16), unique=True, index=True)
     expires_in_seconds: Mapped[int] = mapped_column(Integer)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now())
 
 
 class UserDevice(Base):
@@ -68,7 +68,7 @@ class UserDevice(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[str] = mapped_column(String(128), index=True)
     device_id: Mapped[str] = mapped_column(String(128), index=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now())
 
 
 class Notification(Base):
@@ -84,7 +84,7 @@ class Notification(Base):
     tts_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     tts_repeat_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     target_count: Mapped[int] = mapped_column(Integer)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now())
 
 
 class NotificationDelivery(Base):

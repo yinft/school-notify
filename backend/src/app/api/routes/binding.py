@@ -34,7 +34,7 @@ def create_binding_code(payload: BindingCodeCreateRequest, authorization: str = 
     description="【小程序端】根据绑定码预览待绑定设备信息，用于在绑定前确认并补全名称、位置。",
     responses={401: {"description": "未认证"}, 404: {"description": "绑定码不存在或已过期"}},
 )
-def get_binding_code_device(code: str, current_user_id: str = Depends(require_current_user)) -> BindingDevicePreviewResponse:
+def get_binding_code_device(code: str, _: str = Depends(require_current_user)) -> BindingDevicePreviewResponse:
     try:
         return store.get_device_by_binding_code(code=code)
     except BindingCodeNotFoundError as exc:

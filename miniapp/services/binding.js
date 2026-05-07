@@ -1,4 +1,8 @@
 function normalizeBindCode(code) {
+  if (typeof code === 'object') {
+    return ''
+  }
+
   return String(code || '').trim().toUpperCase()
 }
 
@@ -18,6 +22,14 @@ function extractBindCodeFromScan(scanResult) {
   }
 
   return normalizeBindCode(decodeURIComponent(match[1]))
+}
+
+function getBindingErrorMessage(error, fallback = '绑定失败') {
+  if (error && error.message === 'binding code not found') {
+    return '绑定码已失效，请重新扫码或刷新客户端绑定码'
+  }
+
+  return (error && error.message) || fallback
 }
 
 function createBindingService({ request, currentUserId }) {
@@ -50,5 +62,6 @@ function createBindingService({ request, currentUserId }) {
 module.exports = {
   createBindingService,
   extractBindCodeFromScan,
+  getBindingErrorMessage,
   normalizeBindCode
 }

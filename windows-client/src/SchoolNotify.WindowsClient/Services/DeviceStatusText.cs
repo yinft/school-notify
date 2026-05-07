@@ -20,7 +20,7 @@ public static class DeviceStatusText
 
     public static string FormatLastHeartbeat(DateTimeOffset lastSeenAt)
     {
-        return $"最后心跳：{lastSeenAt.ToOffset(TimeSpan.FromHours(8)):yyyy-MM-dd HH:mm:ss}";
+        return $"最后心跳：{lastSeenAt:yyyy-MM-dd HH:mm:ss}";
     }
 }
 

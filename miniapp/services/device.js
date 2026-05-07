@@ -4,7 +4,7 @@ function formatLastSeenText(lastSeenAt) {
   }
 
   const normalized = String(lastSeenAt).replace('T', ' ').replace('Z', '')
-  return `最后在线：${normalized.slice(0, 16)}`
+  return `最后在线：${normalized.slice(0, 19)}`
 }
 
 function mapDevice(device) {

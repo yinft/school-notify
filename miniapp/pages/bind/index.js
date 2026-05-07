@@ -1,4 +1,4 @@
-const { createBindingService, extractBindCodeFromScan, normalizeBindCode } = require('../../services/binding')
+const { createBindingService, extractBindCodeFromScan, getBindingErrorMessage, normalizeBindCode } = require('../../services/binding')
 const { ensurePageLogin } = require('../../utils/page-auth')
 const { request } = require('../../utils/request')
 
@@ -103,7 +103,7 @@ Page({
       }, 500)
     } catch (error) {
       wx.showToast({
-        title: error.message || '绑定失败',
+        title: getBindingErrorMessage(error),
         icon: 'none'
       })
     } finally {
@@ -111,8 +111,8 @@ Page({
     }
   },
 
-  async previewDevice(code = this.data.code) {
-    const normalizedCode = normalizeBindCode(code)
+  async previewDevice(code) {
+    const normalizedCode = normalizeBindCode(typeof code === 'string' ? code : this.data.code)
     if (!normalizedCode) {
       wx.showToast({ title: '请输入绑定码', icon: 'none' })
       return
@@ -136,7 +136,7 @@ Page({
         helperText: `已识别设备：${device.deviceId}`
       })
     } catch (error) {
-      wx.showToast({ title: error.message || '设备识别失败', icon: 'none' })
+      wx.showToast({ title: getBindingErrorMessage(error, '设备识别失败'), icon: 'none' })
     } finally {
       this.setData({ isLoadingPreview: false })
     }

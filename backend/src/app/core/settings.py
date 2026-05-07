@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "school-notify-backend"
     debug: bool = False
+    sql_echo: bool = False
     database_url: str = "postgresql+psycopg://postgres:123@localhost:5432/school"
     bind_code_expires_seconds: int = 60
     wechat_app_id: str = ""

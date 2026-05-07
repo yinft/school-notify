@@ -448,10 +448,7 @@ class InMemoryStore:
         device_id = redis_service.get_bind_device_id(code)
         if device_id is not None:
             binding_code = session.execute(select(DeviceBindCode).where(DeviceBindCode.code == code)).scalar_one_or_none()
-            if binding_code is None:
-                redis_service.consume_bind_code(code)
-                raise BindingCodeNotFoundError(code)
-            if self._is_binding_code_expired(binding_code):
+            if binding_code is not None and self._is_binding_code_expired(binding_code):
                 redis_service.consume_bind_code(code)
                 session.execute(delete(DeviceBindCode).where(DeviceBindCode.code == code))
                 session.commit()
@@ -511,12 +508,12 @@ class InMemoryStore:
 
     @staticmethod
     def _now() -> datetime:
-        return datetime.now(UTC)
+        return datetime.now()
 
     def _is_binding_code_expired(self, binding_code: DeviceBindCode) -> bool:
         created_at = binding_code.created_at
-        if created_at.tzinfo is None:
-            created_at = created_at.replace(tzinfo=UTC)
+        if created_at.tzinfo is not None:
+            created_at = created_at.astimezone().replace(tzinfo=None)
         return created_at + timedelta(seconds=binding_code.expires_in_seconds) < self._now()
 
 

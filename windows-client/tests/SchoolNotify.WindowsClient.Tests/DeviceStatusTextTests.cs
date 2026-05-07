@@ -33,11 +33,11 @@ public class DeviceStatusTextTests
     }
 
     [Fact]
-    public void FormatsLastHeartbeatAsBeijingTime()
+    public void FormatsLastHeartbeatWithoutApplyingAnotherTimezoneOffset()
     {
-        var utc = DateTimeOffset.Parse("2026-04-21T08:01:00Z");
+        var local = new DateTimeOffset(2026, 4, 21, 16, 1, 0, TimeSpan.Zero);
 
-        var text = DeviceStatusText.FormatLastHeartbeat(utc);
+        var text = DeviceStatusText.FormatLastHeartbeat(local);
 
         Assert.Equal("最后心跳：2026-04-21 16:01:00", text);
     }

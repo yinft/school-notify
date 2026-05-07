@@ -416,6 +416,11 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (_isRefreshingBindingCode)
+        {
+            return;
+        }
+
         _isRefreshingBindingCode = true;
         BindingCodeCountdownTextBlock.Text = "二维码有效期：刷新中...";
 
@@ -438,6 +443,11 @@ public partial class MainWindow : Window
         {
             _isRefreshingBindingCode = false;
         }
+    }
+
+    private async void RefreshBindingCodeButtonClicked(object sender, RoutedEventArgs e)
+    {
+        await RefreshBindingCodeAsync();
     }
 
     private void UpdateBindingCodeCountdownText()

@@ -99,6 +99,7 @@
                     <TextBlock FontSize="18" FontWeight="SemiBold" Text="绑定信息" />
                     <TextBlock x:Name="BindingCodeTextBlock" Margin="0,12,0,0" FontSize="32" FontWeight="Bold" Foreground="#0F172A" Text="绑定码：-" />
                     <TextBlock x:Name="BindingCodeCountdownTextBlock" Margin="0,8,0,0" Foreground="#475569" Text="二维码有效期：-" />
+                    <Button Margin="0,12,0,0" Padding="12,8" Background="#E0F2FE" BorderBrush="#7DD3FC" Foreground="#075985" FontWeight="SemiBold" Content="刷新二维码" Click="RefreshBindingCodeButtonClicked" />
                     <TextBlock x:Name="BindingPayloadTextBlock" Visibility="Collapsed" Margin="0,8,0,0" Foreground="#475569" Text="扫码内容：-" TextWrapping="Wrap" />
                     <Border Width="180" Height="180" Margin="0,16,0,0" Background="#E2E8F0" CornerRadius="12">
                         <Image x:Name="QrImage" Stretch="Uniform" />

@@ -36,3 +36,17 @@ def test_set_device_online_sets_ttl_for_last_seen_key() -> None:
     last_seen_key = service._device_last_seen_key("device-001")
     assert ("setex", online_key, 45, "1") in fake_client.pipeline_obj.ops
     assert any(op[0] == "setex" and op[1] == last_seen_key and op[2] == 90 for op in fake_client.pipeline_obj.ops)
+
+
+def test_set_device_online_stores_local_last_seen_timestamp() -> None:
+    service = RedisService()
+    fake_client = _FakeClient()
+    service._client = fake_client
+
+    service.set_device_online("device-001", ttl=45)
+
+    last_seen_key = service._device_last_seen_key("device-001")
+    last_seen_ops = [op for op in fake_client.pipeline_obj.ops if op[0] == "setex" and op[1] == last_seen_key]
+    assert len(last_seen_ops) == 1
+    last_seen_value = last_seen_ops[0][3]
+    assert "+00:00" not in last_seen_value

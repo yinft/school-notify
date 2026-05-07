@@ -14,6 +14,8 @@ public sealed class MainWindowLayoutTests
         Assert.Contains("x:Name=\"SettingsPanel\"", xaml, StringComparison.Ordinal);
         Assert.Contains("Content=\"⚙ 通知设置\"", xaml, StringComparison.Ordinal);
         Assert.Contains("Click=\"SettingsButtonClicked\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("Content=\"刷新二维码\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("Click=\"RefreshBindingCodeButtonClicked\"", xaml, StringComparison.Ordinal);
         Assert.Contains("ChoicePillRadioButton", xaml, StringComparison.Ordinal);
         Assert.DoesNotContain("<ComboBox", xaml, StringComparison.Ordinal);
     }

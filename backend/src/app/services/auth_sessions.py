@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
@@ -46,7 +46,7 @@ def get_active_session_by_token(db: Session, *, session_token: str) -> AuthSessi
 def revoke_session_by_token(db: Session, *, session_token: str) -> None:
     session = db.execute(select(AuthSession).where(AuthSession.session_token == session_token)).scalar_one_or_none()
     if session and session.revoked_at is None:
-        session.revoked_at = datetime.now(UTC)
+        session.revoked_at = datetime.now()
         db.flush()
     redis_service.revoke_cached_auth_session(session_token)
 

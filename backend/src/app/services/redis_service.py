@@ -71,9 +71,9 @@ class RedisService:
         if not self._client:
             return
         try:
-            from datetime import UTC, datetime
+            from datetime import datetime
 
-            now = datetime.now(UTC).isoformat()
+            now = datetime.now().isoformat()
             last_seen_ttl = ttl * 2
             pipe = self._client.pipeline()
             pipe.setex(self._device_online_key(device_id), ttl, "1")

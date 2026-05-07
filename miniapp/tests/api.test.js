@@ -2,7 +2,7 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 
 const { createDeviceService, formatLastSeenText } = require('../services/device')
-const { createBindingService, extractBindCodeFromScan, normalizeBindCode } = require('../services/binding')
+const { createBindingService, extractBindCodeFromScan, getBindingErrorMessage, normalizeBindCode } = require('../services/binding')
 const { createNotificationService } = require('../services/notification')
 const { createAuthService } = require('../services/auth')
 const { getDurationSeconds, isCustomDurationSelected } = require('../pages/send/duration')
@@ -24,8 +24,8 @@ test('formatLastSeenText formats missing timestamps', () => {
   assert.equal(formatLastSeenText(null), '暂无在线记录')
 })
 
-test('formatLastSeenText formats iso timestamps', () => {
-  assert.equal(formatLastSeenText('2026-04-21T08:00:00Z'), '最后在线：2026-04-21 08:00')
+test('formatLastSeenText formats local timestamps', () => {
+  assert.equal(formatLastSeenText('2026-04-21T16:00:00'), '最后在线：2026-04-21 16:00')
 })
 
 test('createDeviceService fetches and maps user devices', async () => {
@@ -41,7 +41,7 @@ test('createDeviceService fetches and maps user devices', async () => {
             location_label: '会议室',
             client_version: '0.1.0',
             status: 'online',
-            last_seen_at: '2026-04-21T08:00:00Z'
+            last_seen_at: '2026-04-21T16:00:00'
           }
         ]
       })
@@ -59,8 +59,8 @@ test('createDeviceService fetches and maps user devices', async () => {
       locationLabel: '会议室',
       clientVersion: '0.1.0',
       status: 'online',
-      lastSeenAt: '2026-04-21T08:00:00Z',
-      lastSeenText: '最后在线：2026-04-21 08:00',
+      lastSeenAt: '2026-04-21T16:00:00',
+      lastSeenText: '最后在线：2026-04-21 16:00',
       statusText: '在线'
     }
   ])
@@ -241,6 +241,17 @@ test('createNotificationService falls back to shortened device id when device na
 
 test('normalizeBindCode trims whitespace and uppercases input', () => {
   assert.equal(normalizeBindCode('  ab12cd  '), 'AB12CD')
+})
+
+test('normalizeBindCode does not treat tap event objects as codes', () => {
+  assert.equal(normalizeBindCode({ type: 'tap' }), '')
+})
+
+test('getBindingErrorMessage explains expired or replaced binding codes', () => {
+  assert.equal(
+    getBindingErrorMessage({ message: 'binding code not found' }),
+    '绑定码已失效，请重新扫码或刷新客户端绑定码'
+  )
 })
 
 test('createBindingService fetches bind code device preview', async () => {

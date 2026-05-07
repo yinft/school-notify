@@ -27,6 +27,12 @@ def parse_timestamp(value: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
+def assert_local_timestamp(value: str) -> datetime:
+    parsed = parse_timestamp(value)
+    assert parsed.tzinfo is None
+    return parsed
+
+
 def auth_headers(user_id: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {build_session_token(user_id)}"}
 
@@ -167,7 +173,7 @@ def test_device_registration_is_reflected_in_device_list() -> None:
     assert register_payload["location_label"] == ""
     assert register_payload["client_version"] == "0.1.0"
     assert register_payload["status"] == "online"
-    assert parse_timestamp(register_payload["last_seen_at"])
+    assert_local_timestamp(register_payload["last_seen_at"])
 
     list_response = client.get("/api/devices")
 
@@ -177,7 +183,7 @@ def test_device_registration_is_reflected_in_device_list() -> None:
     assert list_payload["items"][0]["device_id"] == "device-001"
     assert list_payload["items"][0]["location_label"] == ""
     assert list_payload["items"][0]["status"] == "online"
-    assert parse_timestamp(list_payload["items"][0]["last_seen_at"])
+    assert_local_timestamp(list_payload["items"][0]["last_seen_at"])
 
 
 def test_device_heartbeat_refreshes_last_seen() -> None:
