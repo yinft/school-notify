@@ -9,9 +9,12 @@ export default defineNuxtConfig({
     }
   },
   site: {
-    url: 'https://www.shcoolhelper.cn',
+    url: 'https://www.schoolhelper.cn',
     name: '桌面提醒小喇叭',
     description: '用微信小程序向 Windows 电脑发送横幅、卡片和语音提醒。'
+  },
+  sitemap: {
+    zeroRuntime: true
   },
   nitro: {
     prerender: {
