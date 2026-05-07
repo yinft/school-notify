@@ -99,8 +99,8 @@ public partial class MainWindow : Window
 
         _notifyIcon = new Forms.NotifyIcon
         {
-            Text = "校园通知屏客户端",
-            Icon = System.Drawing.SystemIcons.Application,
+            Text = "桌面小喇叭",
+            Icon = LoadTrayIcon(),
             Visible = true,
             ContextMenuStrip = BuildTrayMenu()
         };
@@ -108,6 +108,18 @@ public partial class MainWindow : Window
 
         Loaded += OnLoadedAsync;
         Closing += OnClosingAsync;
+    }
+
+    private static System.Drawing.Icon LoadTrayIcon()
+    {
+        var resource = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/Assets/app.ico", UriKind.Absolute));
+        if (resource?.Stream is null)
+        {
+            throw new InvalidOperationException("找不到客户端图标资源 Assets/app.ico");
+        }
+
+        using var stream = resource.Stream;
+        return new System.Drawing.Icon(stream);
     }
 
     private async void OnLoadedAsync(object sender, RoutedEventArgs e)
@@ -340,7 +352,7 @@ public partial class MainWindow : Window
         {
             e.Cancel = true;
             Hide();
-            _notifyIcon.ShowBalloonTip(2000, "校园通知屏客户端", "客户端仍在后台运行，可从系统托盘重新打开。", Forms.ToolTipIcon.Info);
+            _notifyIcon.ShowBalloonTip(2000, "桌面小喇叭", "客户端仍在后台运行，可从系统托盘重新打开。", Forms.ToolTipIcon.Info);
             return;
         }
 

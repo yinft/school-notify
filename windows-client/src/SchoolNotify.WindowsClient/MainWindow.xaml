@@ -1,9 +1,10 @@
 <Window x:Class="SchoolNotify.WindowsClient.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="School Notify Client"
+        Title="桌面小喇叭"
         Height="680"
         Width="980"
+        Icon="pack://application:,,,/Assets/app.ico"
         Background="#F8FAFC">
     <Window.Resources>
         <Style x:Key="ChoicePillRadioButton" TargetType="RadioButton">
@@ -59,7 +60,7 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel>
-                    <TextBlock FontSize="28" FontWeight="Bold" Foreground="White" Text="校园通知屏客户端" />
+                    <TextBlock FontSize="28" FontWeight="Bold" Foreground="White" Text="桌面小喇叭" />
                     <TextBlock x:Name="StatusSummaryTextBlock" Margin="0,8,0,0" Foreground="#CBD5E1" Text="正在初始化客户端..." TextWrapping="Wrap" />
                 </StackPanel>
 
