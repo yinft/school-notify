@@ -12,7 +12,7 @@ export default defineNuxtConfig({
     }
   },
   site: {
-    url: process.env.NUXT_PUBLIC_SITE_URL || 'https://www.desktop-speaker.cn',
+    url: process.env.NUXT_PUBLIC_SITE_URL || 'https://www.schoolhelper.cn',
     name: '思故桌面小喇叭',
     description: '用微信小程序向 Windows 电脑发送横幅、卡片和语音提醒。'
   },

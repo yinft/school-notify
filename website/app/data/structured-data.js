@@ -1,6 +1,6 @@
 import { siteContent } from './site-content.js'
 
-const siteUrl = 'https://www.desktop-speaker.cn'
+const siteUrl = 'https://www.schoolhelper.cn'
 
 export const structuredData = [
   {

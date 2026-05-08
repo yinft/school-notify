@@ -68,3 +68,12 @@ test('structured data describes the app and faq without restricted positioning',
   assert.equal(faq.mainEntity.length, siteContent.faq.length)
   assert.doesNotMatch(combinedStructuredData, /学生|老师|教师|教室|校园|学校|班级|家长|教育 SaaS|学校通知平台|企业级部署|授权购买|商业合作/)
 })
+
+test('structured data uses the canonical schoolhelper domain', () => {
+  const software = structuredData.find((item) => item['@type'] === 'SoftwareApplication')
+  const combinedStructuredData = JSON.stringify(structuredData)
+
+  assert.equal(software.url, 'https://www.schoolhelper.cn')
+  assert.match(software.downloadUrl, /^https:\/\/www\.schoolhelper\.cn\//)
+  assert.doesNotMatch(combinedStructuredData, /desktop-speaker\.cn/)
+})
