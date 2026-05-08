@@ -2,6 +2,13 @@
 import { siteContent } from '../data/site-content.js'
 import { structuredData } from '../data/structured-data.js'
 
+const codeLines = [
+  { prompt: 'POST', text: '/api/notifications', tone: 'accent' },
+  { prompt: 'title', text: '值班提醒', tone: 'soft' },
+  { prompt: 'target', text: '办公室电脑 · 在线', tone: 'ok' },
+  { prompt: 'push', text: 'banner + voice + receipt', tone: 'accent' }
+]
+
 useSeoMeta({
   title: siteContent.seo.title,
   description: siteContent.seo.description,
@@ -19,10 +26,14 @@ useHead({
 </script>
 
 <template>
-  <main>
+  <main class="site-stage">
     <section class="hero-section">
+      <div class="grid-glow" aria-hidden="true"></div>
       <nav class="nav-shell" aria-label="主导航">
-        <NuxtLink class="brand" to="/">{{ siteContent.brand }}</NuxtLink>
+        <NuxtLink class="brand-lockup" to="/">
+          <img src="/images/app-icon.png" alt="" aria-hidden="true" />
+          <span>{{ siteContent.brand }}</span>
+        </NuxtLink>
         <div class="nav-links">
           <a href="#features">功能</a>
           <a href="#download">下载</a>
@@ -40,7 +51,7 @@ useHead({
             <a class="button primary" :href="siteContent.hero.actions[0].href">{{ siteContent.hero.actions[0].label }}</a>
             <a class="button secondary" :href="siteContent.hero.actions[1].href">{{ siteContent.hero.actions[1].label }}</a>
           </div>
-          <dl class="hero-stats">
+          <dl class="hero-stats" aria-label="产品特点">
             <div v-for="stat in siteContent.hero.stats" :key="stat.label">
               <dt>{{ stat.value }}</dt>
               <dd>{{ stat.label }}</dd>
@@ -48,32 +59,61 @@ useHead({
           </dl>
         </div>
 
-        <div class="product-demo reveal-up" aria-label="产品流程演示">
-          <div class="phone-card">
-            <span>微信小程序</span>
-            <strong>通知</strong>
-            <p>请xxx来一趟办公室/值班室。</p>
-            <button>发送到 Windows 电脑</button>
+        <div class="hero-console reveal-up" aria-label="桌面小喇叭推送演示">
+          <div class="orbit-card orbit-card-a">
+            <span>WeChat Mini App</span>
+            <strong>发送提醒</strong>
           </div>
-          <div class="signal-line"></div>
-          <div class="desktop-card">
-            <div class="desktop-topbar"></div>
-            <div class="banner-alert" aria-label="通知：请xxx来一趟办公室/值班室">
-              <span>通知 · 请xxx来一趟办公室/值班室</span>
+          <div class="orbit-card orbit-card-b">
+            <span>Windows Client</span>
+            <strong>实时展示</strong>
+          </div>
+
+          <div class="terminal-card">
+            <div class="terminal-topbar">
+              <span></span><span></span><span></span>
+              <small>school-notify.push</small>
             </div>
-            <div class="receipt-pill">已送达 · 正在语音播报</div>
+            <div class="terminal-lines">
+              <p v-for="(line, index) in codeLines" :key="line.prompt" :class="`line-${line.tone}`" :style="{ '--line-index': index }">
+                <span>{{ line.prompt }}</span>
+                <code>{{ line.text }}</code>
+              </p>
+            </div>
+            <div class="terminal-pulse">
+              <i></i><i></i><i></i>
+            </div>
+          </div>
+
+          <div class="desktop-preview">
+            <div class="preview-header">
+              <img src="/images/app-icon.png" alt="桌面小喇叭图标" />
+              <div>
+                <strong>桌面小喇叭</strong>
+                <span>提醒已送达 · 正在播报</span>
+              </div>
+            </div>
+            <div class="banner-alert" aria-label="电脑端滚动提醒">
+              <span>通知 · 请及时查看办公室电脑上的提醒内容</span>
+            </div>
+            <div class="preview-metrics">
+              <b>online</b>
+              <b>voice</b>
+              <b>receipt</b>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <section id="features" class="light-section page-shell" data-aos="fade-up">
+    <section id="features" class="feature-section page-shell" data-aos="fade-up">
       <div class="section-heading" data-aos="fade-right" data-aos-delay="80">
         <p class="eyebrow dark">清晰的发送链路</p>
-        <h2>从小程序到电脑提醒，只保留必要步骤</h2>
+        <h2>像调用一次 API 一样，把提醒送到电脑桌面</h2>
       </div>
       <div class="flow-grid">
-        <article v-for="(item, index) in siteContent.flow" :key="item.title" class="flow-card" data-aos="zoom-in-up" :data-aos-delay="index * 90">
+        <article v-for="(item, index) in siteContent.flow" :key="item.title" class="glass-card flow-card" data-aos="zoom-in-up" :data-aos-delay="index * 90">
+          <span class="card-index">0{{ index + 1 }}</span>
           <h3>{{ item.title }}</h3>
           <p>{{ item.text }}</p>
         </article>
@@ -82,10 +122,11 @@ useHead({
 
     <section class="steps-section page-shell" data-aos="fade-up">
       <div class="section-heading compact" data-aos="fade-right">
-        <h2>3 步开始使用</h2>
+        <p class="eyebrow dark">快速开始</p>
+        <h2>3 步完成部署，不需要复杂后台</h2>
       </div>
       <div class="steps-grid">
-        <article v-for="(step, index) in siteContent.steps" :key="step.title" class="step-card" data-aos="fade-up" :data-aos-delay="index * 120">
+        <article v-for="(step, index) in siteContent.steps" :key="step.title" class="glass-card step-card" data-aos="fade-up" :data-aos-delay="index * 120">
           <span>{{ step.number }}</span>
           <h3>{{ step.title }}</h3>
           <p>{{ step.text }}</p>
@@ -95,10 +136,11 @@ useHead({
 
     <section class="scenarios-section page-shell" data-aos="fade-up">
       <div class="section-heading compact" data-aos="fade-right">
-        <h2>适合固定电脑和公共屏的提醒场景</h2>
+        <p class="eyebrow dark">使用场景</p>
+        <h2>固定电脑、公共屏、值班室都能变成提醒终端</h2>
       </div>
       <div class="scenario-grid">
-        <article v-for="(scenario, index) in siteContent.scenarios" :key="scenario.title" class="scenario-card" :data-aos="index % 2 === 0 ? 'fade-right' : 'fade-left'" :data-aos-delay="index * 70">
+        <article v-for="(scenario, index) in siteContent.scenarios" :key="scenario.title" class="glass-card scenario-card" :data-aos="index % 2 === 0 ? 'fade-right' : 'fade-left'" :data-aos-delay="index * 70">
           <h3>{{ scenario.title }}</h3>
           <p>{{ scenario.text }}</p>
         </article>
@@ -106,10 +148,11 @@ useHead({
     </section>
 
     <section id="download" class="download-band page-shell" data-aos="zoom-in-up">
+      <img class="download-icon" src="/images/app-icon.png" alt="桌面小喇叭客户端图标" />
       <div data-aos="fade-right" data-aos-delay="120">
         <p class="eyebrow dark">下载与小程序</p>
-        <h2>一个页面完成下载、绑定和说明</h2>
-        <p>下载 Windows 客户端，在小程序里绑定设备后即可发送提醒。</p>
+        <h2>下载客户端，扫码绑定，然后开始发送提醒</h2>
+        <p>当前版本 {{ siteContent.download.version }}，适合先在固定电脑或电脑大屏上小范围试用。</p>
       </div>
       <div class="download-actions" data-aos="fade-left" data-aos-delay="180">
         <a class="button primary light" :href="siteContent.download.href" download>下载客户端</a>
@@ -131,10 +174,11 @@ useHead({
 
     <section id="faq" class="faq-section page-shell" data-aos="fade-up">
       <div class="section-heading compact" data-aos="fade-right">
+        <p class="eyebrow dark">FAQ</p>
         <h2>常见问题</h2>
       </div>
       <div class="faq-list">
-        <article v-for="(item, index) in siteContent.faq" :key="item.question" data-aos="fade-up" :data-aos-delay="index * 80">
+        <article v-for="(item, index) in siteContent.faq" :key="item.question" class="glass-card" data-aos="fade-up" :data-aos-delay="index * 80">
           <h3>{{ item.question }}</h3>
           <p>{{ item.answer }}</p>
         </article>
