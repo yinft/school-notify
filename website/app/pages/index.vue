@@ -3,10 +3,10 @@ import { siteContent } from '../data/site-content.js'
 import { structuredData } from '../data/structured-data.js'
 
 const codeLines = [
-  { prompt: 'POST', text: '/api/notifications', tone: 'accent' },
+  { prompt: 'send', text: '一条桌面提醒', tone: 'accent' },
   { prompt: 'title', text: '值班提醒', tone: 'soft' },
-  { prompt: 'target', text: '办公室电脑 · 在线', tone: 'ok' },
-  { prompt: 'push', text: 'banner + voice + receipt', tone: 'accent' }
+  { prompt: 'target', text: '我的电脑 · 在线', tone: 'ok' },
+  { prompt: 'show', text: '横幅 + 语音 + 记录', tone: 'accent' }
 ]
 
 useSeoMeta({
@@ -51,7 +51,7 @@ useHead({
             <a class="button primary" :href="siteContent.hero.actions[0].href">{{ siteContent.hero.actions[0].label }}</a>
             <a class="button secondary" :href="siteContent.hero.actions[1].href">{{ siteContent.hero.actions[1].label }}</a>
           </div>
-          <dl class="hero-stats" aria-label="产品特点">
+          <dl class="hero-stats" aria-label="工具特点">
             <div v-for="stat in siteContent.hero.stats" :key="stat.label">
               <dt>{{ stat.value }}</dt>
               <dd>{{ stat.label }}</dd>
@@ -72,7 +72,7 @@ useHead({
           <div class="terminal-card">
             <div class="terminal-topbar">
               <span></span><span></span><span></span>
-              <small>school-notify.push</small>
+              <small>desktop-speaker.note</small>
             </div>
             <div class="terminal-lines">
               <p v-for="(line, index) in codeLines" :key="line.prompt" :class="`line-${line.tone}`" :style="{ '--line-index': index }">
@@ -109,7 +109,7 @@ useHead({
     <section id="features" class="feature-section page-shell" data-aos="fade-up">
       <div class="section-heading" data-aos="fade-right" data-aos-delay="80">
         <p class="eyebrow dark">清晰的发送链路</p>
-        <h2>像调用一次 API 一样，把提醒送到电脑桌面</h2>
+        <h2>像发一条消息一样，把提醒送到电脑桌面</h2>
       </div>
       <div class="flow-grid">
         <article v-for="(item, index) in siteContent.flow" :key="item.title" class="glass-card flow-card" data-aos="zoom-in-up" :data-aos-delay="index * 90">
@@ -123,7 +123,7 @@ useHead({
     <section class="steps-section page-shell" data-aos="fade-up">
       <div class="section-heading compact" data-aos="fade-right">
         <p class="eyebrow dark">快速开始</p>
-        <h2>3 步完成部署，不需要复杂后台</h2>
+        <h2>3 步开始试用，不需要复杂配置</h2>
       </div>
       <div class="steps-grid">
         <article v-for="(step, index) in siteContent.steps" :key="step.title" class="glass-card step-card" data-aos="fade-up" :data-aos-delay="index * 120">
@@ -137,7 +137,7 @@ useHead({
     <section class="scenarios-section page-shell" data-aos="fade-up">
       <div class="section-heading compact" data-aos="fade-right">
         <p class="eyebrow dark">使用场景</p>
-        <h2>固定电脑、公共屏、值班室都能变成提醒终端</h2>
+        <h2>个人电脑、固定电脑都能变成提醒终端</h2>
       </div>
       <div class="scenario-grid">
         <article v-for="(scenario, index) in siteContent.scenarios" :key="scenario.title" class="glass-card scenario-card" :data-aos="index % 2 === 0 ? 'fade-right' : 'fade-left'" :data-aos-delay="index * 70">
@@ -151,11 +151,11 @@ useHead({
       <img class="download-icon" src="/images/app-icon.png" alt="桌面小喇叭客户端图标" />
       <div data-aos="fade-right" data-aos-delay="120">
         <p class="eyebrow dark">下载与小程序</p>
-        <h2>下载客户端，扫码绑定，然后开始发送提醒</h2>
+        <h2>下载小工具，扫码绑定，然后开始发送提醒</h2>
         <p>当前版本 {{ siteContent.download.version }}，适合先在固定电脑或电脑大屏上小范围试用。</p>
       </div>
       <div class="download-actions" data-aos="fade-left" data-aos-delay="180">
-        <a class="button primary light" :href="siteContent.download.href" download>下载客户端</a>
+        <a class="button primary light" :href="siteContent.download.href" download>下载个人试用版</a>
         <a id="miniapp" class="button secondary light" href="#miniapp-card">查看小程序说明</a>
       </div>
     </section>
