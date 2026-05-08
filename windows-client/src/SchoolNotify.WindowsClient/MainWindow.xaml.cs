@@ -99,7 +99,7 @@ public partial class MainWindow : Window
 
         _notifyIcon = new Forms.NotifyIcon
         {
-            Text = "桌面小喇叭",
+            Text = "思故桌面小喇叭",
             Icon = LoadTrayIcon(),
             Visible = true,
             ContextMenuStrip = BuildTrayMenu()
@@ -352,7 +352,7 @@ public partial class MainWindow : Window
         {
             e.Cancel = true;
             Hide();
-            _notifyIcon.ShowBalloonTip(2000, "桌面小喇叭", "客户端仍在后台运行，可从系统托盘重新打开。", Forms.ToolTipIcon.Info);
+            _notifyIcon.ShowBalloonTip(2000, "思故桌面小喇叭", "客户端仍在后台运行，可从系统托盘重新打开。", Forms.ToolTipIcon.Info);
             return;
         }
 

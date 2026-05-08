@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="桌面提醒小喇叭">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="思故桌面小喇叭">
   <rect width="64" height="64" rx="16" fill="#0b1020"/>
   <path d="M16 20h32v20H16z" fill="#f8fafc"/>
   <path d="M20 27h24" stroke="#2563eb" stroke-width="4" stroke-linecap="round"/>

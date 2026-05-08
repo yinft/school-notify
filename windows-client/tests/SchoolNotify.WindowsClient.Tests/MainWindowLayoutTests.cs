@@ -10,8 +10,8 @@ public sealed class MainWindowLayoutTests
     {
         var xaml = File.ReadAllText(FindMainWindowXaml());
 
-        Assert.Contains("Title=\"桌面小喇叭\"", xaml, StringComparison.Ordinal);
-        Assert.Contains("Text=\"桌面小喇叭\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("Title=\"思故桌面小喇叭\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("Text=\"思故桌面小喇叭\"", xaml, StringComparison.Ordinal);
         Assert.DoesNotContain("School Notify Client", xaml, StringComparison.Ordinal);
         Assert.DoesNotContain("校园通知屏客户端", xaml, StringComparison.Ordinal);
         Assert.Contains("Icon=\"pack://application:,,,/Assets/app.ico\"", xaml, StringComparison.Ordinal);
@@ -37,8 +37,8 @@ public sealed class MainWindowLayoutTests
         Assert.Contains("<Resource Include=\"Assets\\app.ico\" />", project, StringComparison.Ordinal);
         Assert.Contains("LoadTrayIcon()", mainWindowCode, StringComparison.Ordinal);
         Assert.Contains("Application.GetResourceStream", mainWindowCode, StringComparison.Ordinal);
-        Assert.Contains("Text = \"桌面小喇叭\"", mainWindowCode, StringComparison.Ordinal);
-        Assert.Contains("ShowBalloonTip(2000, \"桌面小喇叭\"", mainWindowCode, StringComparison.Ordinal);
+        Assert.Contains("Text = \"思故桌面小喇叭\"", mainWindowCode, StringComparison.Ordinal);
+        Assert.Contains("ShowBalloonTip(2000, \"思故桌面小喇叭\"", mainWindowCode, StringComparison.Ordinal);
         Assert.DoesNotContain("校园通知屏客户端", mainWindowCode, StringComparison.Ordinal);
         Assert.DoesNotContain("System.Drawing.SystemIcons.Application", mainWindowCode, StringComparison.Ordinal);
         Assert.True(File.Exists(iconPath), $"Expected app icon at {iconPath}");

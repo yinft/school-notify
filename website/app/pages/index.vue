@@ -59,7 +59,7 @@ useHead({
           </dl>
         </div>
 
-        <div class="hero-console reveal-up" aria-label="桌面小喇叭推送演示">
+        <div class="hero-console reveal-up" :aria-label="`${siteContent.brand}推送演示`">
           <div class="orbit-card orbit-card-a">
             <span>WeChat Mini App</span>
             <strong>发送提醒</strong>
@@ -87,9 +87,9 @@ useHead({
 
           <div class="desktop-preview">
             <div class="preview-header">
-              <img src="/images/app-icon.png" alt="桌面小喇叭图标" />
+              <img src="/images/app-icon.png" :alt="`${siteContent.brand}图标`" />
               <div>
-                <strong>桌面小喇叭</strong>
+                <strong>{{ siteContent.brand }}</strong>
                 <span>提醒已送达 · 正在播报</span>
               </div>
             </div>
@@ -148,7 +148,7 @@ useHead({
     </section>
 
     <section id="download" class="download-band page-shell" data-aos="zoom-in-up">
-      <img class="download-icon" src="/images/app-icon.png" alt="桌面小喇叭客户端图标" />
+      <img class="download-icon" src="/images/app-icon.png" :alt="`${siteContent.brand}客户端图标`" />
       <div data-aos="fade-right" data-aos-delay="120">
         <p class="eyebrow dark">下载与小程序</p>
         <h2>下载小工具，扫码绑定，然后开始发送提醒</h2>
