@@ -5,7 +5,10 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: { lang: 'zh-CN' },
-      link: [{ rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' }]
+      link: [
+        { rel: 'icon', href: '/favicon.ico', sizes: 'any' },
+        { rel: 'icon', href: '/images/app-icon.png', type: 'image/png' }
+      ]
     }
   },
   site: {
@@ -14,6 +17,9 @@ export default defineNuxtConfig({
     description: '用微信小程序向 Windows 电脑发送横幅、卡片和语音提醒。'
   },
   sitemap: {
+    zeroRuntime: true
+  },
+  ogImage: {
     zeroRuntime: true
   },
   nitro: {
