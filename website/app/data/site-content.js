@@ -52,6 +52,19 @@ export const siteContent = {
     href: '/downloads/desktop-speaker-windowsclient-green-self-contained-win-x64.zip',
     checksum: '发布前填写 SHA256 校验值'
   },
+  releases: [
+    {
+      version: 'v0.1.0',
+      date: '2026-05-06',
+      summary: 'Windows 桌面端个人试用版，用于固定电脑上的轻量提醒。',
+      items: [
+        '支持扫码绑定自己的电脑设备。',
+        '支持桌面横幅、卡片提醒和语音播报。',
+        '支持查看基础发送记录，方便确认提醒是否送达。',
+        '适合个人学习、家庭或小范围试用。'
+      ]
+    }
+  ],
   miniapp: {
     status: '微信小程序入口',
     note: '上线后在这里放置小程序码。当前页面用于说明个人工具的绑定和使用流程。'

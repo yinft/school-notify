@@ -271,6 +271,7 @@ h2 {
 .orbit-card,
 .glass-card,
 .download-band,
+.release-card,
 .miniapp-band {
   border: 1px solid var(--line);
   background:
@@ -440,6 +441,7 @@ h2 {
 .feature-section,
 .steps-section,
 .scenarios-section,
+.release-section,
 .faq-section { padding: 96px 0; }
 
 .section-heading { max-width: 800px; margin-bottom: 34px; }
@@ -535,6 +537,74 @@ h2 {
 .download-band h2,
 .miniapp-band h2 { font-size: clamp(27px, 3vw, 42px); }
 
+.release-section { padding-top: 56px; }
+
+.release-list {
+  display: grid;
+  gap: 16px;
+}
+
+.release-card {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.release-meta strong {
+  display: block;
+  color: var(--blue);
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.release-meta span {
+  display: inline-flex;
+  margin-top: 10px;
+  padding: 6px 10px;
+  border: 1px solid rgba(20, 184, 166, 0.2);
+  border-radius: 999px;
+  color: #0f766e;
+  background: rgba(20, 184, 166, 0.08);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.release-summary {
+  margin-bottom: 16px;
+  color: #334155;
+  font-weight: 800;
+  line-height: 1.75;
+}
+
+.release-card ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.release-card li {
+  position: relative;
+  padding-left: 20px;
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.release-card li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.75em;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--cyan), var(--blue));
+  box-shadow: 0 0 14px rgba(20, 184, 166, 0.32);
+}
+
 .miniapp-band {
   margin-top: 28px;
   display: grid;
@@ -607,6 +677,7 @@ h2 {
   .steps-grid { grid-template-columns: 1fr; }
   .steps-grid::before { display: none; }
   .download-band { grid-template-columns: 1fr; }
+  .release-card { grid-template-columns: 1fr; gap: 18px; }
   .miniapp-band { grid-template-columns: 1fr; }
   .download-actions { margin-top: 10px; }
 }
@@ -622,6 +693,7 @@ h2 {
   .hero-console { padding: 8px 0; }
   .desktop-preview { width: 100%; justify-self: stretch; }
   .orbit-card { display: none; }
-  .feature-section, .steps-section, .scenarios-section, .faq-section { padding: 72px 0; }
+  .feature-section, .steps-section, .scenarios-section, .release-section, .faq-section { padding: 72px 0; }
+  .release-section { padding-top: 48px; }
   .download-band, .miniapp-band { padding: 28px; border-radius: 26px; }
 }

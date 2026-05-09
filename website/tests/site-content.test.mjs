@@ -39,6 +39,20 @@ test('seo faq covers free use, privacy, and windows support', () => {
   assert.match(questions, /Windows/)
 })
 
+test('release notes describe client updates without commercial positioning', () => {
+  assert.ok(Array.isArray(siteContent.releases))
+  assert.ok(siteContent.releases.length > 0)
+
+  const releaseCopy = siteContent.releases
+    .map((item) => `${item.version}${item.date}${item.summary}${item.items.join('')}`)
+    .join('\n')
+
+  assert.match(releaseCopy, /v0\.1\.0/)
+  assert.match(releaseCopy, /Windows/)
+  assert.match(releaseCopy, /个人|试用|小范围/)
+  assert.doesNotMatch(releaseCopy, /企业版|商业授权|购买|套餐|客户案例/)
+})
+
 test('scenario copy covers generic fixed-screen use cases', () => {
   const scenarioCopy = [
     siteContent.seo.description,
