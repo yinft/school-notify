@@ -34,21 +34,7 @@ export type AdminNotificationDetail = {
 }
 
 export function fetchNotifications(params?: { keyword?: string; sender_user_id?: string; page?: number; page_size?: number }) {
-  const search = new URLSearchParams()
-  if (params?.keyword) {
-    search.set('keyword', params.keyword)
-  }
-  if (params?.sender_user_id) {
-    search.set('sender_user_id', params.sender_user_id)
-  }
-  if (params?.page) {
-    search.set('page', String(params.page))
-  }
-  if (params?.page_size) {
-    search.set('page_size', String(params.page_size))
-  }
-  const suffix = search.size > 0 ? `?${search.toString()}` : ''
-  return request<PaginatedNotificationList>(`/api/admin/notifications${suffix}`)
+  return request<PaginatedNotificationList>('/api/admin/notifications', { params })
 }
 
 export function fetchNotificationDetail(notificationId: string) {

@@ -27,21 +27,7 @@ export type AdminDeviceDetail = {
 }
 
 export function fetchDevices(params?: { keyword?: string; status?: string; page?: number; page_size?: number }) {
-  const search = new URLSearchParams()
-  if (params?.keyword) {
-    search.set('keyword', params.keyword)
-  }
-  if (params?.status) {
-    search.set('status', params.status)
-  }
-  if (params?.page) {
-    search.set('page', String(params.page))
-  }
-  if (params?.page_size) {
-    search.set('page_size', String(params.page_size))
-  }
-  const suffix = search.size > 0 ? `?${search.toString()}` : ''
-  return request<PaginatedDeviceList>(`/api/admin/devices${suffix}`)
+  return request<PaginatedDeviceList>('/api/admin/devices', { params })
 }
 
 export function fetchDeviceDetail(deviceId: string) {
@@ -51,7 +37,7 @@ export function fetchDeviceDetail(deviceId: string) {
 export function updateDevice(deviceId: string, payload: { device_name?: string; location_label?: string }) {
   return request<AdminDeviceListItem>(`/api/admin/devices/${deviceId}`, {
     method: 'PATCH',
-    body: JSON.stringify(payload)
+    data: payload
   })
 }
 

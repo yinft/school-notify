@@ -33,18 +33,7 @@ export type AdminUserDetail = {
 }
 
 export function fetchUsers(params?: { keyword?: string; page?: number; page_size?: number }) {
-  const search = new URLSearchParams()
-  if (params?.keyword) {
-    search.set('keyword', params.keyword)
-  }
-  if (params?.page) {
-    search.set('page', String(params.page))
-  }
-  if (params?.page_size) {
-    search.set('page_size', String(params.page_size))
-  }
-  const suffix = search.size > 0 ? `?${search.toString()}` : ''
-  return request<PaginatedUserList>(`/api/admin/users${suffix}`)
+  return request<PaginatedUserList>('/api/admin/users', { params })
 }
 
 export function fetchUserDetail(userId: string) {

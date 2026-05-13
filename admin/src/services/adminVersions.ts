@@ -21,18 +21,7 @@ export type PaginatedVersionList = {
 }
 
 export function fetchVersions(params?: { keyword?: string; page?: number; page_size?: number }) {
-  const search = new URLSearchParams()
-  if (params?.keyword) {
-    search.set('keyword', params.keyword)
-  }
-  if (params?.page) {
-    search.set('page', String(params.page))
-  }
-  if (params?.page_size) {
-    search.set('page_size', String(params.page_size))
-  }
-  const suffix = search.size > 0 ? `?${search.toString()}` : ''
-  return request<PaginatedVersionList>(`/api/admin/versions${suffix}`)
+  return request<PaginatedVersionList>('/api/admin/versions', { params })
 }
 
 export function createVersion(payload: {
@@ -45,7 +34,7 @@ export function createVersion(payload: {
 }) {
   return request<AdminVersion>('/api/admin/versions', {
     method: 'POST',
-    body: JSON.stringify(payload)
+    data: payload
   })
 }
 
@@ -56,7 +45,7 @@ export function updateVersion(id: number, payload: {
 }) {
   return request<AdminVersion>(`/api/admin/versions/${id}`, {
     method: 'PATCH',
-    body: JSON.stringify(payload)
+    data: payload
   })
 }
 

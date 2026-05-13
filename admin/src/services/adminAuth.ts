@@ -14,7 +14,7 @@ export type AdminProfile = {
 export function loginAdmin(payload: { username: string; password: string }) {
   return request<AdminSession>('/api/admin/auth/login', {
     method: 'POST',
-    body: JSON.stringify(payload),
+    data: payload,
     auth: false
   })
 }
