@@ -43,7 +43,20 @@ SCHOOL_NOTIFY_DEVICE_ONLINE_TTL_SECONDS=90
 SCHOOL_NOTIFY_WECHAT_APP_ID=你的小程序 appid
 SCHOOL_NOTIFY_WECHAT_APP_SECRET=你的小程序 secret
 SCHOOL_NOTIFY_SESSION_SIGNING_SECRET=用于签名 session token 的随机字符串
+SCHOOL_NOTIFY_ADMIN_USERNAME=admin
+SCHOOL_NOTIFY_ADMIN_PASSWORD=replace_with_admin_password
+SCHOOL_NOTIFY_ADMIN_DISPLAY_NAME=系统管理员
 ```
+
+## 初始化管理员
+
+执行：
+
+```bash
+uv run python bootstrap_admin.py
+```
+
+默认脚本会创建一个管理员账号；如账号已存在则不会重复创建。
 
 后端会在 `POST /api/auth/login` 中使用微信 `code2Session` 接口换取 `openid`，并直接把 `openid` 作为当前阶段的 `user_id`。
 

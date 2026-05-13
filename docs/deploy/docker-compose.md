@@ -34,6 +34,9 @@ Important values:
 - `SCHOOL_NOTIFY_SESSION_SIGNING_SECRET`
 - `SCHOOL_NOTIFY_WECHAT_APP_ID`
 - `SCHOOL_NOTIFY_WECHAT_APP_SECRET`
+- `SCHOOL_NOTIFY_ADMIN_USERNAME`
+- `SCHOOL_NOTIFY_ADMIN_PASSWORD`
+- `SCHOOL_NOTIFY_ADMIN_DISPLAY_NAME`
 
 `SCHOOL_NOTIFY_DATABASE_URL` must keep `postgres` as the database host:
 
@@ -99,6 +102,37 @@ Expected response:
 ```json
 {"status":"ok","service":"school-notify-backend"}
 ```
+
+## Bootstrap Admin Account
+
+After the backend container is up, create the initial admin account inside the backend container:
+
+```bash
+docker compose --env-file deploy/backend.env exec backend uv run python bootstrap_admin.py
+```
+
+This script reads these environment variables:
+
+```dotenv
+SCHOOL_NOTIFY_ADMIN_USERNAME=admin
+SCHOOL_NOTIFY_ADMIN_PASSWORD=replace_with_admin_password
+SCHOOL_NOTIFY_ADMIN_DISPLAY_NAME=系统管理员
+```
+
+The script is idempotent for the same username. If the admin already exists, it keeps the existing account.
+
+## Admin And Website Frontend Environment
+
+Recommended frontend environment variables:
+
+```dotenv
+VITE_API_BASE_URL=https://your-api-domain
+NUXT_PUBLIC_BACKEND_BASE_URL=https://your-api-domain
+```
+
+- `admin` uses `VITE_API_BASE_URL` to call `/api/admin/*`
+- `website` uses `NUXT_PUBLIC_BACKEND_BASE_URL` to call `/api/public/versions*`
+- If the website variable is empty, the homepage falls back to static version content
 
 You can also verify from another machine:
 

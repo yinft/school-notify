@@ -3,6 +3,7 @@ import test from 'node:test'
 
 import { siteContent } from '../app/data/site-content.js'
 import { structuredData } from '../app/data/structured-data.js'
+import { buildVersionContent } from '../app/data/version-content.js'
 
 test('homepage positions the product around notification features', () => {
   assert.equal(siteContent.brand, '思故桌面小喇叭')
@@ -51,6 +52,24 @@ test('release notes describe client updates without commercial positioning', () 
   assert.match(releaseCopy, /Windows/)
   assert.match(releaseCopy, /个人|试用|小范围/)
   assert.doesNotMatch(releaseCopy, /企业版|商业授权|购买|套餐|客户案例/)
+})
+
+test('public version payload can be adapted into homepage download content', () => {
+  const content = buildVersionContent([
+    {
+      platform: 'windows',
+      version: '1.2.0',
+      release_notes: '适合个人固定电脑试用',
+      download_url: 'https://www.schoolhelper.cn/downloads/windows-1.2.0.zip',
+      file_size: 2048,
+      published_at: '2026-05-13T08:00:00Z'
+    }
+  ])
+
+  assert.equal(content.download.version, '1.2.0')
+  assert.equal(content.download.href, 'https://www.schoolhelper.cn/downloads/windows-1.2.0.zip')
+  assert.equal(content.releases[0].version, 'v1.2.0')
+  assert.match(content.releases[0].summary, /个人|固定电脑|试用/)
 })
 
 test('scenario copy covers generic fixed-screen use cases', () => {

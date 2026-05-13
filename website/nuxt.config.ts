@@ -11,6 +11,11 @@ export default defineNuxtConfig({
       ]
     }
   },
+  runtimeConfig: {
+    public: {
+      backendBaseUrl: process.env.NUXT_PUBLIC_BACKEND_BASE_URL || ''
+    }
+  },
   site: {
     url: process.env.NUXT_PUBLIC_SITE_URL || 'https://www.schoolhelper.cn',
     name: '思故桌面小喇叭',

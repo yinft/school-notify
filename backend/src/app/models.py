@@ -36,6 +36,55 @@ class AuthSession(Base):
     user: Mapped[User] = relationship(back_populates="auth_sessions")
 
 
+class AdminUser(Base):
+    __tablename__ = "admin_users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(256))
+    display_name: Mapped[str] = mapped_column(String(128))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(),
+        onupdate=lambda: datetime.now(),
+    )
+
+
+class AdminSession(Base):
+    __tablename__ = "admin_sessions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    admin_user_id: Mapped[int] = mapped_column(ForeignKey("admin_users.id"), index=True)
+    session_token: Mapped[str] = mapped_column(String(512), unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now())
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class ClientVersion(Base):
+    __tablename__ = "client_versions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    platform: Mapped[str] = mapped_column(String(32), index=True)
+    version: Mapped[str] = mapped_column(String(64), index=True)
+    build_number: Mapped[str] = mapped_column(String(64), default="")
+    release_notes: Mapped[str] = mapped_column(String(2048), default="")
+    download_url: Mapped[str] = mapped_column(String(1024))
+    file_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    is_published: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_recommended: Mapped[bool] = mapped_column(Boolean, default=False)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_by: Mapped[str] = mapped_column(String(64), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(),
+        onupdate=lambda: datetime.now(),
+    )
+
+
 class Device(Base):
     __tablename__ = "devices"
 

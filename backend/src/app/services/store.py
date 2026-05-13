@@ -289,7 +289,8 @@ class InMemoryStore:
             }
             if duration_seconds is not None:
                 payload["duration_seconds"] = duration_seconds
-            payload["tts_enabled"] = tts_enabled
+            if not tts_enabled:
+                payload["tts_enabled"] = tts_enabled
             if tts_repeat_count is not None:
                 payload["tts_repeat_count"] = tts_repeat_count
 
