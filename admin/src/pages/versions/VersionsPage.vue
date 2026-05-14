@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Search, Plus, Edit, Upload, Download, Delete, Star } from '@element-plus/icons-vue'
 
 import { createVersion, deleteVersion, fetchVersions, publishVersion, recommendVersion, unpublishVersion, updateVersion, type AdminVersion } from '../../services/adminVersions'
 import { formatDateTime } from '../../utils/datetime'
@@ -127,22 +128,17 @@ onMounted(loadVersions)
 
 <template>
   <div class="page-stack">
-    <section class="hero-panel">
-      <div>
-        <p class="section-eyebrow">Versions</p>
-        <h2>官网版本管理</h2>
-        <span>维护官网展示的客户端版本、推荐版和下载地址。</span>
-      </div>
-      <button class="primary-button narrow" type="button" @click="openCreate">新建版本</button>
-    </section>
-
     <section class="table-card">
+      <div class="table-card-header">
+        <div></div>
+        <el-button type="primary" :icon="Plus" @click="openCreate">新建版本</el-button>
+      </div>
       <div v-if="errorMessage" class="feedback-banner error-banner">
         <span>{{ errorMessage }}</span>
         <el-button text type="primary" @click="loadVersions">重试</el-button>
       </div>
       <div class="filter-row versions-filter-row">
-        <el-input v-model="keyword" placeholder="搜索版本号 / Build / 更新说明" clearable />
+        <el-input v-model="keyword" placeholder="搜索版本号 / Build / 更新说明" clearable :prefix-icon="Search" />
         <el-button type="primary" @click="applyFilters">筛选</el-button>
       </div>
       <el-table v-loading="loading" :data="versions" stripe empty-text="暂无版本数据">
@@ -164,13 +160,13 @@ onMounted(loadVersions)
             {{ formatDateTime(scope.row.published_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" min-width="320">
+        <el-table-column label="操作" min-width="280">
           <template #default="scope">
-            <el-button text type="primary" @click="openEdit(scope.row)">编辑</el-button>
-            <el-button v-if="!scope.row.is_published" text @click="handlePublish(scope.row)">发布</el-button>
-            <el-button v-else text @click="handleUnpublish(scope.row)">下线</el-button>
-            <el-button v-if="scope.row.is_published" text @click="handleRecommend(scope.row)">设为推荐</el-button>
-            <el-button v-if="!scope.row.is_published" text type="danger" @click="handleDelete(scope.row)">删除</el-button>
+            <el-button text type="primary" :icon="Edit" @click="openEdit(scope.row)">编辑</el-button>
+            <el-button v-if="!scope.row.is_published" text :icon="Upload" @click="handlePublish(scope.row)">发布</el-button>
+            <el-button v-else text :icon="Download" @click="handleUnpublish(scope.row)">下线</el-button>
+            <el-button v-if="scope.row.is_published" text :icon="Star" @click="handleRecommend(scope.row)">推荐</el-button>
+            <el-button v-if="!scope.row.is_published" text type="danger" :icon="Delete" @click="handleDelete(scope.row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>

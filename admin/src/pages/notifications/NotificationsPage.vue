@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Search, View } from '@element-plus/icons-vue'
 
 import { fetchNotificationDetail, fetchNotifications, type AdminNotificationDetail, type AdminNotificationListItem } from '../../services/adminNotifications'
 import { formatDateTime } from '../../utils/datetime'
@@ -63,21 +64,13 @@ onMounted(loadNotifications)
 
 <template>
   <div class="page-stack">
-    <section class="hero-panel compact">
-      <div>
-        <p class="section-eyebrow">Notifications</p>
-        <h2>通知记录</h2>
-        <span>全局查看通知发送结果和各设备投递状态。</span>
-      </div>
-    </section>
-
     <section class="table-card">
       <div v-if="errorMessage" class="feedback-banner error-banner">
         <span>{{ errorMessage }}</span>
         <el-button text type="primary" @click="loadNotifications">重试</el-button>
       </div>
       <div class="filter-row">
-        <el-input v-model="keyword" placeholder="搜索标题 / 内容" clearable />
+        <el-input v-model="keyword" placeholder="搜索标题 / 内容" clearable :prefix-icon="Search" />
         <el-input v-model="senderUserId" placeholder="发送人 user_id" clearable />
         <el-button type="primary" @click="applyFilters">筛选</el-button>
       </div>
@@ -90,11 +83,18 @@ onMounted(loadNotifications)
             {{ formatDateTime(scope.row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column prop="success_count" label="成功" width="80" />
-        <el-table-column prop="failed_count" label="失败" width="80" />
-        <el-table-column label="操作" width="120">
+        <el-table-column label="投递" width="130">
           <template #default="scope">
-            <el-button text type="primary" @click="openDetail(scope.row.notification_id)">详情</el-button>
+            <span class="delivery-summary">
+              <span class="delivery-ok">{{ scope.row.success_count }}</span>
+              <span class="delivery-divider">/</span>
+              <span class="delivery-fail">{{ scope.row.failed_count }}</span>
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="100">
+          <template #default="scope">
+            <el-button text type="primary" :icon="View" @click="openDetail(scope.row.notification_id)">详情</el-button>
           </template>
         </el-table-column>
       </el-table>

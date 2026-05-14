@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Search, View, Edit } from '@element-plus/icons-vue'
 
 import { fetchDeviceDetail, fetchDevices, unbindDeviceUser, updateDevice, type AdminDeviceDetail, type AdminDeviceListItem } from '../../services/adminDevices'
 import { copyText } from '../../utils/copy'
@@ -82,21 +83,13 @@ onMounted(loadDevices)
 
 <template>
   <div class="page-stack">
-    <section class="hero-panel compact">
-      <div>
-        <p class="section-eyebrow">Devices</p>
-        <h2>设备管理</h2>
-        <span>查看全量设备、绑定关系和最近通知命中情况。</span>
-      </div>
-    </section>
-
     <section class="table-card">
       <div v-if="errorMessage" class="feedback-banner error-banner">
         <span>{{ errorMessage }}</span>
         <el-button text type="primary" @click="loadDevices">重试</el-button>
       </div>
       <div class="filter-row">
-        <el-input v-model="keyword" placeholder="搜索设备 ID / 名称 / 位置" clearable />
+        <el-input v-model="keyword" placeholder="搜索设备 ID / 名称 / 位置" clearable :prefix-icon="Search" />
         <el-select v-model="status" placeholder="设备状态" clearable>
           <el-option label="在线" value="online" />
           <el-option label="离线" value="offline" />
@@ -108,12 +101,18 @@ onMounted(loadDevices)
         <el-table-column prop="device_name" label="设备名称" min-width="160" />
         <el-table-column prop="location_label" label="位置" min-width="120" />
         <el-table-column prop="client_version" label="客户端版本" min-width="120" />
-        <el-table-column prop="status" label="状态" width="100" />
-        <el-table-column prop="bound_users_count" label="绑定人数" width="100" />
-        <el-table-column label="操作" width="220">
+        <el-table-column prop="status" label="状态" width="100">
           <template #default="scope">
-            <el-button text type="primary" @click="openDetail(scope.row.device_id)">详情</el-button>
-            <el-button text @click="renameDevice(scope.row)">改名</el-button>
+            <span :class="['status-badge', scope.row.status === 'online' ? 'status-online' : 'status-offline']">
+              {{ scope.row.status === 'online' ? '在线' : '离线' }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="bound_users_count" label="绑定人数" width="100" />
+        <el-table-column label="操作" width="180">
+          <template #default="scope">
+            <el-button text type="primary" :icon="View" @click="openDetail(scope.row.device_id)">详情</el-button>
+            <el-button text :icon="Edit" @click="renameDevice(scope.row)">改名</el-button>
           </template>
         </el-table-column>
       </el-table>

@@ -24,11 +24,11 @@ const router = createRouter({
       component: AdminLayout,
       children: [
         { path: '', redirect: '/dashboard' },
-        { path: 'dashboard', name: 'dashboard', component: DashboardPage },
-        { path: 'devices', name: 'devices', component: DevicesPage },
-        { path: 'users', name: 'users', component: UsersPage },
-        { path: 'notifications', name: 'notifications', component: NotificationsPage },
-        { path: 'versions', name: 'versions', component: VersionsPage }
+        { path: 'dashboard', name: 'dashboard', component: DashboardPage, meta: { title: '仪表盘' } },
+        { path: 'devices', name: 'devices', component: DevicesPage, meta: { title: '设备管理' } },
+        { path: 'users', name: 'users', component: UsersPage, meta: { title: '用户管理' } },
+        { path: 'notifications', name: 'notifications', component: NotificationsPage, meta: { title: '通知记录' } },
+        { path: 'versions', name: 'versions', component: VersionsPage, meta: { title: '版本管理' } }
       ]
     }
   ]

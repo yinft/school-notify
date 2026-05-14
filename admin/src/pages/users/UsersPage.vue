@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Search, View } from '@element-plus/icons-vue'
 
 import { fetchUserDetail, fetchUsers, type AdminUserDetail, type AdminUserListItem } from '../../services/adminUsers'
 import { formatDateTime } from '../../utils/datetime'
@@ -57,30 +58,22 @@ onMounted(loadUsers)
 
 <template>
   <div class="page-stack">
-    <section class="hero-panel compact">
-      <div>
-        <p class="section-eyebrow">Users</p>
-        <h2>用户管理</h2>
-        <span>查看用户资料、绑定设备数和近期通知发送记录。</span>
-      </div>
-    </section>
-
     <section class="table-card">
       <div v-if="errorMessage" class="feedback-banner error-banner">
         <span>{{ errorMessage }}</span>
         <el-button text type="primary" @click="loadUsers">重试</el-button>
       </div>
       <div class="filter-row">
-        <el-input v-model="keyword" placeholder="搜索用户 ID / 昵称" clearable />
+        <el-input v-model="keyword" placeholder="搜索用户 ID / 昵称" clearable :prefix-icon="Search" />
         <el-button type="primary" @click="applyFilters">筛选</el-button>
       </div>
       <el-table v-loading="loading" :data="users" stripe empty-text="暂无用户数据">
         <el-table-column prop="user_id" label="用户 ID" min-width="180" />
         <el-table-column prop="nickname" label="昵称" min-width="160" />
         <el-table-column prop="bound_devices_count" label="绑定设备数" width="120" />
-        <el-table-column label="操作" width="120">
+        <el-table-column label="操作" width="100">
           <template #default="scope">
-            <el-button text type="primary" @click="openDetail(scope.row.user_id)">详情</el-button>
+            <el-button text type="primary" :icon="View" @click="openDetail(scope.row.user_id)">详情</el-button>
           </template>
         </el-table-column>
       </el-table>
