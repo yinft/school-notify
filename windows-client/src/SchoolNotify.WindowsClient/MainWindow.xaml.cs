@@ -29,6 +29,8 @@ public partial class MainWindow : Window
 
     private readonly SpeechAnnouncementService _speechAnnouncementService = new();
 
+    private readonly UpdateService _updateService;
+
     private readonly DeviceWebSocketClient _webSocketClient;
 
     private readonly DispatcherTimer _heartbeatTimer;
@@ -78,6 +80,7 @@ public partial class MainWindow : Window
 
         _apiClient = new DeviceApiClient(httpClient);
         _deviceAuthenticationCoordinator = new DeviceAuthenticationCoordinator(_apiClient.RegisterDeviceAsync);
+        _updateService = new UpdateService(httpClient, AppDomain.CurrentDomain.BaseDirectory);
         _webSocketClient = new DeviceWebSocketClient(httpClient.BaseAddress!);
         _heartbeatTimer = new DispatcherTimer
         {
@@ -105,6 +108,7 @@ public partial class MainWindow : Window
             ContextMenuStrip = BuildTrayMenu()
         };
         _notifyIcon.DoubleClick += (_, _) => RestoreFromTray();
+        _notifyIcon.BalloonTipClicked += (_, _) => RestartForUpdate();
 
         Loaded += OnLoadedAsync;
         Closing += OnClosingAsync;
@@ -187,6 +191,11 @@ public partial class MainWindow : Window
         {
             var heartbeat = await _apiClient.SendHeartbeatAsync(_currentSession.DeviceId, _deviceToken, _cancellationTokenSource.Token);
             ApplyDeviceState(heartbeat, DeviceStatusText.HeartbeatHealthy);
+
+            if (heartbeat.Update is { Available: true })
+            {
+                _ = TryApplyUpdateAsync(heartbeat.Update);
+            }
         }
         catch (HttpRequestException exception) when (IsDeviceAuthFailure(exception))
         {
@@ -195,6 +204,21 @@ public partial class MainWindow : Window
         catch (Exception exception)
         {
             ShowOperationalFailure($"心跳失败：{exception.Message}", "连接状态：心跳失败");
+        }
+    }
+
+    private async Task TryApplyUpdateAsync(DeviceUpdateInfo updateInfo)
+    {
+        var downloaded = await _updateService.TryStartUpdateAsync(updateInfo, _cancellationTokenSource.Token);
+        if (downloaded)
+        {
+            await Dispatcher.InvokeAsync(() =>
+            {
+                RebuildTrayMenu();
+                _notifyIcon.ShowBalloonTip(5000, "思故桌面小喇叭",
+                    $"新版本 {updateInfo.LatestVersion} 已就绪，请点击托盘菜单「立即更新」完成升级。",
+                    Forms.ToolTipIcon.Info);
+            });
         }
     }
 
@@ -373,9 +397,26 @@ public partial class MainWindow : Window
     private Forms.ContextMenuStrip BuildTrayMenu()
     {
         var menu = new Forms.ContextMenuStrip();
+        if (_updateService.IsUpdatePending)
+        {
+            menu.Items.Add("立即更新", image: null, (_, _) => RestartForUpdate());
+            menu.Items.Add(new Forms.ToolStripSeparator());
+        }
         menu.Items.Add("打开主窗口", image: null, (_, _) => RestoreFromTray());
         menu.Items.Add("退出", image: null, (_, _) => ExitApplication());
         return menu;
+    }
+
+    private void RebuildTrayMenu()
+    {
+        var oldMenu = _notifyIcon.ContextMenuStrip;
+        _notifyIcon.ContextMenuStrip = BuildTrayMenu();
+        oldMenu?.Dispose();
+    }
+
+    private void RestartForUpdate()
+    {
+        _updateService.ApplyUpdateAndRestart();
     }
 
     private void RestoreFromTray()

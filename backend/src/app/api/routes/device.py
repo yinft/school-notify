@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Header, HTTPException, status
 
 from app.api.deps.auth import require_device_token_for_device
-from app.schemas.device import DeviceListResponse, DeviceRegistrationRequest, DeviceResponse
+from app.schemas.device import DeviceListResponse, DeviceRegistrationRequest, DeviceResponse, HeartbeatResponse
 from app.services.store import DeviceNotFoundError, store
 
 
@@ -37,7 +37,7 @@ def register_device(payload: DeviceRegistrationRequest) -> DeviceResponse:
     description="【设备端】设备定期上报心跳以维持在线状态。服务端更新 last_seen_at 时间戳。",
     responses={404: {"description": "设备不存在"}},
 )
-def heartbeat_device(device_id: str, authorization: str = Header(default="")) -> DeviceResponse:
+def heartbeat_device(device_id: str, authorization: str = Header(default="")) -> HeartbeatResponse:
     require_device_token_for_device(expected_device_id=device_id, authorization=authorization)
     try:
         return store.heartbeat_device(device_id=device_id)

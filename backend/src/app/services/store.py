@@ -4,10 +4,10 @@ from secrets import randbelow
 from sqlalchemy import delete, select
 
 from app.core.db import SessionLocal
-from app.models import AuthSession as AuthSessionModel, Device as DeviceModel
+from app.models import AuthSession as AuthSessionModel, ClientVersion, Device as DeviceModel
 from app.models import DeviceBindCode, Notification as NotificationModel, NotificationDelivery, User as UserModel, UserDevice
 from app.schemas.binding import BindingCodeResponse, BindingResponse
-from app.schemas.device import DeviceResponse
+from app.schemas.device import DeviceResponse, DeviceUpdateInfo, HeartbeatResponse
 from app.schemas.notification import NotificationCreateResponse, NotificationDeliveryRecord, NotificationRecord
 from app.services.redis_service import redis_service
 from app.services.wechat_auth import build_device_token
@@ -122,7 +122,7 @@ class InMemoryStore:
                 raise BindingCodeNotFoundError(code)
             return self._to_device_response(device)
 
-    def heartbeat_device(self, *, device_id: str) -> DeviceResponse:
+    def heartbeat_device(self, *, device_id: str) -> HeartbeatResponse:
         with SessionLocal() as session:
             device = session.execute(select(DeviceModel).where(DeviceModel.device_id == device_id)).scalar_one_or_none()
             if device is None:
@@ -133,7 +133,17 @@ class InMemoryStore:
             session.commit()
             session.refresh(device)
             redis_service.set_device_online(device_id)
-            return self._to_device_response(device, include_token=True)
+            update_info = self._build_update_info(session, device.client_version)
+            return HeartbeatResponse(
+                device_id=device.device_id,
+                device_name=device.device_name,
+                location_label=device.location_label,
+                client_version=device.client_version,
+                status=device.status,
+                last_seen_at=device.last_seen_at,
+                device_token=build_device_token(device.device_id),
+                update=update_info,
+            )
 
     def bind_user_to_device(
         self,
@@ -510,6 +520,42 @@ class InMemoryStore:
     @staticmethod
     def _now() -> datetime:
         return datetime.now()
+
+    @staticmethod
+    def _is_newer_version(current: str, latest: str) -> bool:
+        try:
+            cur = tuple(int(p) for p in current.split("."))
+            lat = tuple(int(p) for p in latest.split("."))
+            return lat > cur
+        except (ValueError, AttributeError):
+            return False
+
+    @staticmethod
+    def _build_update_info(session, client_version: str) -> DeviceUpdateInfo | None:
+        recommended = session.execute(
+            select(ClientVersion).where(
+                ClientVersion.platform == "windows",
+                ClientVersion.is_published.is_(True),
+                ClientVersion.is_recommended.is_(True),
+            )
+        ).scalar_one_or_none()
+
+        if recommended is None:
+            return None
+
+        if not InMemoryStore._is_newer_version(client_version, recommended.version):
+            return DeviceUpdateInfo(
+                available=False,
+                current_version=client_version,
+            )
+
+        return DeviceUpdateInfo(
+            available=True,
+            current_version=client_version,
+            latest_version=recommended.version,
+            download_url=recommended.download_url,
+            file_size=recommended.file_size,
+        )
 
     def _is_binding_code_expired(self, binding_code: DeviceBindCode) -> bool:
         created_at = binding_code.created_at
