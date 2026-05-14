@@ -6,6 +6,7 @@ import secrets
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.settings import settings
 from app.models import AdminSession, AdminUser
 
 
@@ -40,15 +41,24 @@ def _needs_password_upgrade(password_hash: str) -> bool:
 
 
 def build_admin_session_token(username: str) -> str:
-    return f"admin-session:{username}"
+    signature = hmac.new(
+        settings.session_signing_secret.encode("utf-8"),
+        f"admin:{username}".encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    return f"admin-session:{username}:{signature}"
 
 
 def parse_admin_session_token(token: str) -> str:
     prefix = "admin-session:"
     if not token.startswith(prefix):
         raise ValueError("invalid admin session")
-    username = token.removeprefix(prefix).strip()
-    if not username:
+    remainder = token.removeprefix(prefix).strip()
+    username, sep, signature = remainder.partition(":")
+    if not username or not sep or not signature:
+        raise ValueError("invalid admin session")
+    expected_signature = build_admin_session_token(username).rsplit(":", 1)[-1]
+    if not hmac.compare_digest(signature, expected_signature):
         raise ValueError("invalid admin session")
     return username
 
