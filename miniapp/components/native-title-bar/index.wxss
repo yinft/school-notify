@@ -9,6 +9,20 @@
   box-sizing: border-box;
 }
 
+.custom-nav-back {
+  position: absolute;
+  left: 28rpx;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  color: #ffffff;
+  font-size: 44rpx;
+  line-height: inherit;
+  z-index: 2;
+  padding-right: 20rpx;
+}
+
 .custom-nav-title {
   position: absolute;
   left: 180rpx;

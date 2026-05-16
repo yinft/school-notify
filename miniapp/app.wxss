@@ -5,15 +5,32 @@ page {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
+.page-shell {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .page {
-  min-height: 100vh;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.page-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   padding: 24rpx 28rpx calc(132rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
 .page-login {
-  height: 100vh;
-  padding-bottom: calc(28rpx + env(safe-area-inset-bottom));
+  padding: 24rpx 28rpx calc(28rpx + env(safe-area-inset-bottom));
   overflow: hidden;
 }
 

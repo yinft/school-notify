@@ -1,97 +1,101 @@
 <import src="../../templates/login-gate.wxml" />
 
-<native-title-bar title="记录" />
-<view class="page {{isLoginRequired ? 'page-login' : ''}}">
-  <block wx:if="{{isLoginRequired}}">
-    <template is="login-gate" data="{{ loginGate: loginGate, isAuthorizingLogin: isAuthorizingLogin }}" />
-  </block>
+<view class="page-shell">
+  <native-title-bar title="记录" />
+  <view class="page {{isLoginRequired ? 'page-login' : ''}}">
+    <block wx:if="{{isLoginRequired}}">
+      <template is="login-gate" data="{{ loginGate: loginGate, isAuthorizingLogin: isAuthorizingLogin }}" />
+    </block>
 
-  <block wx:else>
-    <view class="hero-card hero-card-records hero-card-compact">
-      <view class="hero-overline">通知时间线</view>
-      <view class="hero-title">发送记录更清楚</view>
-      <view class="hero-subtitle">按时间倒序查看每次通知的送达结果，快速回顾设备展示状态。</view>
-      <view class="hero-simple-emphasis-row hero-simple-emphasis-row-left">
-        <view class="hero-simple-emphasis-label">历史摘要</view>
-        <view class="hero-simple-emphasis-value">{{totalRecords}} 条记录</view>
-      </view>
-      <view class="hero-simple-meta">
-        <view class="hero-simple-chip">已展示 {{displayedCount}} 条</view>
-        <view class="hero-simple-chip">时间线视角</view>
-      </view>
-    </view>
-
-    <view class="records-board stack-lg">
-      <view class="section-header">
-        <view class="section-title">通知时间线</view>
-        <view class="section-meta">已加载 {{records.length}} / {{totalRecords}}</view>
-      </view>
-
-      <view class="records-filter-bar">
-        <picker mode="date" value="{{selectedDate}}" bindchange="onDateChange">
-          <view class="records-filter-picker">{{selectedDate || '选择日期筛选'}}</view>
-        </picker>
-        <view wx:if="{{selectedDate}}" class="records-filter-clear" bindtap="clearDateFilter">清除</view>
-      </view>
-
-      <view wx:if="{{isLoading}}" class="state-panel">
-        <view class="state-loading" aria-label="加载中">
-          <view class="state-loading-dot state-loading-dot-1"></view>
-          <view class="state-loading-dot state-loading-dot-2"></view>
-          <view class="state-loading-dot state-loading-dot-3"></view>
+    <block wx:else>
+      <view class="page-body">
+      <view class="hero-card hero-card-records hero-card-compact">
+        <view class="hero-overline">通知时间线</view>
+        <view class="hero-title">发送记录更清楚</view>
+        <view class="hero-subtitle">按时间倒序查看每次通知的送达结果，快速回顾设备展示状态。</view>
+        <view class="hero-simple-emphasis-row hero-simple-emphasis-row-left">
+          <view class="hero-simple-emphasis-label">历史摘要</view>
+          <view class="hero-simple-emphasis-value">{{totalRecords}} 条记录</view>
         </view>
-        <view class="state-title">正在加载记录</view>
-        <view class="state-text">请稍候，系统正在整理最近的通知结果。</view>
-      </view>
-      <view wx:elif="{{errorText}}" class="state-panel state-panel-error">
-        <view class="state-icon">!</view>
-        <view class="state-title">记录加载失败</view>
-        <view class="state-text">{{errorText}}</view>
-        <view class="state-action">
-          <view class="button-inline" bindtap="loadRecords">重新加载</view>
+        <view class="hero-simple-meta">
+          <view class="hero-simple-chip">已展示 {{displayedCount}} 条</view>
+          <view class="hero-simple-chip">时间线视角</view>
         </view>
       </view>
-      <view wx:elif="{{!records.length}}" class="state-panel">
-        <view class="state-icon">#</view>
-        <view class="state-title">{{selectedDate ? '当天没有发送记录' : '还没有发送记录'}}</view>
-        <view class="state-text">{{selectedDate ? '换个日期试试，或清除筛选查看全部记录。' : '发送过通知后，这里会展示每次任务的触达情况。'}}</view>
-      </view>
 
-      <view wx:else class="timeline">
-        <view wx:for="{{records}}" wx:key="id" class="timeline-item">
-          <view class="timeline-rail">
-            <view class="timeline-node timeline-node-{{item.level}}"></view>
-            <view wx:if="{{index < records.length - 1}}" class="timeline-line"></view>
+      <view class="records-board stack-lg">
+        <view class="section-header">
+          <view class="section-title">通知时间线</view>
+          <view class="section-meta">已加载 {{records.length}} / {{totalRecords}}</view>
+        </view>
+
+        <view class="records-filter-bar">
+          <picker mode="date" value="{{selectedDate}}" bindchange="onDateChange">
+            <view class="records-filter-picker">{{selectedDate || '选择日期筛选'}}</view>
+          </picker>
+          <view wx:if="{{selectedDate}}" class="records-filter-clear" bindtap="clearDateFilter">清除</view>
+        </view>
+
+        <view wx:if="{{isLoading}}" class="state-panel">
+          <view class="state-loading" aria-label="加载中">
+            <view class="state-loading-dot state-loading-dot-1"></view>
+            <view class="state-loading-dot state-loading-dot-2"></view>
+            <view class="state-loading-dot state-loading-dot-3"></view>
           </view>
-          <view class="timeline-card">
-            <view class="timeline-card-header">
-              <view class="badge badge-{{item.level}}">{{item.levelText}}</view>
-              <view wx:if="{{item.createdAtText}}" class="timeline-time">{{item.createdAtText}}</view>
-            </view>
-            <view class="timeline-card-title">{{item.title}}</view>
-            <view class="timeline-card-content">{{item.content}}</view>
-            <view class="timeline-summary">
-              <view class="timeline-summary-label">送达摘要</view>
-              <view class="timeline-summary-text">{{item.deliverySummary}}</view>
-            </view>
+          <view class="state-title">正在加载记录</view>
+          <view class="state-text">请稍候，系统正在整理最近的通知结果。</view>
+        </view>
+        <view wx:elif="{{errorText}}" class="state-panel state-panel-error">
+          <view class="state-icon">!</view>
+          <view class="state-title">记录加载失败</view>
+          <view class="state-text">{{errorText}}</view>
+          <view class="state-action">
+            <view class="button-inline" bindtap="loadRecords">重新加载</view>
+          </view>
+        </view>
+        <view wx:elif="{{!records.length}}" class="state-panel">
+          <view class="state-icon">#</view>
+          <view class="state-title">{{selectedDate ? '当天没有发送记录' : '还没有发送记录'}}</view>
+          <view class="state-text">{{selectedDate ? '换个日期试试，或清除筛选查看全部记录。' : '发送过通知后，这里会展示每次任务的触达情况。'}}</view>
+        </view>
 
-            <view wx:if="{{item.deliveries.length}}" class="timeline-deliveries">
-              <view wx:for="{{item.deliveries}}" wx:key="deviceId" class="timeline-delivery-row">
-                <view class="timeline-delivery-dot {{item.displayed ? 'timeline-delivery-dot-done' : ''}}"></view>
-                <view class="timeline-delivery-device">
-                  <view class="timeline-delivery-name">{{item.displayName}}</view>
-                  <view wx:if="{{item.displayMeta}}" class="timeline-delivery-meta">{{item.displayMeta}}</view>
+        <view wx:else class="timeline">
+          <view wx:for="{{records}}" wx:key="id" class="timeline-item">
+            <view class="timeline-rail">
+              <view class="timeline-node timeline-node-{{item.level}}"></view>
+              <view wx:if="{{index < records.length - 1}}" class="timeline-line"></view>
+            </view>
+            <view class="timeline-card">
+              <view class="timeline-card-header">
+                <view class="badge badge-{{item.level}}">{{item.levelText}}</view>
+                <view wx:if="{{item.createdAtText}}" class="timeline-time">{{item.createdAtText}}</view>
+              </view>
+              <view class="timeline-card-title">{{item.title}}</view>
+              <view class="timeline-card-content">{{item.content}}</view>
+              <view class="timeline-summary">
+                <view class="timeline-summary-label">送达摘要</view>
+                <view class="timeline-summary-text">{{item.deliverySummary}}</view>
+              </view>
+
+              <view wx:if="{{item.deliveries.length}}" class="timeline-deliveries">
+                <view wx:for="{{item.deliveries}}" wx:key="deviceId" class="timeline-delivery-row">
+                  <view class="timeline-delivery-dot {{item.displayed ? 'timeline-delivery-dot-done' : ''}}"></view>
+                  <view class="timeline-delivery-device">
+                    <view class="timeline-delivery-name">{{item.displayName}}</view>
+                    <view wx:if="{{item.displayMeta}}" class="timeline-delivery-meta">{{item.displayMeta}}</view>
+                  </view>
+                  <view class="timeline-delivery-status">{{item.statusText}}</view>
                 </view>
-                <view class="timeline-delivery-status">{{item.statusText}}</view>
               </view>
             </view>
           </view>
+          <view wx:if="{{hasMore || isLoadingMore}}" class="timeline-more-state">
+            {{isLoadingMore ? '正在加载更多记录...' : '上滑加载更多记录'}}
+          </view>
+          <view wx:elif="{{records.length}}" class="timeline-more-state timeline-more-state-end">已展示全部记录</view>
         </view>
-        <view wx:if="{{hasMore || isLoadingMore}}" class="timeline-more-state">
-          {{isLoadingMore ? '正在加载更多记录...' : '上滑加载更多记录'}}
-        </view>
-        <view wx:elif="{{records.length}}" class="timeline-more-state timeline-more-state-end">已展示全部记录</view>
       </view>
-    </view>
-  </block>
+      </view>
+    </block>
+  </view>
 </view>

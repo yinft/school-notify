@@ -3,6 +3,10 @@ Component({
     title: {
       type: String,
       value: ''
+    },
+    showBack: {
+      type: Boolean,
+      value: false
     }
   },
 
@@ -20,6 +24,16 @@ Component({
   },
 
   methods: {
+    handleBack() {
+      const pages = getCurrentPages()
+      if (pages.length > 1) {
+        wx.navigateBack({ delta: 1 })
+        return
+      }
+
+      wx.switchTab({ url: '/pages/devices/index' })
+    },
+
     syncNavigationMetrics() {
       const systemInfo = wx.getSystemInfoSync ? wx.getSystemInfoSync() : {}
       const menuButton = wx.getMenuButtonBoundingClientRect ? wx.getMenuButtonBoundingClientRect() : null
