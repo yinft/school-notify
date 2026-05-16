@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+import { loadPublicVersionItems } from '../app/data/public-versions.js'
 import { siteContent } from '../app/data/site-content.js'
-import { structuredData } from '../app/data/structured-data.js'
+import { buildStructuredData, structuredData } from '../app/data/structured-data.js'
 import { buildVersionContent } from '../app/data/version-content.js'
 
 test('homepage positions the product around notification features', () => {
@@ -72,6 +73,38 @@ test('public version payload can be adapted into homepage download content', () 
   assert.match(content.releases[0].summary, /个人|固定电脑|试用/)
 })
 
+test('public version requests only use normalized client payloads', async () => {
+  const items = await loadPublicVersionItems(async (url) => {
+    assert.equal(url, 'https://admin.schoolhelper.cn/api/public/versions?platform=windows')
+
+    return {
+      items: [
+        {
+          version: '1.3.0',
+          download_url: 'https://www.schoolhelper.cn/downloads/windows-1.3.0.zip'
+        }
+      ]
+    }
+  }, 'https://admin.schoolhelper.cn')
+
+  assert.equal(items.length, 1)
+  assert.equal(items[0].version, '1.3.0')
+})
+
+test('public version requests fall back to empty items when unavailable', async () => {
+  await assert.doesNotReject(() => loadPublicVersionItems(async () => {
+    throw new Error('network down')
+  }, 'https://admin.schoolhelper.cn'))
+
+  await assert.doesNotReject(() => loadPublicVersionItems(async () => ({ items: 'invalid' }), 'https://admin.schoolhelper.cn'))
+
+  assert.deepEqual(await loadPublicVersionItems(async () => ({ items: 'invalid' }), 'https://admin.schoolhelper.cn'), [])
+  assert.deepEqual(await loadPublicVersionItems(async () => {
+    throw new Error('network down')
+  }, 'https://admin.schoolhelper.cn'), [])
+  assert.deepEqual(await loadPublicVersionItems(async () => ({ items: [{ version: '1.0.0' }] }), ''), [])
+})
+
 test('scenario copy covers generic fixed-screen use cases', () => {
   const scenarioCopy = [
     siteContent.seo.description,
@@ -109,4 +142,12 @@ test('structured data uses the canonical schoolhelper domain', () => {
   assert.equal(software.url, 'https://www.schoolhelper.cn')
   assert.match(software.downloadUrl, /^https:\/\/www\.schoolhelper\.cn\//)
   assert.doesNotMatch(combinedStructuredData, /desktop-speaker\.cn/)
+})
+
+test('structured data can reuse an injected site url', () => {
+  const structuredDataWithInjectedUrl = buildStructuredData(siteContent, 'https://example.com')
+  const software = structuredDataWithInjectedUrl.find((item) => item['@type'] === 'SoftwareApplication')
+
+  assert.equal(software.url, 'https://example.com')
+  assert.match(software.downloadUrl, /^https:\/\/example\.com\//)
 })

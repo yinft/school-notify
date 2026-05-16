@@ -1,8 +1,7 @@
 import { siteContent } from './site-content.js'
+import { defaultSiteUrl } from './site-config.js'
 
-const siteUrl = 'https://www.schoolhelper.cn'
-
-export function buildStructuredData(content) {
+export function buildStructuredData(content, siteUrl = defaultSiteUrl) {
   return [
     {
       '@context': 'https://schema.org',
@@ -41,4 +40,4 @@ export function buildStructuredData(content) {
   ]
 }
 
-export const structuredData = buildStructuredData(siteContent)
+export const structuredData = buildStructuredData(siteContent, defaultSiteUrl)

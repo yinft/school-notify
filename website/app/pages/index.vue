@@ -1,4 +1,8 @@
 <script setup>
+import { onMounted, ref } from 'vue'
+
+import { loadPublicVersionItems } from '../data/public-versions.js'
+import { defaultSiteUrl } from '../data/site-config.js'
 import { siteContent } from '../data/site-content.js'
 import { buildStructuredData } from '../data/structured-data.js'
 import { buildVersionContent } from '../data/version-content.js'
@@ -12,23 +16,15 @@ const codeLines = [
 
 const config = useRuntimeConfig()
 const backendBaseUrl = config.public.backendBaseUrl?.trim() || ''
+const siteUrl = config.public.siteUrl?.trim() || defaultSiteUrl
 
-const { data: publicVersions } = backendBaseUrl
-  ? await useFetch(`${backendBaseUrl}/api/public/versions?platform=windows`, {
-      key: 'public-windows-versions',
-      default: () => ({ items: [] }),
-      server: true,
-      retry: 0,
-      onResponseError() {
-        return { items: [] }
-      },
-      onRequestError() {
-        return { items: [] }
-      }
-    })
-  : { data: ref({ items: [] }) }
+const publicVersions = ref([])
 
-const versionContent = computed(() => buildVersionContent(publicVersions.value?.items ?? []))
+onMounted(async () => {
+  publicVersions.value = await loadPublicVersionItems($fetch, backendBaseUrl)
+})
+
+const versionContent = computed(() => buildVersionContent(publicVersions.value))
 const pageContent = computed(() => ({
   ...siteContent,
   download: versionContent.value.download,
@@ -44,7 +40,7 @@ useSeoMeta({
 })
 
 useHead({
-  script: buildStructuredData(pageContent.value).map((item) => ({
+  script: buildStructuredData(pageContent.value, siteUrl).map((item) => ({
     type: 'application/ld+json',
     innerHTML: JSON.stringify(item)
   }))
