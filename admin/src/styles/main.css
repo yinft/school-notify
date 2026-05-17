@@ -1180,6 +1180,13 @@ input {
   max-width: 100%;
 }
 
+.field-hint-text {
+  margin-top: 6px;
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .dashboard-summary-list {
   display: grid;
   gap: 12px;

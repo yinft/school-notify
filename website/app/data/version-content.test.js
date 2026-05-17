@@ -64,3 +64,33 @@ test('falls back to latest published version when no recommendation exists', () 
   assert.equal(content.download.version, '1.4.0')
   assert.equal(content.download.href, 'https://example.com/1.4.0.zip')
 })
+
+test('does not duplicate version prefix when backend version already starts with v', () => {
+  const content = buildVersionContent([
+    {
+      version: 'v1',
+      release_notes: 'single-line notes',
+      published_at: '2026-05-17T10:00:00',
+      download_url: 'https://example.com/v1.zip',
+      is_recommended: true
+    }
+  ])
+
+  assert.equal(content.download.version, 'v1')
+  assert.deepEqual(content.releases.map((item) => item.version), ['v1'])
+})
+
+test('maps backend release notes to plain detail text', () => {
+  const content = buildVersionContent([
+    {
+      version: '1.4.0',
+      release_notes: 'fixed desktop banner timing',
+      published_at: '2026-05-17T10:00:00',
+      download_url: 'https://example.com/1.4.0.zip',
+      is_recommended: false
+    }
+  ])
+
+  assert.equal(content.releases[0].detail, 'fixed desktop banner timing')
+  assert.equal('items' in content.releases[0], false)
+})

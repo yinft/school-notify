@@ -29,6 +29,7 @@ const recommendedVersionId = computed(() => versions.value.find((item) => item.i
 const recommendedVersion = computed(() => versions.value.find((item) => item.is_recommended) ?? null)
 const latestPublishedVersion = computed(() => versions.value.find((item) => item.is_published) ?? null)
 const websiteTargetVersion = computed(() => recommendedVersion.value || latestPublishedVersion.value)
+const versionFormatHint = '版本号请使用纯数字点号格式，例如 1.0.0 或 1.2.3，不要填写 v1 或 v1.2.3。'
 
 function resetForm() {
   editingId.value = null
@@ -81,6 +82,11 @@ function openEdit(item: AdminVersion) {
 }
 
 async function submitForm() {
+  if (!/^\d+(\.\d+)+$/.test(form.version.trim())) {
+    ElMessage.warning(versionFormatHint)
+    return
+  }
+
   if (editingId.value) {
     await updateVersion(editingId.value, {
       release_notes: form.release_notes,
@@ -208,6 +214,7 @@ onMounted(loadVersions)
           <p class="section-eyebrow">Version Control</p>
           <h2>版本管理</h2>
           <p class="section-subcopy">推荐版本会作为官网默认下载入口和客户端心跳升级目标。没有推荐版本时，官网会回退到最新发布版本。</p>
+          <p class="section-subcopy">{{ versionFormatHint }}</p>
         </div>
         <el-button type="primary" :icon="Plus" @click="openCreate">新建版本</el-button>
       </div>
@@ -370,6 +377,7 @@ onMounted(loadVersions)
           <div class="form-grid two-columns">
             <el-form-item label="版本号">
               <el-input v-model="form.version" :disabled="Boolean(editingId)" placeholder="建议使用 x.y.z" />
+              <div class="field-hint-text">{{ versionFormatHint }}</div>
             </el-form-item>
             <el-form-item label="文件大小（字节）">
               <el-input v-model.number="form.file_size" placeholder="可选" />

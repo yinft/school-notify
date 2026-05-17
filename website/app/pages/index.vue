@@ -184,8 +184,8 @@ useHead({
 
     <section class="release-section page-shell" aria-labelledby="release-title" data-aos="fade-up">
       <div class="section-heading compact" data-aos="fade-right">
-        <p class="eyebrow dark">更新记录</p>
-        <h2 id="release-title">客户端版本记录</h2>
+        <p class="eyebrow dark">最近更新</p>
+        <h2 id="release-title">Windows 客户端更新记录</h2>
       </div>
       <div class="release-list">
         <article v-for="(release, index) in pageContent.releases" :key="release.version" class="glass-card release-card" data-aos="fade-up" :data-aos-delay="index * 90">
@@ -194,10 +194,7 @@ useHead({
             <span>{{ release.date }}</span>
           </div>
           <div>
-            <p class="release-summary">{{ release.summary }}</p>
-            <ul>
-              <li v-for="item in release.items" :key="item">{{ item }}</li>
-            </ul>
+            <p class="release-summary">{{ release.detail }}</p>
           </div>
         </article>
       </div>

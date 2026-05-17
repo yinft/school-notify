@@ -135,6 +135,24 @@ def test_publish_and_recommend_version() -> None:
     assert recommend_response.json()["is_recommended"] is True
 
 
+def test_admin_rejects_version_with_v_prefix() -> None:
+    response = client.post(
+        "/api/admin/versions",
+        headers=admin_headers(),
+        json={
+            "platform": "windows",
+            "version": "v1",
+            "build_number": "100",
+            "release_notes": "bad version format",
+            "download_url": "https://example.com/windows-v1.zip",
+            "file_size": 1024,
+        },
+    )
+
+    assert response.status_code == 422
+    assert "version must use numeric dot notation like 1.0.0" in response.text
+
+
 def test_cannot_delete_published_version() -> None:
     create_response = client.post(
         "/api/admin/versions",

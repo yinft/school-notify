@@ -8,6 +8,14 @@ function toDateLabel(value) {
   return value.slice(0, 10)
 }
 
+function toVersionLabel(value) {
+  if (!value) {
+    return siteContent.download.version
+  }
+
+  return value.startsWith('v') ? value : `v${value}`
+}
+
 export function buildVersionContent(items) {
   if (!Array.isArray(items) || items.length === 0) {
     return {
@@ -18,10 +26,9 @@ export function buildVersionContent(items) {
 
   const downloadTarget = items.find((item) => item?.is_recommended) || items[0]
   const releases = items.slice(0, 3).map((item) => ({
-    version: `v${item.version}`,
+    version: toVersionLabel(item.version),
     date: toDateLabel(item.published_at),
-    summary: item.release_notes || 'Windows 桌面端个人试用版，用于固定电脑上的轻量提醒。',
-    items: [item.release_notes || '适合个人固定电脑试用。']
+    detail: item.release_notes || 'Windows 桌面端个人试用版，用于固定电脑上的轻量提醒。'
   }))
 
   return {

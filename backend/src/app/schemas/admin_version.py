@@ -1,6 +1,21 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+VERSION_PATTERN_ERROR = "version must use numeric dot notation like 1.0.0"
+
+
+def _normalize_version(value: str) -> str:
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError(VERSION_PATTERN_ERROR)
+
+    parts = normalized.split(".")
+    if len(parts) < 2 or any(not part.isdigit() for part in parts):
+        raise ValueError(VERSION_PATTERN_ERROR)
+
+    return normalized
 
 
 class AdminVersionCreateRequest(BaseModel):
@@ -10,6 +25,11 @@ class AdminVersionCreateRequest(BaseModel):
     release_notes: str = Field("")
     download_url: str = Field(...)
     file_size: int | None = Field(None)
+
+    @field_validator("version")
+    @classmethod
+    def validate_version(cls, value: str) -> str:
+        return _normalize_version(value)
 
 
 class AdminVersionUpdateRequest(BaseModel):
