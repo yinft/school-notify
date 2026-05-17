@@ -69,9 +69,9 @@ onMounted(loadNotifications)
         <span>{{ errorMessage }}</span>
         <el-button text type="primary" @click="loadNotifications">重试</el-button>
       </div>
-      <div class="filter-row">
-        <el-input v-model="keyword" placeholder="搜索标题 / 内容" clearable :prefix-icon="Search" />
-        <el-input v-model="senderUserId" placeholder="发送人 user_id" clearable />
+      <div class="filter-row compact-filter-row notifications-filter-row">
+        <el-input v-model="keyword" class="filter-field filter-field-wide" placeholder="搜索标题 / 内容" clearable :prefix-icon="Search" />
+        <el-input v-model="senderUserId" class="filter-field" placeholder="发送人 user_id" clearable />
         <el-button type="primary" @click="applyFilters">筛选</el-button>
       </div>
       <el-table v-loading="loading" :data="notifications" stripe empty-text="暂无通知数据">

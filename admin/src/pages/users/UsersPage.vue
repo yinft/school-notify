@@ -67,8 +67,8 @@ onMounted(loadUsers)
         <span>{{ errorMessage }}</span>
         <el-button text type="primary" @click="loadUsers">重试</el-button>
       </div>
-      <div class="filter-row">
-        <el-input v-model="keyword" placeholder="搜索用户 ID / 昵称" clearable :prefix-icon="Search" />
+      <div class="filter-row compact-filter-row single-filter-row">
+        <el-input v-model="keyword" class="filter-field filter-field-wide" placeholder="搜索用户 ID / 昵称" clearable :prefix-icon="Search" />
         <el-button type="primary" @click="applyFilters">筛选</el-button>
       </div>
       <el-table v-loading="loading" :data="users" stripe empty-text="暂无用户数据">

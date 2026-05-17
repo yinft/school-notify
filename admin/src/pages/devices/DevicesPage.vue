@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search, View, Edit } from '@element-plus/icons-vue'
 
@@ -16,6 +16,11 @@ const pageSize = ref(10)
 const total = ref(0)
 const loading = ref(false)
 const errorMessage = ref('')
+const renameDialogVisible = ref(false)
+const renamingDeviceId = ref('')
+const renameForm = reactive({
+  device_name: ''
+})
 
 async function loadDevices() {
   loading.value = true
@@ -52,15 +57,23 @@ async function openDetail(deviceId: string) {
 }
 
 async function renameDevice(item: AdminDeviceListItem) {
-  const nextName = window.prompt('新的设备名称', item.device_name)
-  if (!nextName) {
+  renamingDeviceId.value = item.device_id
+  renameForm.device_name = item.device_name
+  renameDialogVisible.value = true
+}
+
+async function submitRename() {
+  if (!renameForm.device_name.trim()) {
+    ElMessage.warning('请输入设备名称')
     return
   }
-  await updateDevice(item.device_id, { device_name: nextName })
+
+  await updateDevice(renamingDeviceId.value, { device_name: renameForm.device_name.trim() })
   ElMessage.success('设备名称已更新')
+  renameDialogVisible.value = false
   await loadDevices()
-  if (activeDetail.value?.device_id === item.device_id) {
-    await openDetail(item.device_id)
+  if (activeDetail.value?.device_id === renamingDeviceId.value) {
+    await openDetail(renamingDeviceId.value)
   }
 }
 
@@ -88,9 +101,9 @@ onMounted(loadDevices)
         <span>{{ errorMessage }}</span>
         <el-button text type="primary" @click="loadDevices">重试</el-button>
       </div>
-      <div class="filter-row">
-        <el-input v-model="keyword" placeholder="搜索设备 ID / 名称 / 位置" clearable :prefix-icon="Search" />
-        <el-select v-model="status" placeholder="设备状态" clearable>
+      <div class="filter-row compact-filter-row">
+        <el-input v-model="keyword" class="filter-field filter-field-wide" placeholder="搜索设备 ID / 名称 / 位置" clearable :prefix-icon="Search" />
+        <el-select v-model="status" class="filter-field" placeholder="设备状态" clearable>
           <el-option label="在线" value="online" />
           <el-option label="离线" value="offline" />
         </el-select>
@@ -174,5 +187,17 @@ onMounted(loadDevices)
         </div>
       </template>
     </el-drawer>
+
+    <el-dialog v-model="renameDialogVisible" title="修改设备名称" width="460px" class="app-form-dialog">
+      <el-form label-position="top" class="dialog-form-grid">
+        <el-form-item label="设备名称">
+          <el-input v-model="renameForm.device_name" maxlength="128" show-word-limit placeholder="例如：值班室电脑" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="renameDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitRename">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>

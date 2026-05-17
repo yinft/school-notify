@@ -16,8 +16,8 @@ export function buildVersionContent(items) {
     }
   }
 
-  const [latest, ...rest] = items
-  const releases = [latest, ...rest].map((item) => ({
+  const downloadTarget = items.find((item) => item?.is_recommended) || items[0]
+  const releases = items.slice(0, 3).map((item) => ({
     version: `v${item.version}`,
     date: toDateLabel(item.published_at),
     summary: item.release_notes || 'Windows 桌面端个人试用版，用于固定电脑上的轻量提醒。',
@@ -27,9 +27,9 @@ export function buildVersionContent(items) {
   return {
     download: {
       ...siteContent.download,
-      version: latest.version,
-      updatedAt: toDateLabel(latest.published_at),
-      href: latest.download_url
+      version: downloadTarget.version,
+      updatedAt: toDateLabel(downloadTarget.published_at),
+      href: downloadTarget.download_url
     },
     releases
   }

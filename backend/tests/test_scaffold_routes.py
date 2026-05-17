@@ -11,7 +11,7 @@ from app.api.routes import auth as auth_route
 from app.core.db import Base, SessionLocal, engine
 from app.core.settings import settings
 from app.main import app
-from app.models import AuthSession, User
+from app.models import AuthSession, ClientVersion, User
 from app.services.auth_sessions import create_auth_session, get_or_create_user_by_openid
 from app.services import store as store_module
 from app.services.device_connections import device_connections
@@ -230,6 +230,36 @@ def test_device_heartbeat_refreshes_last_seen() -> None:
     assert heartbeat_payload["device_id"] == "device-001"
     assert heartbeat_payload["status"] == "online"
     assert parse_timestamp(heartbeat_payload["last_seen_at"]) >= registered_at
+
+
+def test_device_heartbeat_ignores_published_versions_without_recommendation() -> None:
+    client.post(
+        "/api/devices/register",
+        json={
+            "device_id": "device-001",
+            "device_name": "值班室电脑",
+            "client_version": "0.1.0",
+        },
+    )
+
+    with SessionLocal() as session:
+        session.add(
+            ClientVersion(
+                platform="windows",
+                version="0.2.0",
+                build_number="200",
+                release_notes="published but not recommended",
+                download_url="https://example.com/desktop-speaker-0.2.0.zip",
+                is_published=True,
+                is_recommended=False,
+            )
+        )
+        session.commit()
+
+    heartbeat_response = client.post("/api/devices/device-001/heartbeat", headers=device_auth_headers("device-001"))
+
+    assert heartbeat_response.status_code == 200
+    assert heartbeat_response.json()["update"] is None
 
 
 def test_device_heartbeat_returns_not_found_for_unknown_device() -> None:
