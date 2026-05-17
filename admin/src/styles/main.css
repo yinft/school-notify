@@ -851,6 +851,21 @@ input {
   padding: 20px;
 }
 
+.user-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.user-detail-header h3 {
+  margin: 0 0 4px;
+}
+
+.user-detail-header small {
+  color: hsl(var(--muted-foreground));
+}
+
 .detail-row,
 .delivery-row {
   display: flex;

@@ -10,7 +10,11 @@ function createAuthService({ request }) {
       return {
         userId: response.user_id,
         sessionToken: response.session_token,
-        authProvider: response.auth_provider
+        authProvider: response.auth_provider,
+        profile: {
+          nickName: response.nickname || '',
+          avatarUrl: response.avatar_url || ''
+        }
       }
     },
 

@@ -1,7 +1,7 @@
 const { ensurePageLogin } = require('../../utils/page-auth')
 const { getLoginRequiredMessage } = require('../../utils/auth-session')
 const { createLoginGateModel } = require('../../utils/login-gate')
-const { createUserProfile, syncProfileToServer } = require('../../utils/user-profile')
+const { createUserProfile, uploadAvatarToQiniu } = require('../../utils/user-profile')
 
 Page({
   data: {
@@ -57,12 +57,20 @@ Page({
     if (!avatarUrl) return
 
     this.setData({ isSubmittingProfile: true })
-    const profile = createUserProfile({ avatarUrl, nickName: this.data.nickName || '微信用户' })
-    const app = getApp()
-    app.setUserProfile(profile)
-    await syncProfileToServer({ nickname: profile.nickName, avatarUrl })
-    this.setData({ isSubmittingProfile: false })
-    wx.showToast({ title: '头像已更新', icon: 'none' })
+    try {
+      const nickName = this.data.nickName || '微信用户'
+      const permanentAvatarUrl = await uploadAvatarToQiniu({ filePath: avatarUrl, nickname: nickName })
+      const profile = createUserProfile({ avatarUrl: permanentAvatarUrl, nickName })
+      const app = getApp()
+      app.setUserProfile(profile)
+      this.setData({ avatarUrl: permanentAvatarUrl })
+      wx.showToast({ title: '头像已更新', icon: 'none' })
+    } catch {
+      this.syncProfile()
+      wx.showToast({ title: '头像上传失败', icon: 'none' })
+    } finally {
+      this.setData({ isSubmittingProfile: false })
+    }
   },
 
   async logout() {

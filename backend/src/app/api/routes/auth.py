@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps.auth import require_current_user, require_session_token
 from app.core.db import get_db_session
+from app.models import User
 from app.schemas.auth import AuthLoginRequest, AuthSessionResponse
 from app.services.auth_sessions import create_auth_session, get_or_create_user_by_openid, revoke_session_by_token
 from app.services.wechat_auth import build_session_token, exchange_code_for_session
@@ -28,7 +30,7 @@ def login(payload: AuthLoginRequest, db: Session = Depends(get_db_session)) -> A
     user = get_or_create_user_by_openid(db, openid=openid)
     create_auth_session(db, user=user, session_token=auth_session.session_token)
     db.commit()
-    return auth_session
+    return build_auth_session(openid=openid, nickname=user.nickname, avatar_url=user.avatar_url)
 
 
 @router.post(
@@ -50,13 +52,20 @@ def logout(session_token: str = Depends(require_session_token), db: Session = De
     description="【小程序端】根据请求头中的会话令牌返回当前用户信息，用于校验令牌是否有效。",
     responses={401: {"description": "无效或已过期的会话令牌"}},
 )
-def get_current_user(current_user_id: str = Depends(require_current_user)) -> AuthSessionResponse:
-    return build_auth_session(openid=current_user_id)
+def get_current_user(current_user_id: str = Depends(require_current_user), db: Session = Depends(get_db_session)) -> AuthSessionResponse:
+    user = db.execute(select(User).where(User.user_id == current_user_id)).scalar_one_or_none()
+    return build_auth_session(
+        openid=current_user_id,
+        nickname=user.nickname if user else None,
+        avatar_url=user.avatar_url if user else None,
+    )
 
 
-def build_auth_session(*, openid: str) -> AuthSessionResponse:
+def build_auth_session(*, openid: str, nickname: str | None = None, avatar_url: str | None = None) -> AuthSessionResponse:
     return AuthSessionResponse(
         user_id=openid,
         session_token=build_session_token(openid),
         auth_provider="wechat",
+        nickname=nickname,
+        avatar_url=avatar_url,
     )

@@ -5,6 +5,10 @@ class Settings(BaseSettings):
     app_name: str = "school-notify-backend"
     debug: bool = False
     allowed_origins: list[str] = ["*"]
+    qiniu_access_key: str = ""
+    qiniu_secret_key: str = ""
+    qiniu_bucket: str = "yinft"
+    qiniu_domain: str = "http://cdn.schoolhelper.cn"
     sql_echo: bool = False
     database_url: str = "postgresql+psycopg://postgres:123@localhost:5432/school"
     bind_code_expires_seconds: int = 60

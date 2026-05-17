@@ -9,11 +9,13 @@ from starlette.websockets import WebSocketDisconnect
 from app.api.deps import auth as auth_deps
 from app.api.routes import auth as auth_route
 from app.core.db import Base, SessionLocal, engine
+from app.core.settings import settings
 from app.main import app
 from app.models import AuthSession, User
 from app.services.auth_sessions import create_auth_session, get_or_create_user_by_openid
 from app.services import store as store_module
 from app.services.device_connections import device_connections
+from app.services.qiniu_storage import build_upload_token
 from app.services.store import store
 from app.services.wechat_auth import build_device_token, build_session_token
 
@@ -126,7 +128,31 @@ def test_auth_whoami_returns_current_user_from_active_session(monkeypatch) -> No
         "user_id": "wx-openid-001",
         "session_token": build_session_token("wx-openid-001"),
         "auth_provider": "wechat",
+        "nickname": None,
+        "avatar_url": None,
     }
+
+
+def test_auth_login_returns_saved_user_profile(monkeypatch) -> None:
+    monkeypatch.setattr(
+        auth_route,
+        "exchange_code_for_session",
+        lambda code: {
+            "openid": "profile-user",
+            "session_key": "session-key-001",
+        },
+    )
+    with SessionLocal() as session:
+        user = get_or_create_user_by_openid(session, openid="profile-user")
+        user.nickname = "张老师"
+        user.avatar_url = "https://img.schoolhelper.cn/avatars/profile-user/avatar.png"
+        session.commit()
+
+    response = client.post("/api/auth/login", json={"code": "wx-code-001"})
+
+    assert response.status_code == 200
+    assert response.json()["nickname"] == "张老师"
+    assert response.json()["avatar_url"] == "https://img.schoolhelper.cn/avatars/profile-user/avatar.png"
 
 
 def test_auth_logout_revokes_current_session(monkeypatch) -> None:
@@ -1159,6 +1185,70 @@ def test_user_can_update_profile() -> None:
     assert response.status_code == 200
     assert response.json()["nickname"] == "张老师"
     assert response.json()["avatar_url"] == "https://example.com/avatar.jpg"
+
+
+def test_user_can_request_avatar_upload_token(monkeypatch) -> None:
+    token = build_session_token("profile-user")
+    with SessionLocal() as session:
+        user = get_or_create_user_by_openid(session, openid="profile-user")
+        create_auth_session(session, user=user, session_token=token)
+        session.commit()
+
+    monkeypatch.setattr(settings, "qiniu_access_key", "test-ak")
+    monkeypatch.setattr(settings, "qiniu_secret_key", "test-sk")
+    monkeypatch.setattr(settings, "qiniu_bucket", "avatar-bucket")
+    monkeypatch.setattr(settings, "qiniu_domain", "img.schoolhelper.cn")
+
+    response = client.post(
+        "/api/users/me/avatar/upload-token",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["upload_url"] == "https://upload.qiniup.com"
+    assert payload["key"].startswith("avatars/profile-user/")
+    assert payload["key"].endswith(".png")
+    assert payload["public_url"] == f"https://img.schoolhelper.cn/{payload['key']}"
+    assert payload["token"].startswith("test-ak:")
+
+
+def test_avatar_upload_token_requires_qiniu_config(monkeypatch) -> None:
+    token = build_session_token("profile-user")
+    with SessionLocal() as session:
+        user = get_or_create_user_by_openid(session, openid="profile-user")
+        create_auth_session(session, user=user, session_token=token)
+        session.commit()
+
+    monkeypatch.setattr(settings, "qiniu_access_key", "")
+    monkeypatch.setattr(settings, "qiniu_secret_key", "")
+    monkeypatch.setattr(settings, "qiniu_bucket", "")
+    monkeypatch.setattr(settings, "qiniu_domain", "img.schoolhelper.cn")
+
+    response = client.post(
+        "/api/users/me/avatar/upload-token",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "qiniu config missing"
+
+
+def test_qiniu_upload_token_keeps_base64_padding(monkeypatch) -> None:
+    monkeypatch.setattr("app.services.qiniu_storage.time.time", lambda: 1451490000)
+
+    token = build_upload_token(
+        access_key="MY_ACCESS_KEY",
+        secret_key="MY_SECRET_KEY",
+        bucket="my-bucket",
+        key="a.jpg",
+        expires_seconds=1200,
+    )
+
+    access_key, encoded_signature, encoded_policy = token.split(":")
+    assert access_key == "MY_ACCESS_KEY"
+    assert encoded_signature.endswith("=")
+    assert encoded_policy.endswith("==")
 
 
 def test_user_profile_requires_auth() -> None:

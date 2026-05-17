@@ -8,7 +8,7 @@ const { createAuthService } = require('../services/auth')
 const { getDurationSeconds, isCustomDurationSelected } = require('../pages/send/duration')
 const { createLoginGateModel } = require('../utils/login-gate')
 const { buildRequestOptions, getErrorMessage } = require('../utils/request')
-const { createUserProfile, hasAuthorizedProfile } = require('../utils/user-profile')
+const { createUserProfile, hasAuthorizedProfile, uploadAvatarToQiniu } = require('../utils/user-profile')
 const fs = require('node:fs')
 const path = require('node:path')
 const {
@@ -377,6 +377,48 @@ test('createUserProfile trims WeChat nickname and avatar values', () => {
   )
 })
 
+test('uploadAvatarToQiniu gets token, uploads file, and saves public avatar url', async () => {
+  const calls = []
+  const result = await uploadAvatarToQiniu({
+    filePath: 'wxfile://avatar.png',
+    nickname: '小张',
+    request(options) {
+      calls.push({ type: 'request', options })
+      if (options.url === '/users/me/avatar/upload-token') {
+        return Promise.resolve({
+          upload_url: 'https://upload.qiniup.com',
+          token: 'upload-token',
+          key: 'avatars/user-001/20260516.png',
+          public_url: 'https://img.schoolhelper.cn/avatars/user-001/20260516.png'
+        })
+      }
+      return Promise.resolve({ avatar_url: options.data.avatar_url })
+    },
+    uploadFile(options) {
+      calls.push({ type: 'upload', options })
+      options.success({ statusCode: 200, data: '{"key":"avatars/user-001/20260516.png"}' })
+    }
+  })
+
+  assert.equal(result, 'https://img.schoolhelper.cn/avatars/user-001/20260516.png')
+  assert.equal(calls[0].type, 'request')
+  assert.deepEqual(calls[0].options, { url: '/users/me/avatar/upload-token', method: 'POST' })
+  assert.equal(calls[1].type, 'upload')
+  assert.equal(calls[1].options.url, 'https://upload.qiniup.com')
+  assert.equal(calls[1].options.filePath, 'wxfile://avatar.png')
+  assert.equal(calls[1].options.name, 'file')
+  assert.deepEqual(calls[1].options.formData, { token: 'upload-token', key: 'avatars/user-001/20260516.png' })
+  assert.equal(calls[2].type, 'request')
+  assert.deepEqual(calls[2].options, {
+    url: '/users/me',
+    method: 'PATCH',
+    data: {
+      nickname: '小张',
+      avatar_url: 'https://img.schoolhelper.cn/avatars/user-001/20260516.png'
+    }
+  })
+})
+
 test('miniapp user-facing copy avoids campus and education positioning', () => {
   const miniappRoot = path.resolve(__dirname, '..')
   const files = [
@@ -507,7 +549,9 @@ test('createAuthService posts login code and returns backend session', async () 
       return Promise.resolve({
         user_id: 'demo-user',
         session_token: 'mock-session-demo-user',
-        auth_provider: 'wechat_mock'
+        auth_provider: 'wechat_mock',
+        nickname: '张老师',
+        avatar_url: 'https://img.schoolhelper.cn/avatars/demo-user/avatar.png'
       })
     }
   })
@@ -524,7 +568,11 @@ test('createAuthService posts login code and returns backend session', async () 
   assert.deepEqual(session, {
     userId: 'demo-user',
     sessionToken: 'mock-session-demo-user',
-    authProvider: 'wechat_mock'
+    authProvider: 'wechat_mock',
+    profile: {
+      nickName: '张老师',
+      avatarUrl: 'https://img.schoolhelper.cn/avatars/demo-user/avatar.png'
+    }
   })
 })
 

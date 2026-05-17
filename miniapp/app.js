@@ -66,6 +66,9 @@ App({
                 authProvider: loginResult.authProvider
               })
               this.persistAuthSession(session)
+              if (loginResult.profile && (loginResult.profile.nickName || loginResult.profile.avatarUrl)) {
+                this.setUserProfile(loginResult.profile)
+              }
               resolve(session)
             })
             .catch((error) => {

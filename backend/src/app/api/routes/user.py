@@ -4,9 +4,11 @@ from sqlalchemy.orm import Session
 
 from app.api.deps.auth import require_current_user
 from app.core.db import SessionLocal, get_db_session
+from app.core.settings import settings
 from app.models import User
-from app.schemas.auth import UserProfileResponse, UserProfileUpdateRequest
+from app.schemas.auth import AvatarUploadTokenResponse, UserProfileResponse, UserProfileUpdateRequest
 from app.schemas.device import DeviceListResponse, DeviceResponse, DeviceUpdateRequest
+from app.services.qiniu_storage import QINIU_UPLOAD_URL, QiniuConfigMissingError, build_avatar_key, build_public_url, build_upload_token
 from app.services.store import DeviceNotBoundError, DeviceNotFoundError, store
 
 
@@ -77,3 +79,29 @@ def update_profile(
             nickname=user.nickname,
             avatar_url=user.avatar_url,
         )
+
+
+@router.post(
+    "/me/avatar/upload-token",
+    summary="获取头像上传凭证",
+    description="【小程序端】获取七牛云头像直传凭证。",
+    responses={401: {"description": "未认证"}, 503: {"description": "七牛云配置缺失"}},
+)
+def create_avatar_upload_token(current_user_id: str = Depends(require_current_user)) -> AvatarUploadTokenResponse:
+    key = build_avatar_key(user_id=current_user_id)
+    try:
+        token = build_upload_token(
+            access_key=settings.qiniu_access_key,
+            secret_key=settings.qiniu_secret_key,
+            bucket=settings.qiniu_bucket,
+            key=key,
+        )
+    except QiniuConfigMissingError as exc:
+        raise HTTPException(status_code=503, detail="qiniu config missing") from exc
+
+    return AvatarUploadTokenResponse(
+        upload_url=QINIU_UPLOAD_URL,
+        token=token,
+        key=key,
+        public_url=build_public_url(domain=settings.qiniu_domain, key=key),
+    )

@@ -53,6 +53,10 @@ async function copyUserId(userId: string) {
   }
 }
 
+function avatarFallback(nickname?: string | null) {
+  return (nickname || '用户').slice(0, 1)
+}
+
 onMounted(loadUsers)
 </script>
 
@@ -68,6 +72,11 @@ onMounted(loadUsers)
         <el-button type="primary" @click="applyFilters">筛选</el-button>
       </div>
       <el-table v-loading="loading" :data="users" stripe empty-text="暂无用户数据">
+        <el-table-column label="头像" width="88">
+          <template #default="scope">
+            <el-avatar :size="40" :src="scope.row.avatar_url || ''">{{ avatarFallback(scope.row.nickname) }}</el-avatar>
+          </template>
+        </el-table-column>
         <el-table-column prop="user_id" label="用户 ID" min-width="180" />
         <el-table-column prop="nickname" label="昵称" min-width="160" />
         <el-table-column prop="bound_devices_count" label="绑定设备数" width="120" />
@@ -91,7 +100,13 @@ onMounted(loadUsers)
       <template v-if="activeDetail">
         <div class="detail-stack">
           <div class="detail-card">
-            <h3>{{ activeDetail.nickname || '未授权昵称' }}</h3>
+            <div class="user-detail-header">
+              <el-avatar :size="56" :src="activeDetail.avatar_url || ''">{{ avatarFallback(activeDetail.nickname) }}</el-avatar>
+              <div>
+                <h3>{{ activeDetail.nickname || '未授权昵称' }}</h3>
+                <small>用户资料</small>
+              </div>
+            </div>
             <div class="detail-meta-grid single-column-grid">
               <div class="detail-meta-item">
                 <span>用户 ID</span>
