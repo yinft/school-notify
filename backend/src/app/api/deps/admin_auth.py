@@ -1,12 +1,20 @@
-from fastapi import Depends, Header, HTTPException
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db_session
 from app.services.admin_auth import get_active_admin_by_token, parse_admin_session_token
 
+_bearer_scheme = HTTPBearer(auto_error=False)
 
-def require_admin_session_token(authorization: str = Header(default=""), db: Session = Depends(get_db_session)) -> str:
-    token = authorization.removeprefix("Bearer ").strip()
+
+def require_admin_session_token(
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer_scheme),
+    db: Session = Depends(get_db_session),
+) -> str:
+    if credentials is None:
+        raise HTTPException(status_code=401, detail="not authenticated")
+    token = credentials.credentials
     try:
         parse_admin_session_token(token)
     except ValueError as exc:

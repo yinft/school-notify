@@ -1,13 +1,21 @@
-from fastapi import Depends, Header, HTTPException
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db_session
 from app.services.auth_sessions import get_active_session_by_token, get_cached_auth_user_id, refresh_cached_auth_session
 from app.services.wechat_auth import WeChatLoginError, parse_session_token
 
+_bearer_scheme = HTTPBearer(auto_error=False)
 
-def require_session_token(authorization: str = Header(default=""), db: Session = Depends(get_db_session)) -> str:
-    token = authorization.removeprefix("Bearer ").strip()
+
+def require_session_token(
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer_scheme),
+    db: Session = Depends(get_db_session),
+) -> str:
+    if credentials is None:
+        raise HTTPException(status_code=401, detail="not authenticated")
+    token = credentials.credentials
     try:
         parsed_user_id = parse_session_token(token)
     except WeChatLoginError as exc:
@@ -44,14 +52,16 @@ def ensure_same_user(*, expected_user_id: str, current_user_id: str) -> None:
         raise HTTPException(status_code=403, detail="forbidden")
 
 
-def require_device_token_for_device(*, expected_device_id: str, authorization: str) -> str:
-    token = authorization.removeprefix("Bearer ").strip()
+def require_device_token(
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer_scheme),
+) -> str:
+    if credentials is None:
+        raise HTTPException(status_code=401, detail="not authenticated")
+    token = credentials.credentials
     if not token.startswith("device-token:"):
         raise HTTPException(status_code=401, detail="invalid device token")
     try:
         parsed_device_id = parse_session_token(token)
     except WeChatLoginError as exc:
         raise HTTPException(status_code=401, detail="invalid device token") from exc
-    if parsed_device_id != expected_device_id:
-        raise HTTPException(status_code=403, detail="forbidden")
     return parsed_device_id

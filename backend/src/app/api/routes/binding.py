@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.api.deps.auth import ensure_same_user, require_current_user, require_device_token_for_device
+from app.api.deps.auth import ensure_same_user, require_current_user, require_device_token
 from app.schemas.binding import (
     BindingCodeCreateRequest,
     BindingCodeResponse,
@@ -20,8 +20,9 @@ router = APIRouter(prefix="/bindings")
     description="【设备端】为指定设备生成一次性绑定码。用户在小程序中输入此绑定码完成设备绑定。",
     responses={404: {"description": "设备不存在"}},
 )
-def create_binding_code(payload: BindingCodeCreateRequest, authorization: str = Header(default="")) -> BindingCodeResponse:
-    require_device_token_for_device(expected_device_id=payload.device_id, authorization=authorization)
+def create_binding_code(payload: BindingCodeCreateRequest, parsed_device_id: str = Depends(require_device_token)) -> BindingCodeResponse:
+    if parsed_device_id != payload.device_id:
+        raise HTTPException(status_code=403, detail="forbidden")
     try:
         return store.create_binding_code(device_id=payload.device_id)
     except DeviceNotFoundError as exc:
