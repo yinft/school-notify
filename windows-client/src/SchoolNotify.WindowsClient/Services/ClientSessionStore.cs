@@ -6,13 +6,14 @@ namespace SchoolNotify.WindowsClient.Services;
 
 public sealed class ClientSessionStore
 {
-    private const string CurrentVersion = "0.1.0";
-
     private readonly string _sessionPath;
 
-    public ClientSessionStore(string? sessionPath = null)
+    private readonly Func<string> _getCurrentVersion;
+
+    public ClientSessionStore(string? sessionPath = null, Func<string>? getCurrentVersion = null)
     {
         _sessionPath = string.IsNullOrWhiteSpace(sessionPath) ? GetDefaultSessionPath() : sessionPath;
+        _getCurrentVersion = getCurrentVersion ?? (() => ClientVersionProvider.CurrentVersion);
     }
 
     public async Task<ClientSession> LoadOrCreateAsync(CancellationToken cancellationToken = default)
@@ -23,18 +24,30 @@ public sealed class ClientSessionStore
 
         if (File.Exists(sessionPath))
         {
-            await using var existingStream = File.OpenRead(sessionPath);
-            var existing = await JsonSerializer.DeserializeAsync<ClientSession>(existingStream, cancellationToken: cancellationToken);
+            ClientSession? existing;
+            await using (var existingStream = File.OpenRead(sessionPath))
+            {
+                existing = await JsonSerializer.DeserializeAsync<ClientSession>(existingStream, cancellationToken: cancellationToken);
+            }
+
             if (existing is not null)
             {
-                return existing;
+                var currentVersion = _getCurrentVersion();
+                if (existing.ClientVersion == currentVersion)
+                {
+                    return existing;
+                }
+
+                var updated = existing with { ClientVersion = currentVersion };
+                await SaveAsync(updated, cancellationToken);
+                return updated;
             }
         }
 
         var session = new ClientSession(
             DeviceId: Guid.NewGuid().ToString("N"),
             DeviceName: Environment.MachineName,
-            ClientVersion: CurrentVersion);
+            ClientVersion: _getCurrentVersion());
 
         await using var createStream = File.Create(sessionPath);
         await JsonSerializer.SerializeAsync(createStream, session, cancellationToken: cancellationToken);

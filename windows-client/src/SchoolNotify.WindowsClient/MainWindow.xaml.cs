@@ -67,6 +67,8 @@ public partial class MainWindow : Window
 
     private bool _isRefreshingBindingCode;
 
+    private bool _isHeartbeatInProgress;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -75,7 +77,8 @@ public partial class MainWindow : Window
 
         var httpClient = new HttpClient
         {
-            BaseAddress = new Uri(serverConfig.BaseUrl)
+            BaseAddress = new Uri(serverConfig.BaseUrl),
+            Timeout = TimeSpan.FromSeconds(10)
         };
 
         _apiClient = new DeviceApiClient(httpClient);
@@ -138,6 +141,8 @@ public partial class MainWindow : Window
             _currentSession = await _clientSessionStore.LoadOrCreateAsync();
             DeviceNameTextBlock.Text = $"设备名称：{_currentSession.DeviceName}";
             DeviceIdTextBlock.Text = $"设备 ID：{_currentSession.DeviceId}";
+            ClientVersionTextBlock.Text = $"客户端版本：{_currentSession.ClientVersion}";
+            UpdateStatusTextBlock.Text = "更新状态：等待检查";
 
             _clientSettings = await _clientSettingsStore.LoadAsync(_cancellationTokenSource.Token);
             ApplyClientSettingsToControls(_clientSettings);
@@ -167,8 +172,6 @@ public partial class MainWindow : Window
             _bindingCodeRefreshTimer.Start();
 
             await ConnectWebSocketAsync();
-            _heartbeatTimer.Start();
-            ReconnectStatusTextBlock.Text = "重连状态：托盘和开机自启已启用";
         }
         catch (Exception exception) when (IsDeviceAuthFailure(exception))
         {
@@ -182,19 +185,51 @@ public partial class MainWindow : Window
 
     private async void HeartbeatTimerOnTick(object? sender, EventArgs e)
     {
+        await SendHeartbeatAndApplyStateAsync(showCheckingStatus: true);
+    }
+
+    private async Task SendHeartbeatAndApplyStateAsync(bool showCheckingStatus)
+    {
         if (_currentSession is null || string.IsNullOrEmpty(_deviceToken))
+        {
+            return;
+        }
+
+        if (_isHeartbeatInProgress)
         {
             return;
         }
 
         try
         {
+            _isHeartbeatInProgress = true;
+            if (showCheckingStatus && !_updateService.IsUpdatePending && !_updateService.IsDownloading)
+            {
+                UpdateStatusTextBlock.Text = "更新状态：正在检查更新...";
+            }
+
             var heartbeat = await _apiClient.SendHeartbeatAsync(_currentSession.DeviceId, _deviceToken, _cancellationTokenSource.Token);
             ApplyDeviceState(heartbeat, DeviceStatusText.HeartbeatHealthy);
 
             if (heartbeat.Update is { Available: true })
             {
-                _ = TryApplyUpdateAsync(heartbeat.Update);
+                if (_updateService.IsDownloading)
+                {
+                    UpdateStatusTextBlock.Text = $"更新状态：发现新版本 {heartbeat.Update.LatestVersion}，后台下载中";
+                }
+                else
+                {
+                    UpdateStatusTextBlock.Text = $"更新状态：发现新版本 {heartbeat.Update.LatestVersion}，后台下载中";
+                    _ = TryApplyUpdateAsync(heartbeat.Update);
+                }
+            }
+            else if (_updateService.IsUpdatePending)
+            {
+                UpdateStatusTextBlock.Text = "更新状态：新版本已就绪，请从托盘菜单立即更新";
+            }
+            else
+            {
+                UpdateStatusTextBlock.Text = "更新状态：当前已是最新推荐版本";
             }
         }
         catch (HttpRequestException exception) when (IsDeviceAuthFailure(exception))
@@ -204,6 +239,11 @@ public partial class MainWindow : Window
         catch (Exception exception)
         {
             ShowOperationalFailure($"心跳失败：{exception.Message}", "连接状态：心跳失败");
+            UpdateStatusTextBlock.Text = $"更新状态：检查更新失败：{exception.Message}";
+        }
+        finally
+        {
+            _isHeartbeatInProgress = false;
         }
     }
 
@@ -215,6 +255,7 @@ public partial class MainWindow : Window
             await Dispatcher.InvokeAsync(() =>
             {
                 RebuildTrayMenu();
+                UpdateStatusTextBlock.Text = $"更新状态：新版本 {updateInfo.LatestVersion} 已就绪，请从托盘菜单立即更新";
                 _notifyIcon.ShowBalloonTip(5000, "思故桌面小喇叭",
                     $"新版本 {updateInfo.LatestVersion} 已就绪，请点击托盘菜单「立即更新」完成升级。",
                     Forms.ToolTipIcon.Info);
@@ -244,8 +285,9 @@ public partial class MainWindow : Window
             _cancellationTokenSource.Token);
 
         _reconnectAttempt = 0;
+        await SendHeartbeatAndApplyStateAsync(showCheckingStatus: true);
         _heartbeatTimer.Start();
-        ReconnectStatusTextBlock.Text = "重连状态：WebSocket 已连接";
+        ReconnectStatusTextBlock.Text = "实时连接：已连接";
         ApplyConnectionStatus("online");
     }
 
@@ -269,7 +311,7 @@ public partial class MainWindow : Window
     {
         _reconnectAttempt += 1;
         var delay = ReconnectPolicy.GetDelay(_reconnectAttempt);
-        ReconnectStatusTextBlock.Text = $"重连状态：{delay.TotalSeconds:0} 秒后重试";
+        ReconnectStatusTextBlock.Text = $"实时连接：已断开，{delay.TotalSeconds:0} 秒后重试";
         StatusSummaryTextBlock.Text = string.IsNullOrWhiteSpace(reason)
             ? "WebSocket 连接已断开，准备重连"
             : $"WebSocket 已断开：{reason}";

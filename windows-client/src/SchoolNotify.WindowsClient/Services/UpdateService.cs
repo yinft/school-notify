@@ -10,7 +10,6 @@ public sealed class UpdateService
 {
     private readonly HttpClient _httpClient;
     private readonly string _installDir;
-    private readonly Random _random = new();
     private readonly string _updateRootDir;
 
     private string? _pendingVersion;
@@ -18,11 +17,15 @@ public sealed class UpdateService
 
     public bool IsUpdatePending => _pendingVersion is not null;
 
-    public UpdateService(HttpClient httpClient, string installDir)
+    public bool IsDownloading => _isDownloading;
+
+    public UpdateService(HttpClient httpClient, string installDir, string? updateRootDir = null)
     {
         _httpClient = httpClient;
         _installDir = installDir;
-        _updateRootDir = Path.Combine(Path.GetTempPath(), "SchoolNotify", "updates");
+        _updateRootDir = string.IsNullOrWhiteSpace(updateRootDir)
+            ? Path.Combine(Path.GetTempPath(), "SchoolNotify", "updates")
+            : updateRootDir;
         RestorePendingUpdate();
     }
 
@@ -61,6 +64,9 @@ public sealed class UpdateService
         if (string.IsNullOrEmpty(updateInfo.DownloadUrl) || string.IsNullOrEmpty(updateInfo.LatestVersion))
             return false;
 
+        if (!Uri.TryCreate(updateInfo.DownloadUrl, UriKind.Absolute, out var downloadUri))
+            return false;
+
         var versionDir = Path.Combine(_updateRootDir, updateInfo.LatestVersion);
         var extractDir = Path.Combine(versionDir, "extracted");
 
@@ -74,9 +80,6 @@ public sealed class UpdateService
 
         try
         {
-            int delaySeconds = _random.Next(0, 7201);
-            await Task.Delay(TimeSpan.FromSeconds(delaySeconds), cancellationToken);
-
             if (Directory.Exists(extractDir) && Directory.GetFiles(extractDir).Length > 0)
             {
                 _pendingVersion = updateInfo.LatestVersion;
@@ -89,7 +92,7 @@ public sealed class UpdateService
 
             Directory.CreateDirectory(extractDir);
 
-            await DownloadFileAsync(updateInfo.DownloadUrl, zipPath, cancellationToken);
+            await DownloadFileAsync(downloadUri, zipPath, cancellationToken);
 
             ZipFile.ExtractToDirectory(zipPath, extractDir, true);
 
@@ -156,7 +159,7 @@ public sealed class UpdateService
         }
     }
 
-    private async Task DownloadFileAsync(string url, string destinationPath, CancellationToken cancellationToken)
+    private async Task DownloadFileAsync(Uri url, string destinationPath, CancellationToken cancellationToken)
     {
         using var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         response.EnsureSuccessStatusCode();
