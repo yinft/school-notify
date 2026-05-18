@@ -28,7 +28,7 @@ class DeviceUpdateInfo(BaseModel):
 
 
 class HeartbeatResponse(DeviceResponse):
-    update: DeviceUpdateInfo | None = Field(None, description="客户端更新信息")
+    pass
 
 
 class DeviceUpdateRequest(BaseModel):

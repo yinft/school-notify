@@ -40,4 +40,13 @@ public sealed class DeviceApiClient(HttpClient httpClient)
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<DeviceResponse>(JsonOptions, cancellationToken))!;
     }
+
+    public async Task<DeviceUpdateInfo> CheckUpdateAsync(string deviceId, string deviceToken, CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/devices/{deviceId}/update");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", deviceToken);
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<DeviceUpdateInfo>(JsonOptions, cancellationToken))!;
+    }
 }

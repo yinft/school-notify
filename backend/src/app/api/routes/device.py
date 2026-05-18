@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.deps.auth import require_device_token
-from app.schemas.device import DeviceListResponse, DeviceRegistrationRequest, DeviceResponse, HeartbeatResponse
+from app.schemas.device import DeviceListResponse, DeviceRegistrationRequest, DeviceResponse, DeviceUpdateInfo, HeartbeatResponse
 from app.services.store import DeviceNotFoundError, store
 
 
@@ -36,6 +36,7 @@ def register_device(payload: DeviceRegistrationRequest) -> DeviceResponse:
     summary="设备心跳",
     description="【设备端】设备定期上报心跳以维持在线状态。服务端更新 last_seen_at 时间戳。",
     responses={404: {"description": "设备不存在"}},
+    response_model_exclude_none=True,
 )
 def heartbeat_device(
     device_id: str,
@@ -45,5 +46,23 @@ def heartbeat_device(
         raise HTTPException(status_code=403, detail="forbidden")
     try:
         return store.heartbeat_device(device_id=device_id)
+    except DeviceNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="device not found") from exc
+
+
+@router.get(
+    "/{device_id}/update",
+    summary="检查设备客户端更新",
+    description="【设备端】检查当前客户端版本是否存在已发布且推荐的 Windows 更新版本。",
+    responses={404: {"description": "设备不存在"}},
+)
+def check_device_update(
+    device_id: str,
+    parsed_device_id: str = Depends(require_device_token),
+) -> DeviceUpdateInfo:
+    if parsed_device_id != device_id:
+        raise HTTPException(status_code=403, detail="forbidden")
+    try:
+        return store.get_device_update(device_id=device_id)
     except DeviceNotFoundError as exc:
         raise HTTPException(status_code=404, detail="device not found") from exc

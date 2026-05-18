@@ -35,6 +35,8 @@ public partial class MainWindow : Window
 
     private readonly DispatcherTimer _heartbeatTimer;
 
+    private readonly DispatcherTimer _updateCheckTimer;
+
     private readonly DispatcherTimer _bannerHideTimer;
 
     private readonly DispatcherTimer _reconnectTimer;
@@ -69,6 +71,8 @@ public partial class MainWindow : Window
 
     private bool _isHeartbeatInProgress;
 
+    private bool _isUpdateCheckInProgress;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -87,7 +91,11 @@ public partial class MainWindow : Window
         _webSocketClient = new DeviceWebSocketClient(httpClient.BaseAddress!);
         _heartbeatTimer = new DispatcherTimer
         {
-            Interval = TimeSpan.FromSeconds(30)
+            Interval = TimeSpan.FromMinutes(10)
+        };
+        _updateCheckTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMinutes(60)
         };
         _bannerHideTimer = new DispatcherTimer
         {
@@ -99,6 +107,7 @@ public partial class MainWindow : Window
             Interval = TimeSpan.FromSeconds(1)
         };
         _heartbeatTimer.Tick += HeartbeatTimerOnTick;
+        _updateCheckTimer.Tick += UpdateCheckTimerOnTick;
         _bannerHideTimer.Tick += BannerHideTimerOnTick;
         _reconnectTimer.Tick += ReconnectTimerOnTick;
         _bindingCodeRefreshTimer.Tick += BindingCodeRefreshTimerOnTick;
@@ -172,6 +181,7 @@ public partial class MainWindow : Window
             _bindingCodeRefreshTimer.Start();
 
             await ConnectWebSocketAsync();
+            _updateCheckTimer.Start();
         }
         catch (Exception exception) when (IsDeviceAuthFailure(exception))
         {
@@ -185,10 +195,15 @@ public partial class MainWindow : Window
 
     private async void HeartbeatTimerOnTick(object? sender, EventArgs e)
     {
-        await SendHeartbeatAndApplyStateAsync(showCheckingStatus: true);
+        await SendHeartbeatAndApplyStateAsync();
     }
 
-    private async Task SendHeartbeatAndApplyStateAsync(bool showCheckingStatus)
+    private async void UpdateCheckTimerOnTick(object? sender, EventArgs e)
+    {
+        await CheckForUpdateAsync(showCheckingStatus: true);
+    }
+
+    private async Task SendHeartbeatAndApplyStateAsync()
     {
         if (_currentSession is null || string.IsNullOrEmpty(_deviceToken))
         {
@@ -203,24 +218,55 @@ public partial class MainWindow : Window
         try
         {
             _isHeartbeatInProgress = true;
+            var heartbeat = await _apiClient.SendHeartbeatAsync(_currentSession.DeviceId, _deviceToken, _cancellationTokenSource.Token);
+            ApplyDeviceState(heartbeat, DeviceStatusText.HeartbeatHealthy);
+        }
+        catch (HttpRequestException exception) when (IsDeviceAuthFailure(exception))
+        {
+            ShowDeviceAuthFailure();
+        }
+        catch (Exception exception)
+        {
+            ShowOperationalFailure($"心跳失败：{exception.Message}", "连接状态：心跳失败");
+        }
+        finally
+        {
+            _isHeartbeatInProgress = false;
+        }
+    }
+
+    private async Task CheckForUpdateAsync(bool showCheckingStatus)
+    {
+        if (_currentSession is null || string.IsNullOrEmpty(_deviceToken))
+        {
+            return;
+        }
+
+        if (_isUpdateCheckInProgress)
+        {
+            return;
+        }
+
+        try
+        {
+            _isUpdateCheckInProgress = true;
             if (showCheckingStatus && !_updateService.IsUpdatePending && !_updateService.IsDownloading)
             {
                 UpdateStatusTextBlock.Text = "更新状态：正在检查更新...";
             }
 
-            var heartbeat = await _apiClient.SendHeartbeatAsync(_currentSession.DeviceId, _deviceToken, _cancellationTokenSource.Token);
-            ApplyDeviceState(heartbeat, DeviceStatusText.HeartbeatHealthy);
+            var update = await _apiClient.CheckUpdateAsync(_currentSession.DeviceId, _deviceToken, _cancellationTokenSource.Token);
 
-            if (heartbeat.Update is { Available: true })
+            if (update.Available)
             {
                 if (_updateService.IsDownloading)
                 {
-                    UpdateStatusTextBlock.Text = $"更新状态：发现新版本 {heartbeat.Update.LatestVersion}，后台下载中";
+                    UpdateStatusTextBlock.Text = $"更新状态：发现新版本 {update.LatestVersion}，后台下载中";
                 }
                 else
                 {
-                    UpdateStatusTextBlock.Text = $"更新状态：发现新版本 {heartbeat.Update.LatestVersion}，后台下载中";
-                    _ = TryApplyUpdateAsync(heartbeat.Update);
+                    UpdateStatusTextBlock.Text = $"更新状态：发现新版本 {update.LatestVersion}，后台下载中";
+                    _ = TryApplyUpdateAsync(update);
                 }
             }
             else if (_updateService.IsUpdatePending)
@@ -238,12 +284,11 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            ShowOperationalFailure($"心跳失败：{exception.Message}", "连接状态：心跳失败");
             UpdateStatusTextBlock.Text = $"更新状态：检查更新失败：{exception.Message}";
         }
         finally
         {
-            _isHeartbeatInProgress = false;
+            _isUpdateCheckInProgress = false;
         }
     }
 
@@ -285,7 +330,8 @@ public partial class MainWindow : Window
             _cancellationTokenSource.Token);
 
         _reconnectAttempt = 0;
-        await SendHeartbeatAndApplyStateAsync(showCheckingStatus: true);
+        await SendHeartbeatAndApplyStateAsync();
+        await CheckForUpdateAsync(showCheckingStatus: true);
         _heartbeatTimer.Start();
         ReconnectStatusTextBlock.Text = "实时连接：已连接";
         ApplyConnectionStatus("online");
@@ -423,6 +469,7 @@ public partial class MainWindow : Window
         }
 
         _heartbeatTimer.Stop();
+        _updateCheckTimer.Stop();
         _bannerHideTimer.Stop();
         _reconnectTimer.Stop();
         _bindingCodeRefreshTimer.Stop();

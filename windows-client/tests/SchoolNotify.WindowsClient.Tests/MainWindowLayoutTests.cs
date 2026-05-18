@@ -44,11 +44,16 @@ public sealed class MainWindowLayoutTests
         Assert.Contains("Application.GetResourceStream", mainWindowCode, StringComparison.Ordinal);
         Assert.Contains("Text = \"思故桌面小喇叭\"", mainWindowCode, StringComparison.Ordinal);
         Assert.Contains("Timeout = TimeSpan.FromSeconds(10)", mainWindowCode, StringComparison.Ordinal);
+        Assert.Contains("Interval = TimeSpan.FromMinutes(10)", mainWindowCode, StringComparison.Ordinal);
+        Assert.Contains("Interval = TimeSpan.FromMinutes(60)", mainWindowCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("Interval = TimeSpan.FromSeconds(30)", mainWindowCode, StringComparison.Ordinal);
+        Assert.Contains("UpdateCheckTimerOnTick", mainWindowCode, StringComparison.Ordinal);
+        Assert.Contains("CheckForUpdateAsync", mainWindowCode, StringComparison.Ordinal);
         Assert.Contains("_isHeartbeatInProgress", mainWindowCode, StringComparison.Ordinal);
-        Assert.Contains("_ = TryApplyUpdateAsync(heartbeat.Update)", mainWindowCode, StringComparison.Ordinal);
+        Assert.Contains("_ = TryApplyUpdateAsync(update)", mainWindowCode, StringComparison.Ordinal);
         Assert.Contains("发现新版本", mainWindowCode, StringComparison.Ordinal);
         Assert.Contains("!_updateService.IsDownloading", mainWindowCode, StringComparison.Ordinal);
-        Assert.DoesNotContain("await TryApplyUpdateAsync(heartbeat.Update)", mainWindowCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("await TryApplyUpdateAsync(update)", mainWindowCode, StringComparison.Ordinal);
         Assert.Contains("实时连接：已连接", mainWindowCode, StringComparison.Ordinal);
         Assert.DoesNotContain("重连状态", mainWindowCode, StringComparison.Ordinal);
         Assert.Contains("ShowBalloonTip(2000, \"思故桌面小喇叭\"", mainWindowCode, StringComparison.Ordinal);

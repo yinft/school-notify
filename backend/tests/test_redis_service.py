@@ -1,4 +1,11 @@
 from app.services.redis_service import RedisService
+from app.core.settings import Settings
+
+
+def test_default_device_online_ttl_is_twenty_minutes() -> None:
+    settings = Settings()
+
+    assert settings.device_online_ttl_seconds == 1200
 
 
 class _FakePipeline:

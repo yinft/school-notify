@@ -259,7 +259,49 @@ def test_device_heartbeat_ignores_published_versions_without_recommendation() ->
     heartbeat_response = client.post("/api/devices/device-001/heartbeat", headers=device_auth_headers("device-001"))
 
     assert heartbeat_response.status_code == 200
-    assert heartbeat_response.json()["update"] is None
+    assert "update" not in heartbeat_response.json()
+
+
+def test_heartbeat_response_schema_has_no_update_field() -> None:
+    from app.schemas.device import HeartbeatResponse
+
+    assert "update" not in HeartbeatResponse.model_fields
+
+
+def test_device_update_check_returns_recommended_version() -> None:
+    client.post(
+        "/api/devices/register",
+        json={
+            "device_id": "device-001",
+            "device_name": "值班室电脑",
+            "client_version": "0.1.0",
+        },
+    )
+
+    with SessionLocal() as session:
+        session.add(
+            ClientVersion(
+                platform="windows",
+                version="0.2.0",
+                build_number="200",
+                release_notes="recommended update",
+                download_url="https://example.com/desktop-speaker-0.2.0.zip",
+                is_published=True,
+                is_recommended=True,
+            )
+        )
+        session.commit()
+
+    response = client.get("/api/devices/device-001/update", headers=device_auth_headers("device-001"))
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "available": True,
+        "current_version": "0.1.0",
+        "latest_version": "0.2.0",
+        "download_url": "https://example.com/desktop-speaker-0.2.0.zip",
+        "file_size": None,
+    }
 
 
 def test_device_heartbeat_returns_not_found_for_unknown_device() -> None:

@@ -133,7 +133,6 @@ class InMemoryStore:
             session.commit()
             session.refresh(device)
             redis_service.set_device_online(device_id)
-            update_info = self._build_update_info(session, device.client_version)
             return HeartbeatResponse(
                 device_id=device.device_id,
                 device_name=device.device_name,
@@ -142,7 +141,16 @@ class InMemoryStore:
                 status=device.status,
                 last_seen_at=device.last_seen_at,
                 device_token=build_device_token(device.device_id),
-                update=update_info,
+            )
+
+    def get_device_update(self, *, device_id: str) -> DeviceUpdateInfo:
+        with SessionLocal() as session:
+            device = session.execute(select(DeviceModel).where(DeviceModel.device_id == device_id)).scalar_one_or_none()
+            if device is None:
+                raise DeviceNotFoundError(device_id)
+            return self._build_update_info(session, device.client_version) or DeviceUpdateInfo(
+                available=False,
+                current_version=device.client_version,
             )
 
     def bind_user_to_device(

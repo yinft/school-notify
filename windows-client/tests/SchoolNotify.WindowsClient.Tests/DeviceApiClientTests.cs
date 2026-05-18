@@ -71,6 +71,25 @@ public class DeviceApiClientTests
         Assert.Equal("device-token-001", handler.LastRequest.Headers.Authorization!.Parameter);
     }
 
+    [Fact]
+    public async Task CheckUpdateAsync_GetsDeviceUpdateEndpoint()
+    {
+        var handler = new RecordingHandler("{\"available\":true,\"current_version\":\"0.1.0\",\"latest_version\":\"0.2.0\",\"download_url\":\"https://cdn.example.test/client.zip\",\"file_size\":123}");
+        var httpClient = new HttpClient(handler)
+        {
+            BaseAddress = new System.Uri("http://127.0.0.1:8000")
+        };
+        var apiClient = new DeviceApiClient(httpClient);
+
+        var update = await apiClient.CheckUpdateAsync("device-001", "device-token-001");
+
+        Assert.Equal(HttpMethod.Get, handler.LastRequest!.Method);
+        Assert.Equal("http://127.0.0.1:8000/api/devices/device-001/update", handler.LastRequest.RequestUri!.ToString());
+        Assert.Equal("device-token-001", handler.LastRequest.Headers.Authorization!.Parameter);
+        Assert.True(update.Available);
+        Assert.Equal("0.2.0", update.LatestVersion);
+    }
+
     private sealed class RecordingHandler(string responseBody) : HttpMessageHandler
     {
         public HttpRequestMessage? LastRequest { get; private set; }
