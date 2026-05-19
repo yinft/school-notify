@@ -70,7 +70,7 @@ test('public version payload can be adapted into homepage download content', () 
   assert.equal(content.download.version, '1.2.0')
   assert.equal(content.download.href, 'https://www.schoolhelper.cn/downloads/windows-1.2.0.zip')
   assert.equal(content.releases[0].version, 'v1.2.0')
-  assert.match(content.releases[0].summary, /个人|固定电脑|试用/)
+  assert.match(content.releases[0].detail, /个人|固定电脑|试用/)
 })
 
 test('public version requests only use normalized client payloads', async () => {

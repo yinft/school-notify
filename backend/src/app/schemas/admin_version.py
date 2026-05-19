@@ -65,6 +65,7 @@ class PublicVersionResponse(BaseModel):
     download_url: str
     file_size: int | None
     published_at: datetime | None
+    is_recommended: bool
 
 
 class PublicVersionListResponse(BaseModel):

@@ -17,6 +17,7 @@ def _to_response(version) -> PublicVersionResponse:
         download_url=version.download_url,
         file_size=version.file_size,
         published_at=version.published_at,
+        is_recommended=version.is_recommended,
     )
 
 

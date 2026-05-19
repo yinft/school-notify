@@ -229,3 +229,44 @@ def test_public_recommended_version_returns_single_item() -> None:
 
     assert response.status_code == 200
     assert response.json()["version"] == "1.0.0"
+
+
+def test_public_versions_include_recommendation_flag() -> None:
+    first_id = client.post(
+        "/api/admin/versions",
+        headers=admin_headers(),
+        json={
+            "platform": "windows",
+            "version": "1.0.0",
+            "build_number": "100",
+            "release_notes": "stable",
+            "download_url": "https://example.com/windows-1.0.0.zip",
+            "file_size": 1024,
+        },
+    ).json()["id"]
+    second_id = client.post(
+        "/api/admin/versions",
+        headers=admin_headers(),
+        json={
+            "platform": "windows",
+            "version": "1.1.0",
+            "build_number": "110",
+            "release_notes": "candidate",
+            "download_url": "https://example.com/windows-1.1.0.zip",
+            "file_size": 2048,
+        },
+    ).json()["id"]
+
+    client.post(f"/api/admin/versions/{first_id}/publish", headers=admin_headers())
+    client.post(f"/api/admin/versions/{second_id}/publish", headers=admin_headers())
+    client.post(f"/api/admin/versions/{first_id}/recommend", headers=admin_headers())
+
+    response = client.get("/api/public/versions?platform=windows")
+    items = response.json()["items"]
+
+    assert response.status_code == 200
+    assert len(items) == 2
+    assert items[0]["version"] == "1.1.0"
+    assert items[0]["is_recommended"] is False
+    assert items[1]["version"] == "1.0.0"
+    assert items[1]["is_recommended"] is True
