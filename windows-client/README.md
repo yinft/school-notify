@@ -27,33 +27,50 @@ windows-client/artifacts/obj/
 
 ## 绿色版打包
 
-推荐使用固定输出路径生成绿色版自包含包：
+推荐每次打包时显式传入版本号，避免后台版本号已更新但 zip 内程序集仍是旧版本。
+
+以下示例打包 `1.0.1`：
 
 ```powershell
+$version = "1.0.1"
+$publishDir = "artifacts\publish\windows-client\$version"
+$zipPath = "artifacts\publish\windows-client\school-notify-windows-client-$version.zip"
+
+if (Test-Path $publishDir) { Remove-Item $publishDir -Recurse -Force }
+if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+
+dotnet clean src\SchoolNotify.WindowsClient\SchoolNotify.WindowsClient.csproj `
+  -c Release `
+  -r win-x64
+
 dotnet publish src\SchoolNotify.WindowsClient\SchoolNotify.WindowsClient.csproj `
   -c Release `
   -r win-x64 `
   --self-contained true `
+  -p:Version=$version `
+  -p:AssemblyVersion=$version.0 `
+  -p:FileVersion=$version.0 `
+  -p:InformationalVersion=$version `
   -p:PublishSingleFile=false `
   -p:UseAppHost=true `
-  -o artifacts\SchoolNotify.WindowsClient-green-self-contained-win-x64
+  -o $publishDir
 
 Compress-Archive `
-  -Path artifacts\SchoolNotify.WindowsClient-green-self-contained-win-x64\* `
-  -DestinationPath artifacts\SchoolNotify.WindowsClient-green-self-contained-win-x64.zip `
+  -Path "$publishDir\*" `
+  -DestinationPath $zipPath `
   -Force
 ```
 
-固定输出目录：
+输出目录：
 
 ```text
-windows-client/artifacts/SchoolNotify.WindowsClient-green-self-contained-win-x64/
+windows-client/artifacts/publish/windows-client/1.0.1/
 ```
 
-固定 zip 包路径：
+zip 包路径：
 
 ```text
-windows-client/artifacts/SchoolNotify.WindowsClient-green-self-contained-win-x64.zip
+windows-client/artifacts/publish/windows-client/school-notify-windows-client-1.0.1.zip
 ```
 
 打包后应确认 zip 内至少包含：
@@ -62,6 +79,30 @@ windows-client/artifacts/SchoolNotify.WindowsClient-green-self-contained-win-x64
 SchoolNotify.WindowsClient.exe
 server-config.json
 ```
+
+### 版本校验
+
+上传 zip 前必须校验包内 DLL 版本，确保它与后台配置的 `latest_version` 一致：
+
+```powershell
+$dll = Resolve-Path "$publishDir\SchoolNotify.WindowsClient.dll"
+$asm = [System.Reflection.AssemblyName]::GetAssemblyName($dll)
+$info = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($dll)
+
+"AssemblyVersion=$($asm.Version)"
+"FileVersion=$($info.FileVersion)"
+"ProductVersion=$($info.ProductVersion)"
+```
+
+例如打包 `1.0.1` 时，应看到类似：
+
+```text
+AssemblyVersion=1.0.1.0
+FileVersion=1.0.1.0
+ProductVersion=1.0.1+...
+```
+
+如果这里仍显示 `0.1.0`，说明包内容是旧版本；不要上传这个 zip。
 
 ## 推荐后续脚本化
 

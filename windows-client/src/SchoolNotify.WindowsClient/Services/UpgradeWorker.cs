@@ -6,43 +6,107 @@ namespace SchoolNotify.WindowsClient.Services;
 
 public static class UpgradeWorker
 {
+    private static readonly string LogPath = Path.Combine(Path.GetTempPath(), "SchoolNotify", "updates", "upgrade.log");
+
     public static void Run(string sourceDir, string targetDir)
     {
-        if (string.IsNullOrEmpty(sourceDir) || string.IsNullOrEmpty(targetDir))
-            return;
-
-        if (!Directory.Exists(sourceDir))
-            return;
-
-        var mainExeName = Path.GetFileName(Environment.ProcessPath ?? "SchoolNotify.WindowsClient.exe");
-
-        var mainProcesses = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(mainExeName));
-        foreach (var proc in mainProcesses)
-        {
-            if (proc.Id == Environment.ProcessId)
-                continue;
-            proc.WaitForExit(30000);
-        }
-
-        Thread.Sleep(2000);
-
+        sourceDir = StripQuotes(sourceDir);
+        targetDir = StripQuotes(targetDir);
         try
         {
-            CopyDirectory(sourceDir, targetDir);
+            Log($"UpgradeWorker started. sourceDir=[{sourceDir}] targetDir=[{targetDir}]");
+
+            if (string.IsNullOrEmpty(sourceDir) || string.IsNullOrEmpty(targetDir))
+            {
+                Log("Exiting: sourceDir or targetDir is empty.");
+                return;
+            }
+
+            if (!Directory.Exists(sourceDir))
+            {
+                Log($"Exiting: sourceDir does not exist: {sourceDir}");
+                return;
+            }
+
+            var mainExeName = Path.GetFileName(Environment.ProcessPath ?? "SchoolNotify.WindowsClient.exe");
+            Log($"mainExeName=[{mainExeName}] ProcessId=[{Environment.ProcessId}]");
+
+            var mainProcesses = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(mainExeName));
+            Log($"Found {mainProcesses.Length} processes with name {Path.GetFileNameWithoutExtension(mainExeName)}");
+
+            foreach (var proc in mainProcesses)
+            {
+                if (proc.Id == Environment.ProcessId)
+                    continue;
+
+                Log($"Waiting for process {proc.Id} to exit (max 30s)...");
+                proc.WaitForExit(30000);
+                Log($"Process {proc.Id} exited or timed out. HasExited={proc.HasExited}");
+            }
+
+            Thread.Sleep(2000);
+
+            Log($"Starting file copy from [{sourceDir}] to [{targetDir}]");
+            CopyDirectoryWithRetry(sourceDir, targetDir, maxRetries: 5, retryDelayMs: 2000);
+            Log("File copy completed.");
+
+            var targetExe = Path.Combine(targetDir, mainExeName);
+            if (File.Exists(targetExe))
+            {
+                Log($"Starting new version: {targetExe}");
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = targetExe,
+                    UseShellExecute = true,
+                });
+            }
+            else
+            {
+                Log($"ERROR: target exe not found: {targetExe}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Log($"EXCEPTION: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+        }
+    }
+
+    private static string StripQuotes(string value)
+    {
+        if (value.Length >= 2 && value.StartsWith('"') && value.EndsWith('"'))
+            return value[1..^1];
+        return value;
+    }
+
+    private static void Log(string message)
+    {
+        try
+        {
+            var dir = Path.GetDirectoryName(LogPath);
+            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
+
+            File.AppendAllText(LogPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}\n");
         }
         catch
         {
-            return;
         }
+    }
 
-        var targetExe = Path.Combine(targetDir, mainExeName);
-        if (File.Exists(targetExe))
+    private static void CopyDirectoryWithRetry(string source, string target, int maxRetries, int retryDelayMs)
+    {
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
-            Process.Start(new ProcessStartInfo
+            try
             {
-                FileName = targetExe,
-                UseShellExecute = true,
-            });
+                CopyDirectory(source, target);
+                return;
+            }
+            catch (IOException ex) when (attempt < maxRetries)
+            {
+                Log($"Copy attempt {attempt} failed: {ex.Message}. Retrying in {retryDelayMs}ms...");
+                Thread.Sleep(retryDelayMs);
+            }
         }
     }
 

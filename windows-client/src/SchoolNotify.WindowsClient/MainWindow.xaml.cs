@@ -120,7 +120,7 @@ public partial class MainWindow : Window
             ContextMenuStrip = BuildTrayMenu()
         };
         _notifyIcon.DoubleClick += (_, _) => RestoreFromTray();
-        _notifyIcon.BalloonTipClicked += (_, _) => RestartForUpdate();
+        _notifyIcon.BalloonTipClicked += (_, _) => RestoreFromTray();
 
         Loaded += OnLoadedAsync;
         Closing += OnClosingAsync;
@@ -257,7 +257,11 @@ public partial class MainWindow : Window
 
             var update = await _apiClient.CheckUpdateAsync(_currentSession.DeviceId, _deviceToken, _cancellationTokenSource.Token);
 
-            if (update.Available)
+            if (_updateService.IsUpdatePending)
+            {
+                UpdateStatusTextBlock.Text = "更新状态：新版本已就绪，请从托盘菜单立即更新";
+            }
+            else if (update.Available)
             {
                 if (_updateService.IsDownloading)
                 {
@@ -268,10 +272,6 @@ public partial class MainWindow : Window
                     UpdateStatusTextBlock.Text = $"更新状态：发现新版本 {update.LatestVersion}，后台下载中";
                     _ = TryApplyUpdateAsync(update);
                 }
-            }
-            else if (_updateService.IsUpdatePending)
-            {
-                UpdateStatusTextBlock.Text = "更新状态：新版本已就绪，请从托盘菜单立即更新";
             }
             else
             {
@@ -505,6 +505,9 @@ public partial class MainWindow : Window
 
     private void RestartForUpdate()
     {
+        _isExplicitExitRequested = true;
+        var progressWindow = new UpdateProgressWindow();
+        progressWindow.Show();
         _updateService.ApplyUpdateAndRestart();
     }
 

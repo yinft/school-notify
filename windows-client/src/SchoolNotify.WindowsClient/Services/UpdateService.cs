@@ -127,15 +127,52 @@ public sealed class UpdateService
         if (string.IsNullOrEmpty(exePath))
             return;
 
-        var args = $"--upgrade --source \"{extractDir}\" --target \"{_installDir}\"";
+        var workerDir = PrepareUpgradeWorkerDir(exePath);
+        var workerExePath = Path.Combine(workerDir, Path.GetFileName(exePath));
+        if (!File.Exists(workerExePath))
+            return;
+
+        var args = $"--upgrade --source \"{extractDir.TrimEnd('\\')}\" --target \"{_installDir.TrimEnd('\\')}\"";
         Process.Start(new ProcessStartInfo
         {
-            FileName = exePath,
+            FileName = workerExePath,
             Arguments = args,
             UseShellExecute = true,
+            WindowStyle = ProcessWindowStyle.Hidden,
         });
 
         System.Windows.Application.Current.Shutdown();
+    }
+
+    private string PrepareUpgradeWorkerDir(string exePath)
+    {
+        var sourceDir = Path.GetDirectoryName(exePath);
+        if (string.IsNullOrEmpty(sourceDir))
+            return string.Empty;
+
+        var workerDir = Path.Combine(_updateRootDir, "worker");
+        if (Directory.Exists(workerDir))
+            Directory.Delete(workerDir, true);
+
+        CopyDirectory(sourceDir, workerDir);
+        return workerDir;
+    }
+
+    private static void CopyDirectory(string source, string target)
+    {
+        Directory.CreateDirectory(target);
+
+        foreach (var file in Directory.GetFiles(source))
+        {
+            var destFile = Path.Combine(target, Path.GetFileName(file));
+            File.Copy(file, destFile, true);
+        }
+
+        foreach (var dir in Directory.GetDirectories(source))
+        {
+            var destDir = Path.Combine(target, Path.GetFileName(dir));
+            CopyDirectory(dir, destDir);
+        }
     }
 
     private void CleanOldUpdateDirs(string? keepVersion)

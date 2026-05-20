@@ -27,7 +27,12 @@ public partial class App : System.Windows.Application
         for (int i = 0; i < args.Length - 1; i++)
         {
             if (string.Equals(args[i], key, StringComparison.OrdinalIgnoreCase))
-                return args[i + 1];
+            {
+                var value = args[i + 1];
+                if (value.Length >= 2 && value.StartsWith('"') && value.EndsWith('"'))
+                    value = value[1..^1];
+                return value;
+            }
         }
         return string.Empty;
     }
