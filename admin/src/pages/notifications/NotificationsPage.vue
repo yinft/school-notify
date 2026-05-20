@@ -74,10 +74,11 @@ onMounted(loadNotifications)
         <el-input v-model="senderUserId" class="filter-field" placeholder="发送人 user_id" clearable />
         <el-button type="primary" @click="applyFilters">筛选</el-button>
       </div>
-      <el-table v-loading="loading" :data="notifications" stripe empty-text="暂无通知数据">
-        <el-table-column prop="notification_id" label="通知 ID" min-width="180" />
-        <el-table-column prop="title" label="标题" min-width="180" />
-        <el-table-column prop="sender_user_id" label="发送人" min-width="120" />
+      <div class="table-scroll">
+      <el-table v-loading="loading" :data="notifications" stripe empty-text="暂无通知数据" class="admin-data-table">
+        <el-table-column prop="notification_id" label="通知 ID" min-width="220" show-overflow-tooltip class-name="mono-cell" />
+        <el-table-column prop="title" label="标题" min-width="220" show-overflow-tooltip />
+        <el-table-column prop="sender_user_id" label="发送人" min-width="160" show-overflow-tooltip class-name="mono-cell" />
         <el-table-column label="发送时间" min-width="180">
           <template #default="scope">
             {{ formatDateTime(scope.row.created_at) }}
@@ -92,12 +93,15 @@ onMounted(loadNotifications)
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="100">
+        <el-table-column label="操作" width="110" fixed="right">
           <template #default="scope">
+            <div class="table-actions">
             <el-button text type="primary" :icon="View" @click="openDetail(scope.row.notification_id)">详情</el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
+      </div>
       <el-pagination
         class="table-pagination"
         layout="total, prev, pager, next"

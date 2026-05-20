@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "test:ui": "node tests/admin-responsive-structure.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

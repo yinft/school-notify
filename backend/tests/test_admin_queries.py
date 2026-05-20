@@ -106,6 +106,27 @@ def test_admin_dashboard_summary_returns_counts() -> None:
     ]
 
 
+def test_admin_dashboard_summary_supports_30_day_trend() -> None:
+    seed_admin_query_data()
+
+    response = client.get("/api/admin/dashboard/summary?trend_days=30", headers=admin_headers())
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload["notification_trend"]) == 30
+
+
+def test_admin_dashboard_notification_trend_endpoint_returns_selected_range() -> None:
+    seed_admin_query_data()
+
+    response = client.get("/api/admin/dashboard/notification-trend?days=30", headers=admin_headers())
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload["items"]) == 30
+    assert set(payload["items"][0].keys()) == {"date", "count"}
+
+
 def test_admin_device_list_and_detail() -> None:
     seed_admin_query_data()
 

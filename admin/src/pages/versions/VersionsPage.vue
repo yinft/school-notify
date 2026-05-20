@@ -287,9 +287,10 @@ onMounted(loadVersions)
         <el-input v-model="keyword" class="filter-field filter-field-wide" placeholder="搜索版本号 / Build / 更新说明" clearable :prefix-icon="Search" />
         <el-button type="primary" @click="applyFilters">筛选</el-button>
       </div>
-      <el-table v-loading="loading" :data="versions" stripe empty-text="暂无版本数据" :row-class-name="versionRowClassName">
+      <div class="table-scroll">
+      <el-table v-loading="loading" :data="versions" stripe empty-text="暂无版本数据" :row-class-name="versionRowClassName" class="admin-data-table version-table">
         <el-table-column prop="version" label="版本号" min-width="120" />
-        <el-table-column prop="build_number" label="Build" min-width="100" />
+        <el-table-column prop="build_number" label="Build" min-width="140" show-overflow-tooltip class-name="mono-cell" />
         <el-table-column prop="platform" label="平台" width="100" />
         <el-table-column label="版本状态" min-width="220">
           <template #default="scope">
@@ -343,17 +344,20 @@ onMounted(loadVersions)
             {{ formatDateTime(scope.row.published_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" min-width="280">
+        <el-table-column label="操作" min-width="300" fixed="right">
           <template #default="scope">
+            <div class="table-actions table-actions-wide">
             <el-button text type="primary" :icon="Edit" @click="openEdit(scope.row)">编辑</el-button>
             <el-button v-if="!scope.row.is_published" text :icon="Upload" @click="handlePublish(scope.row)">发布</el-button>
             <el-button v-else text :icon="Download" @click="handleUnpublish(scope.row)">下线</el-button>
             <el-button v-if="scope.row.is_recommended" text type="warning" :icon="Star" disabled>当前推荐</el-button>
             <el-button v-else-if="scope.row.is_published" text :icon="Star" @click="handleRecommend(scope.row)">设为推荐</el-button>
             <el-button v-if="!scope.row.is_published" text type="danger" :icon="Delete" @click="handleDelete(scope.row)">删除</el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
+      </div>
       <el-pagination
         class="table-pagination"
         layout="total, prev, pager, next"

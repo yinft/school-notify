@@ -9,3 +9,7 @@ class AdminDashboardSummaryResponse(BaseModel):
     notification_trend: list[dict[str, int | str]]
     device_status_ratio: dict[str, int]
     version_distribution: list[dict[str, int | str]]
+
+
+class AdminDashboardNotificationTrendResponse(BaseModel):
+    items: list[dict[str, int | str]]

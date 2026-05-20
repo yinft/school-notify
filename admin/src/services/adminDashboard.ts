@@ -13,3 +13,7 @@ export type DashboardSummary = {
 export function fetchDashboardSummary() {
   return request<DashboardSummary>('/api/admin/dashboard/summary')
 }
+
+export function fetchDashboardNotificationTrend(params: { days: 7 | 30 }) {
+  return request<{ items: DashboardSummary['notification_trend'] }>('/api/admin/dashboard/notification-trend', { params })
+}

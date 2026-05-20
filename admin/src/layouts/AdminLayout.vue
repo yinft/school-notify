@@ -46,6 +46,10 @@ function toggleSidebar() {
   sidebarCollapsed.value = !sidebarCollapsed.value
 }
 
+function handleMenuSelect(path: string) {
+  void router.push(path)
+}
+
 async function handleLogout() {
   await authStore.logout()
   await router.push('/login')
@@ -54,6 +58,7 @@ async function handleLogout() {
 
 <template>
   <div class="admin-shell" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
+    <div class="responsive-shell-glow" aria-hidden="true"></div>
     <aside class="admin-sidebar card-box">
       <div class="brand-block">
         <img src="/app-icon.png" alt="思故桌面小喇叭图标" />
@@ -62,18 +67,18 @@ async function handleLogout() {
           <span>School Notify Admin</span>
         </div>
       </div>
-      <nav class="sidebar-nav">
-        <el-tooltip v-for="item in menuItems" :key="item.path" :content="item.label" placement="right" :disabled="!sidebarCollapsed">
-          <RouterLink
-            :to="item.path"
-            class="nav-link"
-            :class="{ active: route.path === item.path }"
-          >
-            <el-icon><component :is="item.icon" /></el-icon>
-            <span v-if="!sidebarCollapsed" class="nav-label">{{ item.label }}</span>
-          </RouterLink>
-        </el-tooltip>
-      </nav>
+      <el-menu
+        class="sidebar-nav"
+        :default-active="route.path"
+        :collapse="sidebarCollapsed"
+        @select="handleMenuSelect"
+      >
+        <el-menu-item v-for="item in menuItems" :key="item.path" :index="item.path">
+          <el-icon><component :is="item.icon" /></el-icon>
+          <template #title>{{ item.label }}</template>
+        </el-menu-item>
+      </el-menu>
+      <p class="mobile-nav-hint">左右滑动切换模块</p>
       <div class="sidebar-collapse-btn" @click="toggleSidebar">
         <el-icon><Fold v-if="!sidebarCollapsed" /><Expand v-else /></el-icon>
       </div>
@@ -82,6 +87,10 @@ async function handleLogout() {
     <main class="admin-main">
       <header class="admin-topbar card-box">
         <div class="topbar-left">
+          <div class="topbar-title-block">
+            <p class="topbar-eyebrow">Operations Console</p>
+            <h1>{{ pageTitle }}</h1>
+          </div>
           <nav class="breadcrumb">
             <template v-for="(crumb, idx) in breadcrumbs" :key="crumb.path">
               <RouterLink v-if="idx < breadcrumbs.length - 1" :to="crumb.path" class="breadcrumb-item">

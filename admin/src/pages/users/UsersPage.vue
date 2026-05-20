@@ -71,21 +71,25 @@ onMounted(loadUsers)
         <el-input v-model="keyword" class="filter-field filter-field-wide" placeholder="搜索用户 ID / 昵称" clearable :prefix-icon="Search" />
         <el-button type="primary" @click="applyFilters">筛选</el-button>
       </div>
-      <el-table v-loading="loading" :data="users" stripe empty-text="暂无用户数据">
+      <div class="table-scroll">
+      <el-table v-loading="loading" :data="users" stripe empty-text="暂无用户数据" class="admin-data-table">
         <el-table-column label="头像" width="88">
           <template #default="scope">
             <el-avatar :size="40" :src="scope.row.avatar_url || ''">{{ avatarFallback(scope.row.nickname) }}</el-avatar>
           </template>
         </el-table-column>
-        <el-table-column prop="user_id" label="用户 ID" min-width="180" />
-        <el-table-column prop="nickname" label="昵称" min-width="160" />
+        <el-table-column prop="user_id" label="用户 ID" min-width="220" show-overflow-tooltip class-name="mono-cell" />
+        <el-table-column prop="nickname" label="昵称" min-width="170" show-overflow-tooltip />
         <el-table-column prop="bound_devices_count" label="绑定设备数" width="120" />
-        <el-table-column label="操作" width="100">
+        <el-table-column label="操作" width="110" fixed="right">
           <template #default="scope">
+            <div class="table-actions">
             <el-button text type="primary" :icon="View" @click="openDetail(scope.row.user_id)">详情</el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
+      </div>
       <el-pagination
         class="table-pagination"
         layout="total, prev, pager, next"

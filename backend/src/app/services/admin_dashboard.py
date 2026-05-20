@@ -6,22 +6,27 @@ from sqlalchemy.orm import Session
 from app.models import Device, Notification, User
 
 
-def get_dashboard_summary(db: Session) -> dict[str, int]:
-    device_count = db.execute(select(func.count()).select_from(Device)).scalar_one()
-    online_device_count = db.execute(select(func.count()).select_from(Device).where(Device.status == "online")).scalar_one()
-    user_count = db.execute(select(func.count()).select_from(User)).scalar_one()
-    notification_count = db.execute(select(func.count()).select_from(Notification)).scalar_one()
+def get_notification_trend(db: Session, days: int) -> list[dict[str, int | str]]:
     today = datetime.now().date()
     notifications = db.execute(select(Notification)).scalars().all()
-    notification_trend = []
-    for days_ago in range(6, -1, -1):
+    trend = []
+    for days_ago in range(days - 1, -1, -1):
         target_day = today - timedelta(days=days_ago)
-        notification_trend.append(
+        trend.append(
             {
                 "date": target_day.isoformat(),
                 "count": sum(1 for item in notifications if item.created_at.date() == target_day),
             }
         )
+    return trend
+
+
+def get_dashboard_summary(db: Session, trend_days: int = 7) -> dict[str, int]:
+    device_count = db.execute(select(func.count()).select_from(Device)).scalar_one()
+    online_device_count = db.execute(select(func.count()).select_from(Device).where(Device.status == "online")).scalar_one()
+    user_count = db.execute(select(func.count()).select_from(User)).scalar_one()
+    notification_count = db.execute(select(func.count()).select_from(Notification)).scalar_one()
+    notification_trend = get_notification_trend(db, trend_days)
 
     device_status_ratio = {
         "online": online_device_count,

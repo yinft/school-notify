@@ -109,11 +109,12 @@ onMounted(loadDevices)
         </el-select>
         <el-button type="primary" @click="applyFilters">筛选</el-button>
       </div>
-      <el-table v-loading="loading" :data="devices" stripe empty-text="暂无设备数据">
-        <el-table-column prop="device_id" label="设备 ID" min-width="160" />
-        <el-table-column prop="device_name" label="设备名称" min-width="160" />
-        <el-table-column prop="location_label" label="位置" min-width="120" />
-        <el-table-column prop="client_version" label="客户端版本" min-width="120" />
+      <div class="table-scroll">
+      <el-table v-loading="loading" :data="devices" stripe empty-text="暂无设备数据" class="admin-data-table">
+        <el-table-column prop="device_id" label="设备 ID" min-width="190" show-overflow-tooltip class-name="mono-cell" />
+        <el-table-column prop="device_name" label="设备名称" min-width="170" show-overflow-tooltip />
+        <el-table-column prop="location_label" label="位置" min-width="140" show-overflow-tooltip />
+        <el-table-column prop="client_version" label="客户端版本" min-width="140" show-overflow-tooltip />
         <el-table-column prop="status" label="状态" width="100">
           <template #default="scope">
             <span :class="['status-badge', scope.row.status === 'online' ? 'status-online' : 'status-offline']">
@@ -122,13 +123,16 @@ onMounted(loadDevices)
           </template>
         </el-table-column>
         <el-table-column prop="bound_users_count" label="绑定人数" width="100" />
-        <el-table-column label="操作" width="180">
+        <el-table-column label="操作" width="190" fixed="right">
           <template #default="scope">
+            <div class="table-actions">
             <el-button text type="primary" :icon="View" @click="openDetail(scope.row.device_id)">详情</el-button>
             <el-button text :icon="Edit" @click="renameDevice(scope.row)">改名</el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
+      </div>
       <el-pagination
         class="table-pagination"
         layout="total, prev, pager, next"
