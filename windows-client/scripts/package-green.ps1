@@ -6,9 +6,20 @@
     执行 dotnet publish 生成 self-contained 绿色版 zip 包。
     通过环境变量 SCHOOL_NOTIFY_BASE_URL 指定后端地址。
 
+.PARAMETER Version
+    版本号，如 "1.0.3"
+
+.PARAMETER BaseUrl
+    后端服务器地址
+
+.PARAMETER Environment
+    打包环境：test（默认）或 prod
+    - test → 输出到 artifacts/publish/windows-client/<version>/
+    - prod → 输出到 artifacts/<version>/
+
 .EXAMPLE
     .\scripts\package-green.ps1 -Version "1.0.3" -BaseUrl "http://test-server:8000"
-    .\scripts\package-green.ps1 -Version "1.0.3" -BaseUrl "https://prod.example.com"
+    .\scripts\package-green.ps1 -Version "1.0.3" -BaseUrl "https://prod.example.com" -Environment prod
 #>
 
 param(
@@ -16,19 +27,32 @@ param(
     [string]$Version,
 
     [Parameter(Mandatory = $true)]
-    [string]$BaseUrl
+    [string]$BaseUrl,
+
+    [ValidateSet("test", "prod")]
+    [string]$Environment = "test"
 )
 
 $ErrorActionPreference = "Stop"
 
 $projectDir = Split-Path -Parent $PSScriptRoot
 $project    = Join-Path $projectDir "src\SchoolNotify.WindowsClient\SchoolNotify.WindowsClient.csproj"
-$publishDir = Join-Path $projectDir "artifacts\publish\windows-client\$Version"
-$zipPath    = Join-Path $projectDir "artifacts\publish\windows-client\school-notify-windows-client-$Version.zip"
+
+if ($Environment -eq "prod") {
+    $outputBase = Join-Path $projectDir "artifacts"
+} else {
+    $outputBase = Join-Path $projectDir "artifacts\publish\windows-client"
+}
+
+$publishDir = Join-Path $outputBase $Version
+$zipPath    = Join-Path $outputBase "school-notify-windows-client-$Version.zip"
 
 $env:SCHOOL_NOTIFY_BASE_URL = $BaseUrl.TrimEnd('/')
 
-Write-Host "BaseUrl: $env:SCHOOL_NOTIFY_BASE_URL"
+Write-Host "Environment: $Environment"
+Write-Host "BaseUrl:     $env:SCHOOL_NOTIFY_BASE_URL"
+Write-Host "Output:      $outputBase"
+Write-Host ""
 
 if (Test-Path $publishDir) { Remove-Item $publishDir -Recurse -Force }
 if (Test-Path $zipPath)    { Remove-Item $zipPath -Force }
@@ -81,5 +105,6 @@ Compress-Archive -Path "$publishDir\*" -DestinationPath $zipPath -Force
 $zip = Get-Item $zipPath
 Write-Host ""
 Write-Host "Done!"
-Write-Host "  ZIP:  $($zip.FullName)"
+Write-Host "  DIR: $publishDir"
+Write-Host "  ZIP: $($zip.FullName)"
 Write-Host "  Size: $([math]::Round($zip.Length / 1MB, 2)) MB"

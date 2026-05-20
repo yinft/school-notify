@@ -38,11 +38,11 @@ windows-client/artifacts/obj/
 ### 使用方法
 
 ```powershell
-# 测试包（指向测试服务器）
+# 测试包（默认环境，指向测试服务器）
 .\scripts\package-green.ps1 -Version "1.0.3" -BaseUrl "http://test-server:8000"
 
-# 生产包（指向正式服务器）
-.\scripts\package-green.ps1 -Version "1.0.3" -BaseUrl "https://your-domain.com"
+# 生产包（-Environment prod，指向正式服务器）
+.\scripts\package-green.ps1 -Version "1.0.3" -BaseUrl "https://your-domain.com" -Environment prod
 ```
 
 ### 脚本做了什么
@@ -52,12 +52,12 @@ windows-client/artifacts/obj/
 3. 校验 DLL 版本与 `-Version` 参数一致
 4. 压缩为 zip
 
-### 产出
+### 产出路径
 
-```text
-windows-client/artifacts/publish/windows-client/<version>/
-windows-client/artifacts/publish/windows-client/school-notify-windows-client-<version>.zip
-```
+| 环境 | 完整目录 | zip 包 |
+|---|---|---|
+| test（默认） | `artifacts/publish/windows-client/<version>/` | `artifacts/publish/windows-client/school-notify-windows-client-<version>.zip` |
+| prod | `artifacts/<version>/` | `artifacts/school-notify-windows-client-<version>.zip` |
 
 ### 版本校验
 
