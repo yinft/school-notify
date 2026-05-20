@@ -1,6 +1,4 @@
 using System;
-using System.IO;
-using System.Threading.Tasks;
 using SchoolNotify.WindowsClient.Services;
 using Xunit;
 
@@ -9,59 +7,59 @@ namespace SchoolNotify.WindowsClient.Tests;
 public sealed class ServerConfigStoreTests
 {
     [Fact]
-    public async Task ServerConfigStore_ReturnsDefaultBaseUrl_WhenMissing()
+    public void ServerConfigStore_ReturnsDefaultBaseUrl_WhenEnvVarNotSet()
     {
-        var filePath = Path.Combine(Path.GetTempPath(), $"school-notify-server-config-{Guid.NewGuid():N}.json");
-        var store = new ServerConfigStore(filePath);
+        var original = Environment.GetEnvironmentVariable("SCHOOL_NOTIFY_BASE_URL");
+        try
+        {
+            Environment.SetEnvironmentVariable("SCHOOL_NOTIFY_BASE_URL", null);
+            var store = new ServerConfigStore();
 
-        var config = await store.LoadAsync();
+            var config = store.Load();
 
-        Assert.Equal("http://127.0.0.1:8000", config.BaseUrl);
+            Assert.Equal("http://127.0.0.1:8000", config.BaseUrl);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("SCHOOL_NOTIFY_BASE_URL", original);
+        }
     }
 
     [Fact]
-    public async Task ServerConfigStore_LoadsConfiguredBaseUrl_WhenFileExists()
+    public void ServerConfigStore_LoadsBaseUrl_FromEnvVar()
     {
-        var filePath = Path.Combine(Path.GetTempPath(), $"school-notify-server-config-{Guid.NewGuid():N}.json");
-
+        var original = Environment.GetEnvironmentVariable("SCHOOL_NOTIFY_BASE_URL");
         try
         {
-            await File.WriteAllTextAsync(filePath, "{" + Environment.NewLine + "  \"BaseUrl\": \"https://www.schoolhelper.cn\"" + Environment.NewLine + "}");
-            var store = new ServerConfigStore(filePath);
+            Environment.SetEnvironmentVariable("SCHOOL_NOTIFY_BASE_URL", "https://www.schoolhelper.cn");
+            var store = new ServerConfigStore();
 
-            var config = await store.LoadAsync();
+            var config = store.Load();
 
             Assert.Equal("https://www.schoolhelper.cn", config.BaseUrl);
         }
         finally
         {
-            if (File.Exists(filePath))
-            {
-                File.Delete(filePath);
-            }
+            Environment.SetEnvironmentVariable("SCHOOL_NOTIFY_BASE_URL", original);
         }
     }
 
     [Fact]
-    public async Task ServerConfigStore_LoadsConfiguredBaseUrl_Synchronously_WhenFileExists()
+    public void ServerConfigStore_TrimsTrailingSlash()
     {
-        var filePath = Path.Combine(Path.GetTempPath(), $"school-notify-server-config-{Guid.NewGuid():N}.json");
-
+        var original = Environment.GetEnvironmentVariable("SCHOOL_NOTIFY_BASE_URL");
         try
         {
-            await File.WriteAllTextAsync(filePath, "{" + Environment.NewLine + "  \"BaseUrl\": \"http://8.136.61.23:8000\"" + Environment.NewLine + "}");
-            var store = new ServerConfigStore(filePath);
+            Environment.SetEnvironmentVariable("SCHOOL_NOTIFY_BASE_URL", "https://example.com/");
+            var store = new ServerConfigStore();
 
             var config = store.Load();
 
-            Assert.Equal("http://8.136.61.23:8000", config.BaseUrl);
+            Assert.Equal("https://example.com", config.BaseUrl);
         }
         finally
         {
-            if (File.Exists(filePath))
-            {
-                File.Delete(filePath);
-            }
+            Environment.SetEnvironmentVariable("SCHOOL_NOTIFY_BASE_URL", original);
         }
     }
 }

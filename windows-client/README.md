@@ -24,9 +24,16 @@ windows-client/artifacts/bin/
 windows-client/artifacts/obj/
 ```
 
+## 服务器地址
+
+客户端通过环境变量 `SCHOOL_NOTIFY_BASE_URL` 读取后端地址。
+
+- **本地调试**：不设置该变量时默认 `http://127.0.0.1:8000`
+- **打包时**：由 `package-green.ps1` 通过 `-BaseUrl` 参数自动设置
+
 ## 绿色版打包
 
-使用 `scripts/package-green.ps1` 一键打包，自动处理 `server-config.json` 的地址切换。
+使用 `scripts/package-green.ps1` 一键打包。
 
 ### 使用方法
 
@@ -40,12 +47,10 @@ windows-client/artifacts/obj/
 
 ### 脚本做了什么
 
-1. 备份当前 `src/SchoolNotify.WindowsClient/server-config.json`
-2. 将 `BaseUrl` 替换为传入的地址
-3. `dotnet clean` + `dotnet publish` (self-contained, win-x64)
-4. 校验 DLL 版本与 `-Version` 参数一致
-5. 压缩为 zip
-6. **恢复** `server-config.json` 为原始内容
+1. 设置环境变量 `SCHOOL_NOTIFY_BASE_URL` 为传入的地址
+2. `dotnet clean` + `dotnet publish` (self-contained, win-x64)
+3. 校验 DLL 版本与 `-Version` 参数一致
+4. 压缩为 zip
 
 ### 产出
 
