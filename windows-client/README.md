@@ -26,111 +26,47 @@ windows-client/artifacts/obj/
 
 ## 绿色版打包
 
-推荐每次打包时显式传入版本号，避免后台版本号已更新但 zip 内程序集仍是旧版本。
+使用 `scripts/package-green.ps1` 一键打包，自动处理 `server-config.json` 的地址切换。
 
-### 切换服务器地址
-
-`src/SchoolNotify.WindowsClient/server-config.json` 控制客户端连接的后端地址：
-
-```json
-{
-  "BaseUrl": "http://127.0.0.1:8000"
-}
-```
-
-**打包生产环境前**，必须将 `BaseUrl` 改为正式服务器地址（例如 `https://your-domain.com`），打包完成后可改回本地地址继续开发。
-
-当前没有自动替换机制，需要手动编辑此文件。
-
-### 打包命令
-
-以下示例打包 `1.0.2`：
+### 使用方法
 
 ```powershell
-$version = "1.0.2"
-$publishDir = "artifacts\publish\windows-client\$version"
-$zipPath = "artifacts\publish\windows-client\school-notify-windows-client-$version.zip"
+# 测试包（指向测试服务器）
+.\scripts\package-green.ps1 -Version "1.0.3" -BaseUrl "http://test-server:8000"
 
-if (Test-Path $publishDir) { Remove-Item $publishDir -Recurse -Force }
-if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
-
-dotnet clean src\SchoolNotify.WindowsClient\SchoolNotify.WindowsClient.csproj `
-  -c Release `
-  -r win-x64
-
-dotnet publish src\SchoolNotify.WindowsClient\SchoolNotify.WindowsClient.csproj `
-  -c Release `
-  -r win-x64 `
-  --self-contained true `
-  -p:Version=$version `
-  -p:AssemblyVersion=$version.0 `
-  -p:FileVersion=$version.0 `
-  -p:InformationalVersion=$version `
-  -p:PublishSingleFile=false `
-  -p:UseAppHost=true `
-  -o $publishDir
-
-Compress-Archive `
-  -Path "$publishDir\*" `
-  -DestinationPath $zipPath `
-  -Force
+# 生产包（指向正式服务器）
+.\scripts\package-green.ps1 -Version "1.0.3" -BaseUrl "https://your-domain.com"
 ```
 
-输出目录：
+### 脚本做了什么
+
+1. 备份当前 `src/SchoolNotify.WindowsClient/server-config.json`
+2. 将 `BaseUrl` 替换为传入的地址
+3. `dotnet clean` + `dotnet publish` (self-contained, win-x64)
+4. 校验 DLL 版本与 `-Version` 参数一致
+5. 压缩为 zip
+6. **恢复** `server-config.json` 为原始内容
+
+### 产出
 
 ```text
-windows-client/artifacts/publish/windows-client/1.0.2/
-```
-
-zip 包路径：
-
-```text
-windows-client/artifacts/publish/windows-client/school-notify-windows-client-1.0.2.zip
-```
-
-打包后应确认 zip 内至少包含：
-
-```text
-SchoolNotify.WindowsClient.exe
-server-config.json
+windows-client/artifacts/publish/windows-client/<version>/
+windows-client/artifacts/publish/windows-client/school-notify-windows-client-<version>.zip
 ```
 
 ### 版本校验
 
-上传 zip 前必须校验包内 DLL 版本，确保它与后台配置的 `latest_version` 一致：
+脚本自动校验 DLL 版本。如果版本不匹配会报错并终止，不会生成 zip。
 
-```powershell
-$dll = Resolve-Path "$publishDir\SchoolNotify.WindowsClient.dll"
-$asm = [System.Reflection.AssemblyName]::GetAssemblyName($dll)
-$info = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($dll)
-
-"AssemblyVersion=$($asm.Version)"
-"FileVersion=$($info.FileVersion)"
-"ProductVersion=$($info.ProductVersion)"
-```
-
-例如打包 `1.0.2` 时，应看到类似：
+输出示例：
 
 ```text
-AssemblyVersion=1.0.2.0
-FileVersion=1.0.2.0
-ProductVersion=1.0.2+...
+Version check:
+  AssemblyVersion = 1.0.3.0
+  FileVersion     = 1.0.3.0
+  ProductVersion  = 1.0.3+abc123...
+
+Done!
+  ZIP:  ...\school-notify-windows-client-1.0.3.zip
+  Size: 67.87 MB
 ```
-
-如果这里仍显示 `0.1.0`，说明包内容是旧版本；不要上传这个 zip。
-
-## 推荐后续脚本化
-
-后续可以新增：
-
-```text
-windows-client/scripts/package-green.ps1
-```
-
-脚本职责：
-
-1. 清理旧的绿色版发布目录。
-2. 执行 `dotnet publish`。
-3. 压缩生成固定 zip。
-4. 校验 `SchoolNotify.WindowsClient.exe` 和 `server-config.json` 存在。
-5. 输出最终 zip 路径和大小。
