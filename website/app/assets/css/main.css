@@ -670,6 +670,22 @@ h2 {
   }
 }
 
+.site-footer {
+  padding: 40px 0 32px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.site-footer a {
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.site-footer a:hover {
+  color: var(--ink);
+}
+
 @media (max-width: 980px) {
   .hero-section { min-height: auto; }
   .hero-grid { grid-template-columns: 1fr; gap: 46px; padding: 54px 0 90px; }

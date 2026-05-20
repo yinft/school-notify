@@ -224,5 +224,11 @@ useHead({
         </article>
       </div>
     </section>
+
+    <footer class="site-footer page-shell">
+      <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
+        皖ICP备2026013308号-1
+      </a>
+    </footer>
   </main>
 </template>
