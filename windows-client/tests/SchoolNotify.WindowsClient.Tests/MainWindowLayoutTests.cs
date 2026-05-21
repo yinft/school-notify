@@ -74,10 +74,10 @@ public sealed class MainWindowLayoutTests
         Assert.Contains("UpdateCheckTimerOnTick", mainWindowCode, StringComparison.Ordinal);
         Assert.Contains("CheckForUpdateAsync", mainWindowCode, StringComparison.Ordinal);
         Assert.Contains("_isHeartbeatInProgress", mainWindowCode, StringComparison.Ordinal);
-        Assert.Contains("_ = TryApplyUpdateAsync(update)", mainWindowCode, StringComparison.Ordinal);
+        Assert.Contains("await _updateService.TryStartUpdateAsync(update, _cancellationTokenSource.Token)", mainWindowCode, StringComparison.Ordinal);
         Assert.Contains("发现新版本", mainWindowCode, StringComparison.Ordinal);
         Assert.Contains("!_updateService.IsDownloading", mainWindowCode, StringComparison.Ordinal);
-        Assert.DoesNotContain("await TryApplyUpdateAsync(update)", mainWindowCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("_ = TryApplyUpdateAsync(update)", mainWindowCode, StringComparison.Ordinal);
         Assert.Contains("实时连接：已连接", mainWindowCode, StringComparison.Ordinal);
         Assert.DoesNotContain("重连状态", mainWindowCode, StringComparison.Ordinal);
         Assert.Contains("ShowBalloonTip(2000, \"思故桌面小喇叭\"", mainWindowCode, StringComparison.Ordinal);

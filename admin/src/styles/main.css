@@ -1621,6 +1621,46 @@ body {
   gap: 4px 8px;
 }
 
+.version-table .table-actions .el-button.is-text,
+.version-table .table-actions .el-button.is-link,
+.version-table .table-actions .el-button--text,
+.version-table .table-actions .el-button--link {
+  color: #c2410c !important;
+  background-color: rgba(249, 115, 22, 0.08) !important;
+  border: 1px solid rgba(249, 115, 22, 0.14) !important;
+  box-shadow: none;
+}
+
+.version-table .table-actions .el-button.is-text:hover,
+.version-table .table-actions .el-button.is-link:hover,
+.version-table .table-actions .el-button--text:hover,
+.version-table .table-actions .el-button--link:hover {
+  color: #9a3412 !important;
+  background-color: rgba(249, 115, 22, 0.14) !important;
+  border-color: rgba(249, 115, 22, 0.22) !important;
+}
+
+.version-table .table-actions .el-button--primary.is-text,
+.version-table .table-actions .el-button--primary.is-link,
+.version-table .table-actions .el-button--primary.el-button--text,
+.version-table .table-actions .el-button--primary.el-button--link {
+  color: #c2410c !important;
+}
+
+.version-table .table-actions .el-button--warning.is-text,
+.version-table .table-actions .el-button--warning.is-link {
+  color: #b45309 !important;
+  background-color: rgba(245, 158, 11, 0.1) !important;
+  border-color: rgba(245, 158, 11, 0.18) !important;
+}
+
+.version-table .table-actions .el-button--danger.is-text,
+.version-table .table-actions .el-button--danger.is-link {
+  color: #dc2626 !important;
+  background-color: rgba(239, 68, 68, 0.08) !important;
+  border-color: rgba(239, 68, 68, 0.16) !important;
+}
+
 .table-actions .el-button + .el-button {
   margin-left: 0;
 }

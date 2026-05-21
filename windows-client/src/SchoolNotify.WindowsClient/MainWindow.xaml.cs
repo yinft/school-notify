@@ -261,16 +261,25 @@ public partial class MainWindow : Window
             {
                 UpdateStatusTextBlock.Text = "更新状态：新版本已就绪，请从托盘菜单立即更新";
             }
+            else if (_updateService.IsDownloading)
+            {
+                UpdateStatusTextBlock.Text = $"更新状态：发现新版本 {update.LatestVersion}，正在下载中...";
+            }
             else if (update.Available)
             {
-                if (_updateService.IsDownloading)
+                UpdateStatusTextBlock.Text = $"更新状态：发现新版本 {update.LatestVersion}，正在下载中...";
+                var downloaded = await _updateService.TryStartUpdateAsync(update, _cancellationTokenSource.Token);
+                if (downloaded)
                 {
-                    UpdateStatusTextBlock.Text = $"更新状态：发现新版本 {update.LatestVersion}，后台下载中";
+                    RebuildTrayMenu();
+                    UpdateStatusTextBlock.Text = $"更新状态：新版本 {update.LatestVersion} 已就绪，请从托盘菜单立即更新";
+                    _notifyIcon.ShowBalloonTip(5000, "思故桌面小喇叭",
+                        $"新版本 {update.LatestVersion} 已就绪，请点击托盘菜单「立即更新」完成升级。",
+                        Forms.ToolTipIcon.Info);
                 }
                 else
                 {
-                    UpdateStatusTextBlock.Text = $"更新状态：发现新版本 {update.LatestVersion}，后台下载中";
-                    _ = TryApplyUpdateAsync(update);
+                    UpdateStatusTextBlock.Text = $"更新状态：下载新版本 {update.LatestVersion} 失败，稍后重试";
                 }
             }
             else
@@ -289,22 +298,6 @@ public partial class MainWindow : Window
         finally
         {
             _isUpdateCheckInProgress = false;
-        }
-    }
-
-    private async Task TryApplyUpdateAsync(DeviceUpdateInfo updateInfo)
-    {
-        var downloaded = await _updateService.TryStartUpdateAsync(updateInfo, _cancellationTokenSource.Token);
-        if (downloaded)
-        {
-            await Dispatcher.InvokeAsync(() =>
-            {
-                RebuildTrayMenu();
-                UpdateStatusTextBlock.Text = $"更新状态：新版本 {updateInfo.LatestVersion} 已就绪，请从托盘菜单立即更新";
-                _notifyIcon.ShowBalloonTip(5000, "思故桌面小喇叭",
-                    $"新版本 {updateInfo.LatestVersion} 已就绪，请点击托盘菜单「立即更新」完成升级。",
-                    Forms.ToolTipIcon.Info);
-            });
         }
     }
 
