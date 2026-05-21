@@ -208,24 +208,3 @@ def test_public_versions_only_returns_published_items() -> None:
     assert response.status_code == 200
     assert [item["version"] for item in response.json()["items"]] == ["1.0.0"]
 
-
-def test_public_recommended_version_returns_single_item() -> None:
-    version_id = client.post(
-        "/api/admin/versions",
-        headers=admin_headers(),
-        json={
-            "platform": "windows",
-            "version": "1.0.0",
-            "build_number": "100",
-            "release_notes": "初始版本",
-            "download_url": "https://example.com/windows-1.0.0.zip",
-            "file_size": 1024,
-        },
-    ).json()["id"]
-    client.post(f"/api/admin/versions/{version_id}/publish", headers=admin_headers())
-    client.post(f"/api/admin/versions/{version_id}/recommend", headers=admin_headers())
-
-    response = client.get("/api/public/versions/recommended?platform=windows")
-
-    assert response.status_code == 200
-    assert response.json()["version"] == "1.0.0"

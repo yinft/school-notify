@@ -78,13 +78,3 @@ def list_public_versions(db: Session, *, platform: str | None) -> list[ClientVer
     if platform:
         stmt = stmt.where(ClientVersion.platform == platform)
     return db.execute(stmt).scalars().all()
-
-
-def get_recommended_public_version(db: Session, *, platform: str) -> ClientVersion | None:
-    return db.execute(
-        select(ClientVersion).where(
-            ClientVersion.platform == platform,
-            ClientVersion.is_published.is_(True),
-            ClientVersion.is_recommended.is_(True),
-        )
-    ).scalar_one_or_none()
