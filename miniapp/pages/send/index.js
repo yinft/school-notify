@@ -12,7 +12,7 @@ Page({
     durationIndex: 0,
     customDurationValue: '',
     ttsEnabled: true,
-    title: '',
+    title: '通知',
     content: '',
     devices: [],
     selectedDeviceIds: [],
@@ -220,7 +220,7 @@ Page({
         icon: 'success'
       })
       this.setData({
-        title: '',
+        title: '通知',
         content: '',
         customDurationValue: '',
         durationIndex: 0

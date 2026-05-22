@@ -497,6 +497,12 @@ test('profile page nickname confirm ignores unchanged saved nickname', () => {
   assert.match(profileScript, /profile\.nickName === currentNickName/)
 })
 
+test('send page keeps default title as 通知', () => {
+  const sendScript = fs.readFileSync(path.resolve(__dirname, '../pages/send/index.js'), 'utf8')
+
+  assert.match(sendScript, /title:\s*'通知'/)
+})
+
 test('miniapp user-facing copy avoids campus and education positioning', () => {
   const miniappRoot = path.resolve(__dirname, '..')
   const files = [
