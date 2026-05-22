@@ -22,8 +22,28 @@
             </view>
           </button>
           <view class="profile-info">
-            <view class="profile-nick-text">{{nickName || '微信用户'}}</view>
-            <view class="hero-subtitle">{{isSubmittingProfile ? '保存中，请稍候...' : '点击头像更新微信头像。'}}</view>
+            <view class="profile-nick-trigger">
+              <view class="profile-nick-display-row">
+                <view class="profile-nick-display">{{draftNickName || nickName || '点击同步微信昵称'}}</view>
+                <view class="profile-nick-arrow">›</view>
+              </view>
+              <input
+                class="profile-nick-input"
+                type="nickname"
+                placeholder=""
+                value="{{draftNickName || nickName}}"
+                bindinput="onNickNameInput"
+                bindblur="onNickNameBlur"
+                bindchange="onNickNameConfirm"
+              />
+            </view>
+            <view class="hero-subtitle">{{isSubmittingProfile ? '保存中，请稍候...' : '点头像同步头像，点昵称同步昵称。'}}</view>
+          </view>
+        </view>
+        <view wx:if="{{showProfileSyncPrompt}}" class="profile-sync-notice">
+          <view class="profile-sync-copy">
+            <view class="profile-sync-title">补全微信资料</view>
+            <view class="profile-sync-desc">点头像同步头像，点昵称同步昵称。</view>
           </view>
         </view>
       </view>

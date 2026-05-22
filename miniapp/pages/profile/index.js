@@ -1,13 +1,15 @@
 const { ensurePageLogin } = require('../../utils/page-auth')
 const { getLoginRequiredMessage } = require('../../utils/auth-session')
 const { createLoginGateModel } = require('../../utils/login-gate')
-const { createUserProfile, uploadAvatarToQiniu } = require('../../utils/user-profile')
+const { createUserProfile, hasAuthorizedProfile, syncProfileToServer, uploadAvatarToQiniu } = require('../../utils/user-profile')
 
 Page({
   data: {
     userId: '',
     avatarUrl: '',
     nickName: '',
+    draftNickName: '',
+    showProfileSyncPrompt: false,
     isLoginRequired: false,
     loginTipText: '',
     loginGate: null,
@@ -27,12 +29,52 @@ Page({
 
   syncProfile() {
     const app = getApp()
-    const profile = app.globalData.userProfile || {}
+    const profile = createUserProfile(app.globalData.userProfile || {})
     this.setData({
       userId: app.globalData.currentUserId,
       avatarUrl: profile.avatarUrl || '',
-      nickName: profile.nickName || '微信用户'
+      nickName: profile.nickName || '微信用户',
+      draftNickName: profile.nickName || '',
+      showProfileSyncPrompt: !hasAuthorizedProfile(profile)
     })
+  },
+
+  onNickNameInput(event) {
+    this.setData({ draftNickName: event.detail.value || '' })
+  },
+
+  onNickNameBlur(event) {
+    this.setData({ draftNickName: event.detail.value || '' })
+  },
+
+  async onNickNameConfirm(event) {
+    if (this.data.isLoginRequired || this.data.isSubmittingProfile) {
+      return
+    }
+
+    const nickName = event.detail.value || this.data.draftNickName || ''
+    const profile = createUserProfile({ avatarUrl: this.data.avatarUrl || '', nickName })
+    const currentNickName = createUserProfile({ nickName: this.data.nickName === '微信用户' ? '' : this.data.nickName }).nickName
+    if (!profile.nickName) {
+      return
+    }
+    if (profile.nickName === currentNickName) {
+      return
+    }
+
+    this.setData({ isSubmittingProfile: true })
+    try {
+      await syncProfileToServer({ nickname: profile.nickName })
+      const app = getApp()
+      app.setUserProfile(createUserProfile({ avatarUrl: this.data.avatarUrl, nickName: profile.nickName }))
+      this.syncProfile()
+      wx.showToast({ title: '微信昵称已更新', icon: 'none' })
+    } catch {
+      this.syncProfile()
+      wx.showToast({ title: '昵称更新失败', icon: 'none' })
+    } finally {
+      this.setData({ isSubmittingProfile: false })
+    }
   },
 
   async manualLogin() {
@@ -58,16 +100,15 @@ Page({
 
     this.setData({ isSubmittingProfile: true })
     try {
-      const nickName = this.data.nickName || '微信用户'
+      const nickName = createUserProfile({ nickName: this.data.nickName === '微信用户' ? '' : this.data.nickName }).nickName
       const permanentAvatarUrl = await uploadAvatarToQiniu({ filePath: avatarUrl, nickname: nickName })
-      const profile = createUserProfile({ avatarUrl: permanentAvatarUrl, nickName })
       const app = getApp()
-      app.setUserProfile(profile)
-      this.setData({ avatarUrl: permanentAvatarUrl })
-      wx.showToast({ title: '头像已更新', icon: 'none' })
+      app.setUserProfile(createUserProfile({ avatarUrl: permanentAvatarUrl, nickName: this.data.draftNickName || nickName }))
+      this.syncProfile()
+      wx.showToast({ title: '微信头像已更新', icon: 'none' })
     } catch {
       this.syncProfile()
-      wx.showToast({ title: '头像上传失败', icon: 'none' })
+      wx.showToast({ title: '头像更新失败', icon: 'none' })
     } finally {
       this.setData({ isSubmittingProfile: false })
     }
@@ -79,6 +120,9 @@ Page({
     this.setData({
       userId: '',
       avatarUrl: '',
+      nickName: '',
+      draftNickName: '',
+      showProfileSyncPrompt: false,
       isLoginRequired: true,
       loginTipText: getLoginRequiredMessage('我的'),
       loginGate: createLoginGateModel('我的')

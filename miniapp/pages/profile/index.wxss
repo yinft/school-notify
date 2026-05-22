@@ -74,6 +74,62 @@
   line-height: 1.3;
 }
 
+.profile-nick-input {
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-size: 36rpx;
+  font-weight: 700;
+  line-height: 1.3;
+  min-height: 48rpx;
+}
+
+.profile-nick-trigger {
+  width: 100%;
+  position: relative;
+  min-height: 52rpx;
+}
+
+.profile-nick-trigger::after {
+  border: none;
+}
+
+.profile-nick-display-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  min-height: 52rpx;
+}
+
+.profile-nick-display {
+  flex: 1;
+  min-width: 0;
+  color: #ffffff;
+  font-size: 36rpx;
+  font-weight: 700;
+  line-height: 1.3;
+  word-break: break-all;
+}
+
+.profile-nick-arrow {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 30rpx;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.profile-nick-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  z-index: 2;
+}
+
 .profile-glow {
   position: absolute;
   border-radius: 50%;
@@ -93,6 +149,48 @@
   height: 110rpx;
   right: 110rpx;
   bottom: -28rpx;
+}
+
+.profile-sync-notice {
+  margin-top: 24rpx;
+  padding: 24rpx;
+  border-radius: 26rpx;
+  background: rgba(255, 255, 255, 0.16);
+  position: relative;
+  z-index: 2;
+}
+
+.profile-sync-copy {
+  min-width: 0;
+}
+
+.profile-sync-title {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.profile-sync-desc {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.profile-sync-action {
+  margin-top: 18rpx;
+  flex-shrink: 0;
+  min-width: 176rpx;
+  height: 76rpx;
+  padding: 0 24rpx;
+  border-radius: 999rpx;
+  background: #ffffff;
+  color: #2f80ff;
+  font-size: 24rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .menu-item {

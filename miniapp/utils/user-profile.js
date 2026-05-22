@@ -13,16 +13,11 @@ function createUserProfile({ avatarUrl = '', nickName = '' } = {}) {
   }
 }
 
-async function syncProfileToServer({ nickname, avatarUrl }) {
+async function syncProfileToServer({ nickname, avatarUrl, request: requestImpl = request }) {
   const payload = {}
   if (nickname) payload.nickname = nickname
   if (avatarUrl) payload.avatar_url = avatarUrl
-  try {
-    const result = await request({ url: '/users/me', method: 'PATCH', data: payload })
-    return result
-  } catch {
-    return null
-  }
+  return requestImpl({ url: '/users/me', method: 'PATCH', data: payload })
 }
 
 function uploadFile({ uploadFileImpl, uploadUrl, filePath, token, key }) {
@@ -46,10 +41,11 @@ function uploadFile({ uploadFileImpl, uploadUrl, filePath, token, key }) {
   })
 }
 
-async function uploadAvatarToQiniu({ filePath, nickname, request: requestImpl = request, uploadFile: uploadFileImpl = wx.uploadFile }) {
+async function uploadAvatarToQiniu({ filePath, nickname, request: requestImpl = request, uploadFile: uploadFileImpl }) {
+  const resolvedUploadFile = uploadFileImpl || wx.uploadFile
   const uploadToken = await requestImpl({ url: '/users/me/avatar/upload-token', method: 'POST' })
   await uploadFile({
-    uploadFileImpl,
+    uploadFileImpl: resolvedUploadFile,
     uploadUrl: uploadToken.upload_url,
     filePath,
     token: uploadToken.token,
@@ -66,10 +62,35 @@ async function uploadAvatarToQiniu({ filePath, nickname, request: requestImpl = 
   return uploadToken.public_url
 }
 
+async function syncWechatProfile({
+  avatarFilePath = '',
+  avatarUrl = '',
+  nickName = '',
+  request: requestImpl = request,
+  uploadFile: uploadFileImpl
+}) {
+  const profile = createUserProfile({ avatarUrl, nickName })
+  const nextAvatarUrl = avatarFilePath
+    ? await uploadAvatarToQiniu({
+      filePath: avatarFilePath,
+      nickname: profile.nickName,
+      request: requestImpl,
+      uploadFile: uploadFileImpl
+    })
+    : profile.avatarUrl
+
+  if (!avatarFilePath) {
+    await syncProfileToServer({ nickname: profile.nickName, avatarUrl: nextAvatarUrl, request: requestImpl })
+  }
+
+  return createUserProfile({ avatarUrl: nextAvatarUrl, nickName: profile.nickName })
+}
+
 module.exports = {
   USER_PROFILE_STORAGE_KEY,
   createUserProfile,
   hasAuthorizedProfile,
   uploadAvatarToQiniu,
-  syncProfileToServer
+  syncProfileToServer,
+  syncWechatProfile
 }

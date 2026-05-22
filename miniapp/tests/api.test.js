@@ -8,7 +8,7 @@ const { createAuthService } = require('../services/auth')
 const { getDurationSeconds, isCustomDurationSelected } = require('../pages/send/duration')
 const { createLoginGateModel } = require('../utils/login-gate')
 const { buildRequestOptions, getErrorMessage } = require('../utils/request')
-const { createUserProfile, hasAuthorizedProfile, uploadAvatarToQiniu } = require('../utils/user-profile')
+const { createUserProfile, hasAuthorizedProfile, uploadAvatarToQiniu, syncWechatProfile } = require('../utils/user-profile')
 const fs = require('node:fs')
 const path = require('node:path')
 const {
@@ -377,6 +377,13 @@ test('createUserProfile trims WeChat nickname and avatar values', () => {
   )
 })
 
+test('createUserProfile keeps current nickname comparable for no-op confirmation', () => {
+  const current = createUserProfile({ nickName: '小张' })
+  const incoming = createUserProfile({ nickName: ' 小张 ' })
+
+  assert.equal(current.nickName, incoming.nickName)
+})
+
 test('uploadAvatarToQiniu gets token, uploads file, and saves public avatar url', async () => {
   const calls = []
   const result = await uploadAvatarToQiniu({
@@ -417,6 +424,77 @@ test('uploadAvatarToQiniu gets token, uploads file, and saves public avatar url'
       avatar_url: 'https://img.schoolhelper.cn/avatars/user-001/20260516.png'
     }
   })
+})
+
+test('syncWechatProfile uploads avatar and returns trimmed profile data', async () => {
+  const calls = []
+  const profile = await syncWechatProfile({
+    avatarFilePath: 'wxfile://avatar.png',
+    nickName: ' 小张 ',
+    request(options) {
+      calls.push({ type: 'request', options })
+      if (options.url === '/users/me/avatar/upload-token') {
+        return Promise.resolve({
+          upload_url: 'https://upload.qiniup.com',
+          token: 'upload-token',
+          key: 'avatars/user-001/20260522.png',
+          public_url: 'https://img.schoolhelper.cn/avatars/user-001/20260522.png'
+        })
+      }
+      return Promise.resolve({ ok: true })
+    },
+    uploadFile(options) {
+      calls.push({ type: 'upload', options })
+      options.success({ statusCode: 200, data: '{"key":"avatars/user-001/20260522.png"}' })
+    }
+  })
+
+  assert.deepEqual(profile, {
+    avatarUrl: 'https://img.schoolhelper.cn/avatars/user-001/20260522.png',
+    nickName: '小张'
+  })
+  assert.equal(calls[0].options.url, '/users/me/avatar/upload-token')
+  assert.equal(calls[1].type, 'upload')
+  assert.deepEqual(calls[2].options, {
+    url: '/users/me',
+    method: 'PATCH',
+    data: {
+      nickname: '小张',
+      avatar_url: 'https://img.schoolhelper.cn/avatars/user-001/20260522.png'
+    }
+  })
+})
+
+test('syncWechatProfile rejects when nickname-only save fails', async () => {
+  await assert.rejects(
+    syncWechatProfile({
+      avatarUrl: 'https://img.schoolhelper.cn/avatars/user-001/20260522.png',
+      nickName: '小张',
+      request() {
+        return Promise.reject(new Error('save failed'))
+      }
+    }),
+    /save failed/
+  )
+})
+
+test('profile page includes sync prompt action for incomplete profile', () => {
+  const profileMarkup = fs.readFileSync(path.resolve(__dirname, '../pages/profile/index.wxml'), 'utf8')
+
+  assert.match(profileMarkup, /点头像同步头像，点昵称同步昵称/)
+  assert.match(profileMarkup, /type="nickname"/)
+  assert.match(profileMarkup, /bindblur="onNickNameBlur"/)
+  assert.match(profileMarkup, /class="profile-nick-input"/)
+  assert.match(profileMarkup, /class="profile-nick-trigger"/)
+  assert.match(profileMarkup, /class="profile-nick-display"/)
+  assert.match(profileMarkup, /bindchange="onNickNameConfirm"/)
+  assert.doesNotMatch(profileMarkup, /onSyncWechatProfile/)
+})
+
+test('profile page nickname confirm ignores unchanged saved nickname', () => {
+  const profileScript = fs.readFileSync(path.resolve(__dirname, '../pages/profile/index.js'), 'utf8')
+
+  assert.match(profileScript, /profile\.nickName === currentNickName/)
 })
 
 test('miniapp user-facing copy avoids campus and education positioning', () => {
