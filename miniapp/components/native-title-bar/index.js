@@ -11,9 +11,9 @@ Component({
   },
 
   data: {
-    navHeight: 0,
-    statusBarHeight: 0,
-    menuButtonTopGap: 0,
+    navHeight: 76,
+    statusBarHeight: 44,
+    menuButtonTopGap: 6,
     menuButtonHeight: 32
   },
 
