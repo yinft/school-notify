@@ -7,7 +7,14 @@
     </block>
 
     <block wx:else>
-      <view class="page-body">
+      <scroll-view
+        class="page-body"
+        scroll-y
+        enhanced
+        show-scrollbar="{{false}}"
+        lower-threshold="200"
+        bindscrolltolower="onScrollToLower"
+      >
       <view class="hero-card hero-card-records hero-card-compact">
         <view class="hero-overline">通知时间线</view>
         <view class="hero-title">发送记录更清楚</view>
@@ -94,7 +101,7 @@
           <view wx:elif="{{records.length}}" class="timeline-more-state timeline-more-state-end">已展示全部记录</view>
         </view>
       </view>
-      </view>
+      </scroll-view>
     </block>
   </view>
 </view>

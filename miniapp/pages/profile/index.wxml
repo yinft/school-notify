@@ -35,26 +35,25 @@
             </view>
           </button>
           <view class="profile-info">
-            <view class="profile-nick-row">
-              <view class="profile-nick-display">{{draftNickName || nickName || '微信用户'}}</view>
-              <view class="profile-nick-sync-trigger">
-                <view class="profile-nick-sync-arrow">›</view>
-                <input
-                  class="profile-nick-sync-input"
-                  type="nickname"
-                  placeholder=""
-                  value="{{draftNickName || nickName}}"
-                  bindchange="onNickNameConfirm"
-                />
-              </view>
+            <view class="profile-nick-field">
+              <input
+                class="profile-nick-input"
+                type="nickname"
+                placeholder="请输入昵称"
+                placeholder-class="profile-nick-placeholder"
+                value="{{draftNickName || nickName}}"
+                bindinput="onNickNameInput"
+                bindblur="onNickNameConfirm"
+                bindconfirm="onNickNameConfirm"
+              />
             </view>
-            <view class="hero-subtitle">{{isSubmittingProfile ? '保存中，请稍候...' : '点头像同步微信头像，点右侧箭头同步微信昵称。'}}</view>
+            <view class="hero-subtitle">{{isSubmittingProfile ? '保存中，请稍候...' : '点头像同步微信头像，修改昵称后会自动保存。'}}</view>
           </view>
         </view>
         <view wx:if="{{showProfileSyncPrompt}}" class="profile-sync-notice">
           <view class="profile-sync-copy">
             <view class="profile-sync-title">补全微信资料</view>
-            <view class="profile-sync-desc">点头像同步微信头像，点右侧箭头同步微信昵称。</view>
+            <view class="profile-sync-desc">点头像同步微信头像，修改昵称后会自动保存。</view>
           </view>
         </view>
       </view>

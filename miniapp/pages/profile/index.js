@@ -43,6 +43,10 @@ Page({
     })
   },
 
+  onNickNameInput(event) {
+    this.setData({ draftNickName: event.detail.value || '' })
+  },
+
   async onNickNameConfirm(event) {
     if (this.data.isLoginRequired || this.data.isSubmittingProfile) {
       return

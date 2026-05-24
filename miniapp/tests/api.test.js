@@ -87,21 +87,21 @@ test('device list uses simple separators without alternating left accent bars', 
   assert.doesNotMatch(devicesStyle, /border-left/)
 })
 
-test('profile nickname sync uses a lightweight arrow trigger', () => {
+test('profile nickname uses wechat nickname input type with auto-save on blur', () => {
   const profileMarkup = fs.readFileSync(path.resolve(__dirname, '../pages/profile/index.wxml'), 'utf8')
   const profileStyle = fs.readFileSync(path.resolve(__dirname, '../pages/profile/index.wxss'), 'utf8')
+  const profileScript = fs.readFileSync(path.resolve(__dirname, '../pages/profile/index.js'), 'utf8')
 
-  assert.match(profileMarkup, /class="profile-nick-row"/)
-  assert.match(profileMarkup, /class="profile-nick-display"/)
-  assert.match(profileMarkup, /class="profile-nick-sync-trigger"/)
-  assert.match(profileMarkup, /class="profile-nick-sync-arrow"/)
-  assert.match(profileMarkup, /input[\s\S]*class="profile-nick-sync-input"[\s\S]*type="nickname"/)
-  assert.doesNotMatch(profileMarkup, /bindinput="onNickNameInput"/)
-  assert.doesNotMatch(profileMarkup, /bindfocus="onNickNameFocus"/)
-  assert.doesNotMatch(profileMarkup, /bindblur="onNickNameBlur"/)
-  assert.match(profileStyle, /\.profile-nick-row\s*\{/)
-  assert.match(profileStyle, /\.profile-nick-sync-trigger\s*\{/)
-  assert.match(profileStyle, /\.profile-nick-sync-input\s*\{[\s\S]*opacity:\s*0;/)
+  assert.match(profileMarkup, /class="profile-nick-field"/)
+  assert.match(profileMarkup, /input[\s\S]*class="profile-nick-input"[\s\S]*bindinput="onNickNameInput"/)
+  assert.match(profileMarkup, /bindblur="onNickNameConfirm"/)
+  assert.match(profileMarkup, /bindconfirm="onNickNameConfirm"/)
+  assert.match(profileMarkup, /type="nickname"/)
+  assert.doesNotMatch(profileMarkup, /class="profile-nick-sync-trigger"/)
+  assert.match(profileStyle, /\.profile-nick-field\s*\{/)
+  assert.match(profileStyle, /\.profile-nick-input\s*\{[\s\S]*color:\s*#ffffff;/)
+  assert.match(profileStyle, /\.profile-nick-input\s*\{[\s\S]*background:\s*transparent;/)
+  assert.match(profileScript, /onNickNameInput\(event\)/)
 })
 
 test('records page initial load is not blocked by the loading guard', () => {
@@ -112,12 +112,20 @@ test('records page initial load is not blocked by the loading guard', () => {
   assert.match(recordsScript, /hasLoadedOnce:\s*true/)
 })
 
-test('profile nickname display remains visible while sync trigger stays separate', () => {
+test('records page uses scroll-view with scrolltolower for infinite loading', () => {
+  const recordsMarkup = fs.readFileSync(path.resolve(__dirname, '../pages/records/index.wxml'), 'utf8')
+  const recordsScript = fs.readFileSync(path.resolve(__dirname, '../pages/records/index.js'), 'utf8')
+
+  assert.match(recordsMarkup, /scroll-view[\s\S]*scroll-y/)
+  assert.match(recordsMarkup, /bindscrolltolower="onScrollToLower"/)
+  assert.match(recordsScript, /onScrollToLower/)
+})
+
+test('profile nickname display stays in a single editable row', () => {
   const profileMarkup = fs.readFileSync(path.resolve(__dirname, '../pages/profile/index.wxml'), 'utf8')
 
-  assert.match(profileMarkup, /class="profile-nick-row"/)
-  assert.match(profileMarkup, /class="profile-nick-display"/)
-  assert.match(profileMarkup, /class="profile-nick-sync-trigger"/)
+  assert.match(profileMarkup, /class="profile-nick-field"/)
+  assert.match(profileMarkup, /class="profile-nick-input"/)
 })
 
 test('send page keeps selected devices when device list reloads', () => {
@@ -594,12 +602,11 @@ test('syncWechatProfile rejects when nickname-only save fails', async () => {
 test('profile page includes sync prompt action for incomplete profile', () => {
   const profileMarkup = fs.readFileSync(path.resolve(__dirname, '../pages/profile/index.wxml'), 'utf8')
 
-  assert.match(profileMarkup, /点头像同步微信头像，点右侧箭头同步微信昵称/)
-  assert.match(profileMarkup, /type="nickname"/)
-  assert.match(profileMarkup, /class="profile-nick-sync-input"/)
-  assert.match(profileMarkup, /class="profile-nick-display"/)
-  assert.match(profileMarkup, /class="profile-nick-sync-trigger"/)
-  assert.match(profileMarkup, /bindchange="onNickNameConfirm"/)
+  assert.equal(profileMarkup.includes('点头像同步微信头像，修改昵称后会自动保存。'), true)
+  assert.match(profileMarkup, /class="profile-nick-input"/)
+  assert.match(profileMarkup, /class="profile-nick-field"/)
+  assert.match(profileMarkup, /bindblur="onNickNameConfirm"/)
+  assert.match(profileMarkup, /bindconfirm="onNickNameConfirm"/)
   assert.doesNotMatch(profileMarkup, /onSyncWechatProfile/)
 })
 

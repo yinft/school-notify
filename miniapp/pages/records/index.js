@@ -163,11 +163,15 @@ Page({
     })
   },
 
-  onReachBottom() {
+  onScrollToLower() {
     if (this.data.isLoginRequired) {
       return
     }
 
     this.loadRecords({ append: true })
+  },
+
+  onReachBottom() {
+    this.onScrollToLower()
   }
 })
