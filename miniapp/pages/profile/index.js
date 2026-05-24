@@ -14,14 +14,17 @@ Page({
     loginTipText: '',
     loginGate: null,
     isAuthorizingLogin: false,
-    isSubmittingProfile: false
+    isSubmittingProfile: false,
+    isProfileReady: false
   },
 
   async onShow() {
+    wx.setNavigationBarTitle({ title: '我的' })
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 3 })
     }
     if (!(await ensurePageLogin(this, '我的'))) {
+      this.setData({ isProfileReady: true })
       return
     }
     this.syncProfile()
@@ -35,16 +38,9 @@ Page({
       avatarUrl: profile.avatarUrl || '',
       nickName: profile.nickName || '微信用户',
       draftNickName: profile.nickName || '',
-      showProfileSyncPrompt: !hasAuthorizedProfile(profile)
+      showProfileSyncPrompt: !hasAuthorizedProfile(profile),
+      isProfileReady: true
     })
-  },
-
-  onNickNameInput(event) {
-    this.setData({ draftNickName: event.detail.value || '' })
-  },
-
-  onNickNameBlur(event) {
-    this.setData({ draftNickName: event.detail.value || '' })
   },
 
   async onNickNameConfirm(event) {

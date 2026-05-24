@@ -18,7 +18,7 @@ Page({
     selectedDeviceIds: [],
     selectedCount: 0,
     isSubmitting: false,
-    isLoadingDevices: false,
+    isLoadingDevices: true,
     errorText: '',
     submitHint: '请选择至少一台在线设备，并填写完整提醒内容。',
     isSubmitDisabled: true,
@@ -33,6 +33,7 @@ Page({
       this.getTabBar().setData({ selected: 1 })
     }
     if (!(await ensurePageLogin(this, '发送提醒'))) {
+      this.setData({ isLoadingDevices: false })
       return
     }
     this.loadDevices()
@@ -59,11 +60,14 @@ Page({
     this.setData({ isLoadingDevices: true, errorText: '' })
 
     try {
+      const selectedDeviceIds = new Set(this.data.selectedDeviceIds)
       const devices = await deviceService.fetchUserDevices()
-      const onlineDevices = devices.filter((device) => device.status === 'online').map((device) => ({ ...device, selected: false }))
+      const onlineDevices = devices
+        .filter((device) => device.status === 'online')
+        .map((device) => ({ ...device, selected: selectedDeviceIds.has(device.id) }))
       this.setData({
         devices: onlineDevices,
-        selectedDeviceIds: [],
+        selectedDeviceIds: onlineDevices.filter((device) => device.selected).map((device) => device.id),
         errorText: ''
       })
       this.syncSubmitState()
@@ -155,6 +159,8 @@ Page({
       submitHint = '标题和正文需要完整填写后才能发送。'
     } else if (requiresCustomDuration && !customDurationValue) {
       submitHint = '请输入自定义时长，单位为秒。'
+    } else if (requiresCustomDuration && Number(customDurationValue) <= 0) {
+      submitHint = '请输入大于 0 的自定义时长。'
     } else if (isSubmitting) {
       submitHint = '提醒正在发送，请稍候。'
     } else {
@@ -168,7 +174,7 @@ Page({
         !selectedDeviceIds.length ||
         !title.trim() ||
         !content.trim() ||
-        (requiresCustomDuration && !customDurationValue),
+        (requiresCustomDuration && (!customDurationValue || Number(customDurationValue) <= 0)),
       submitHint
     })
   },
@@ -191,6 +197,11 @@ Page({
 
     if (isCustomDurationSelected(durationIndex) && !customDurationValue) {
       wx.showToast({ title: '请输入自定义时长', icon: 'none' })
+      return
+    }
+
+    if (isCustomDurationSelected(durationIndex) && Number(customDurationValue) <= 0) {
+      wx.showToast({ title: '请输入大于 0 的自定义时长', icon: 'none' })
       return
     }
 

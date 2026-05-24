@@ -1,14 +1,27 @@
 <import src="../../templates/login-gate.wxml" />
 
 <view class="page-shell">
-  <native-title-bar title="我的" />
   <view class="page {{isLoginRequired ? 'page-login' : ''}}">
     <block wx:if="{{isLoginRequired}}">
       <template is="login-gate" data="{{ loginGate: loginGate, isAuthorizingLogin: isAuthorizingLogin }}" />
     </block>
 
-    <block wx:else>
+    <block wx:elif="{{!isProfileReady}}">
       <view class="page-body">
+        <view class="state-panel">
+          <view class="state-loading" aria-label="加载中">
+            <view class="state-loading-dot state-loading-dot-1"></view>
+            <view class="state-loading-dot state-loading-dot-2"></view>
+            <view class="state-loading-dot state-loading-dot-3"></view>
+          </view>
+          <view class="state-title">正在加载账号信息</view>
+          <view class="state-text">请稍候，系统正在同步你的资料。</view>
+        </view>
+      </view>
+    </block>
+
+    <block wx:else>
+      <view class="page-body profile-page-body">
       <view class="hero-card hero-card-profile hero-card-compact">
         <view class="profile-glow profile-glow-a"></view>
         <view class="profile-glow profile-glow-b"></view>
@@ -22,28 +35,26 @@
             </view>
           </button>
           <view class="profile-info">
-            <view class="profile-nick-trigger">
-              <view class="profile-nick-display-row">
-                <view class="profile-nick-display">{{draftNickName || nickName || '点击同步微信昵称'}}</view>
-                <view class="profile-nick-arrow">›</view>
+            <view class="profile-nick-row">
+              <view class="profile-nick-display">{{draftNickName || nickName || '微信用户'}}</view>
+              <view class="profile-nick-sync-trigger">
+                <view class="profile-nick-sync-arrow">›</view>
+                <input
+                  class="profile-nick-sync-input"
+                  type="nickname"
+                  placeholder=""
+                  value="{{draftNickName || nickName}}"
+                  bindchange="onNickNameConfirm"
+                />
               </view>
-              <input
-                class="profile-nick-input"
-                type="nickname"
-                placeholder=""
-                value="{{draftNickName || nickName}}"
-                bindinput="onNickNameInput"
-                bindblur="onNickNameBlur"
-                bindchange="onNickNameConfirm"
-              />
             </view>
-            <view class="hero-subtitle">{{isSubmittingProfile ? '保存中，请稍候...' : '点头像同步头像，点昵称同步昵称。'}}</view>
+            <view class="hero-subtitle">{{isSubmittingProfile ? '保存中，请稍候...' : '点头像同步微信头像，点右侧箭头同步微信昵称。'}}</view>
           </view>
         </view>
         <view wx:if="{{showProfileSyncPrompt}}" class="profile-sync-notice">
           <view class="profile-sync-copy">
             <view class="profile-sync-title">补全微信资料</view>
-            <view class="profile-sync-desc">点头像同步头像，点昵称同步昵称。</view>
+            <view class="profile-sync-desc">点头像同步微信头像，点右侧箭头同步微信昵称。</view>
           </view>
         </view>
       </view>

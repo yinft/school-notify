@@ -1,7 +1,6 @@
 <import src="../../templates/login-gate.wxml" />
 
 <view class="page-shell">
-  <native-title-bar title="设备" />
   <view class="page {{isLoginRequired ? 'page-login' : ''}}">
     <block wx:if="{{isLoginRequired}}">
       <template is="login-gate" data="{{ loginGate: loginGate, isAuthorizingLogin: isAuthorizingLogin }}" />
