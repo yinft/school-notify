@@ -46,6 +46,9 @@ public static class UpgradeWorker
 
             Thread.Sleep(2000);
 
+            Log($"Cleaning target directory [{targetDir}] before copy");
+            CleanTargetDirectory(sourceDir, targetDir);
+
             Log($"Starting file copy from [{sourceDir}] to [{targetDir}]");
             CopyDirectoryWithRetry(sourceDir, targetDir, maxRetries: 5, retryDelayMs: 2000);
             Log("File copy completed.");
@@ -107,6 +110,66 @@ public static class UpgradeWorker
                 Log($"Copy attempt {attempt} failed: {ex.Message}. Retrying in {retryDelayMs}ms...");
                 Thread.Sleep(retryDelayMs);
             }
+        }
+    }
+
+    private static void CleanTargetDirectory(string source, string target)
+    {
+        if (!Directory.Exists(target))
+        {
+            return;
+        }
+
+        var sourceFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        CollectRelativePaths(source, source, sourceFiles);
+
+        foreach (var file in Directory.GetFiles(target, "*", SearchOption.AllDirectories))
+        {
+            var relative = file.Substring(target.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            if (!sourceFiles.Contains(relative))
+            {
+                try
+                {
+                    File.Delete(file);
+                    Log($"Removed old file: {relative}");
+                }
+                catch (Exception ex)
+                {
+                    Log($"Failed to remove old file {relative}: {ex.Message}");
+                }
+            }
+        }
+
+        foreach (var dir in Directory.GetDirectories(target, "*", SearchOption.TopDirectoryOnly))
+        {
+            var dirName = Path.GetFileName(dir);
+            var sourceDir = Path.Combine(source, dirName);
+            if (!Directory.Exists(sourceDir))
+            {
+                try
+                {
+                    Directory.Delete(dir, true);
+                    Log($"Removed old directory: {dirName}");
+                }
+                catch (Exception ex)
+                {
+                    Log($"Failed to remove old directory {dirName}: {ex.Message}");
+                }
+            }
+        }
+    }
+
+    private static void CollectRelativePaths(string root, string current, HashSet<string> results)
+    {
+        foreach (var file in Directory.GetFiles(current))
+        {
+            var relative = file.Substring(root.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            results.Add(relative);
+        }
+
+        foreach (var dir in Directory.GetDirectories(current))
+        {
+            CollectRelativePaths(root, dir, results);
         }
     }
 

@@ -1,3 +1,4 @@
+using System.IO;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -74,13 +75,25 @@ public sealed class DeviceWebSocketClient
 
             while (socket.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
             {
-                var result = await socket.ReceiveAsync(buffer, cancellationToken);
+                using var ms = new MemoryStream();
+                WebSocketReceiveResult result;
+                do
+                {
+                    result = await socket.ReceiveAsync(buffer, cancellationToken);
+                    if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        break;
+                    }
+
+                    ms.Write(buffer, 0, result.Count);
+                } while (!result.EndOfMessage);
+
                 if (result.MessageType == WebSocketMessageType.Close)
                 {
                     break;
                 }
 
-                var json = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                var json = Encoding.UTF8.GetString(ms.ToArray());
                 var document = JsonDocument.Parse(json);
                 var eventName = document.RootElement.GetProperty("event").GetString();
                 if (eventName != "notification_created")

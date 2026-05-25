@@ -39,10 +39,8 @@
               <input
                 class="profile-nick-input"
                 type="nickname"
-                placeholder="请输入昵称"
+                placeholder="{{nickNamePlaceholder}}"
                 placeholder-class="profile-nick-placeholder"
-                value="{{draftNickName || nickName}}"
-                bindinput="onNickNameInput"
                 bindblur="onNickNameConfirm"
                 bindconfirm="onNickNameConfirm"
               />

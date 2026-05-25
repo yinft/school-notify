@@ -93,15 +93,27 @@ test('profile nickname uses wechat nickname input type with auto-save on blur', 
   const profileScript = fs.readFileSync(path.resolve(__dirname, '../pages/profile/index.js'), 'utf8')
 
   assert.match(profileMarkup, /class="profile-nick-field"/)
-  assert.match(profileMarkup, /input[\s\S]*class="profile-nick-input"[\s\S]*bindinput="onNickNameInput"/)
-  assert.match(profileMarkup, /bindblur="onNickNameConfirm"/)
+  assert.match(profileMarkup, /input[\s\S]*class="profile-nick-input"[\s\S]*bindblur="onNickNameConfirm"/)
   assert.match(profileMarkup, /bindconfirm="onNickNameConfirm"/)
   assert.match(profileMarkup, /type="nickname"/)
   assert.doesNotMatch(profileMarkup, /class="profile-nick-sync-trigger"/)
   assert.match(profileStyle, /\.profile-nick-field\s*\{/)
   assert.match(profileStyle, /\.profile-nick-input\s*\{[\s\S]*color:\s*#ffffff;/)
   assert.match(profileStyle, /\.profile-nick-input\s*\{[\s\S]*background:\s*transparent;/)
-  assert.match(profileScript, /onNickNameInput\(event\)/)
+  assert.match(profileScript, /onNickNameConfirm\(event\)/)
+})
+
+test('profile nickname input has no value binding so WeChat nickname selection is not overridden', () => {
+  const profileMarkup = fs.readFileSync(path.resolve(__dirname, '../pages/profile/index.wxml'), 'utf8')
+  const profileScript = fs.readFileSync(path.resolve(__dirname, '../pages/profile/index.js'), 'utf8')
+  const profileStyle = fs.readFileSync(path.resolve(__dirname, '../pages/profile/index.wxss'), 'utf8')
+
+  assert.doesNotMatch(profileMarkup, /value="\{\{/)
+  assert.doesNotMatch(profileMarkup, /bindinput="onNickNameInput"/)
+  assert.match(profileMarkup, /placeholder="\{\{nickNamePlaceholder\}\}"/)
+  assert.match(profileStyle, /\.profile-nick-placeholder\s*\{[^}]*color:\s*#ffffff/)
+  assert.match(profileScript, /nickNamePlaceholder:\s*''/)
+  assert.match(profileScript, /nickNamePlaceholder:\s*profile\.nickName/)
 })
 
 test('records page initial load is not blocked by the loading guard', () => {

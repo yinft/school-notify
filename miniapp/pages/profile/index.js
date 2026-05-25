@@ -38,13 +38,10 @@ Page({
       avatarUrl: profile.avatarUrl || '',
       nickName: profile.nickName || '微信用户',
       draftNickName: profile.nickName || '',
+      nickNamePlaceholder: profile.nickName || '请输入昵称',
       showProfileSyncPrompt: !hasAuthorizedProfile(profile),
       isProfileReady: true
     })
-  },
-
-  onNickNameInput(event) {
-    this.setData({ draftNickName: event.detail.value || '' })
   },
 
   async onNickNameConfirm(event) {
@@ -52,12 +49,13 @@ Page({
       return
     }
 
-    const nickName = event.detail.value || this.data.draftNickName || ''
+    const nickName = event.detail && typeof event.detail.value === 'string' ? event.detail.value : ''
     const profile = createUserProfile({ avatarUrl: this.data.avatarUrl || '', nickName })
-    const currentNickName = createUserProfile({ nickName: this.data.nickName === '微信用户' ? '' : this.data.nickName }).nickName
     if (!profile.nickName) {
       return
     }
+
+    const currentNickName = createUserProfile({ nickName: this.data.nickName === '微信用户' ? '' : this.data.nickName }).nickName
     if (profile.nickName === currentNickName) {
       return
     }
@@ -121,7 +119,8 @@ Page({
       userId: '',
       avatarUrl: '',
       nickName: '',
-      draftNickName: '',
+    draftNickName: '',
+    nickNamePlaceholder: '',
       showProfileSyncPrompt: false,
       isLoginRequired: true,
       loginTipText: getLoginRequiredMessage('我的'),
