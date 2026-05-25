@@ -7,21 +7,18 @@
     "pages/profile/index"
   ],
   "window": {
-    "navigationStyle": "custom",
     "navigationBarTitleText": "",
     "navigationBarBackgroundColor": "#0F172A",
     "navigationBarTextStyle": "white",
     "backgroundColor": "#F8FAFC",
     "backgroundTextStyle": "light"
   },
-  "usingComponents": {
-    "native-title-bar": "/components/native-title-bar/index"
-  },
   "tabBar": {
     "custom": true,
     "color": "#94a3b8",
     "selectedColor": "#0f172a",
     "backgroundColor": "#ffffff",
+    "borderStyle": "white",
     "list": [
       { "pagePath": "pages/devices/index", "text": "设备" },
       { "pagePath": "pages/send/index", "text": "发送" },

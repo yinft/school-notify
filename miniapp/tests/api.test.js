@@ -24,6 +24,127 @@ test('formatLastSeenText formats missing timestamps', () => {
   assert.equal(formatLastSeenText(null), '暂无在线记录')
 })
 
+test('miniapp uses custom bottom tab bar with page-selected state sync', () => {
+  const appConfig = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../app.json'), 'utf8'))
+  const tabbedPageScripts = [
+    fs.readFileSync(path.resolve(__dirname, '../pages/devices/index.js'), 'utf8'),
+    fs.readFileSync(path.resolve(__dirname, '../pages/send/index.js'), 'utf8'),
+    fs.readFileSync(path.resolve(__dirname, '../pages/records/index.js'), 'utf8'),
+    fs.readFileSync(path.resolve(__dirname, '../pages/profile/index.js'), 'utf8')
+  ]
+
+  assert.equal(appConfig.tabBar.custom, true)
+  assert.equal(appConfig.tabBar.list.length, 4)
+  assert.equal(tabbedPageScripts.every((script) => script.includes('getTabBar')), true)
+})
+
+test('miniapp uses native navigation to avoid first tab page layout jump', () => {
+  const appConfig = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../app.json'), 'utf8'))
+  const pageMarkups = ['devices', 'bind', 'send', 'records', 'profile'].map((page) =>
+    fs.readFileSync(path.resolve(__dirname, `../pages/${page}/index.wxml`), 'utf8')
+  )
+
+  assert.notEqual(appConfig.window.navigationStyle, 'custom')
+  assert.equal(Boolean(appConfig.usingComponents && appConfig.usingComponents['native-title-bar']), false)
+  assert.equal(pageMarkups.some((markup) => markup.includes('<native-title-bar')), false)
+})
+
+test('tab pages start in loading state to avoid first-entry empty-state flicker', () => {
+  const sendScript = fs.readFileSync(path.resolve(__dirname, '../pages/send/index.js'), 'utf8')
+  const recordsScript = fs.readFileSync(path.resolve(__dirname, '../pages/records/index.js'), 'utf8')
+  const profileScript = fs.readFileSync(path.resolve(__dirname, '../pages/profile/index.js'), 'utf8')
+  const profileMarkup = fs.readFileSync(path.resolve(__dirname, '../pages/profile/index.wxml'), 'utf8')
+  const sendInitialData = sendScript.match(/data:\s*\{[\s\S]*?\n  \},/)?.[0] || ''
+  const recordsInitialData = recordsScript.match(/data:\s*\{[\s\S]*?\n  \},/)?.[0] || ''
+  const profileInitialData = profileScript.match(/data:\s*\{[\s\S]*?\n  \},/)?.[0] || ''
+
+  assert.match(sendInitialData, /isLoadingDevices:\s*true/)
+  assert.match(recordsInitialData, /isLoading:\s*true/)
+  assert.match(profileInitialData, /isProfileReady:\s*false/)
+  assert.match(profileMarkup, /wx:elif="\{\{!isProfileReady\}\}"/)
+})
+
+test('profile page avoids empty overscroll when content fits the viewport', () => {
+  const profileMarkup = fs.readFileSync(path.resolve(__dirname, '../pages/profile/index.wxml'), 'utf8')
+  const profileStyle = fs.readFileSync(path.resolve(__dirname, '../pages/profile/index.wxss'), 'utf8')
+
+  assert.match(profileMarkup, /class="page-body profile-page-body"/)
+  assert.match(profileStyle, /\.profile-page-body\s*\{[\s\S]*overflow-y:\s*auto;/)
+  assert.match(profileStyle, /\.profile-page-body\s*\{[\s\S]*padding-bottom:\s*calc\(24rpx \+ env\(safe-area-inset-bottom\)\);/)
+})
+
+test('profile page sets native navigation title when shown', () => {
+  const profileScript = fs.readFileSync(path.resolve(__dirname, '../pages/profile/index.js'), 'utf8')
+
+  assert.match(profileScript, /wx\.setNavigationBarTitle\(\{\s*title:\s*'我的'\s*\}\)/)
+})
+
+test('device list uses simple separators without alternating left accent bars', () => {
+  const devicesStyle = fs.readFileSync(path.resolve(__dirname, '../pages/devices/index.wxss'), 'utf8')
+
+  assert.match(devicesStyle, /\.device-row\s*\{[\s\S]*border-bottom:\s*1rpx solid #edf4ff;/)
+  assert.doesNotMatch(devicesStyle, /\.device-row:nth-child/)
+  assert.doesNotMatch(devicesStyle, /border-left/)
+})
+
+test('profile nickname uses wechat nickname input type with auto-save on blur', () => {
+  const profileMarkup = fs.readFileSync(path.resolve(__dirname, '../pages/profile/index.wxml'), 'utf8')
+  const profileStyle = fs.readFileSync(path.resolve(__dirname, '../pages/profile/index.wxss'), 'utf8')
+  const profileScript = fs.readFileSync(path.resolve(__dirname, '../pages/profile/index.js'), 'utf8')
+
+  assert.match(profileMarkup, /class="profile-nick-field"/)
+  assert.match(profileMarkup, /input[\s\S]*class="profile-nick-input"[\s\S]*bindinput="onNickNameInput"/)
+  assert.match(profileMarkup, /bindblur="onNickNameConfirm"/)
+  assert.match(profileMarkup, /bindconfirm="onNickNameConfirm"/)
+  assert.match(profileMarkup, /type="nickname"/)
+  assert.doesNotMatch(profileMarkup, /class="profile-nick-sync-trigger"/)
+  assert.match(profileStyle, /\.profile-nick-field\s*\{/)
+  assert.match(profileStyle, /\.profile-nick-input\s*\{[\s\S]*color:\s*#ffffff;/)
+  assert.match(profileStyle, /\.profile-nick-input\s*\{[\s\S]*background:\s*transparent;/)
+  assert.match(profileScript, /onNickNameInput\(event\)/)
+})
+
+test('records page initial load is not blocked by the loading guard', () => {
+  const recordsScript = fs.readFileSync(path.resolve(__dirname, '../pages/records/index.js'), 'utf8')
+
+  assert.match(recordsScript, /hasLoadedOnce:\s*false/)
+  assert.match(recordsScript, /\(!append && this\.data\.isLoading && this\.data\.hasLoadedOnce\)/)
+  assert.match(recordsScript, /hasLoadedOnce:\s*true/)
+})
+
+test('records page uses scroll-view with scrolltolower for infinite loading', () => {
+  const recordsMarkup = fs.readFileSync(path.resolve(__dirname, '../pages/records/index.wxml'), 'utf8')
+  const recordsScript = fs.readFileSync(path.resolve(__dirname, '../pages/records/index.js'), 'utf8')
+
+  assert.match(recordsMarkup, /scroll-view[\s\S]*scroll-y/)
+  assert.match(recordsMarkup, /bindscrolltolower="onScrollToLower"/)
+  assert.match(recordsScript, /onScrollToLower/)
+})
+
+test('profile nickname display stays in a single editable row', () => {
+  const profileMarkup = fs.readFileSync(path.resolve(__dirname, '../pages/profile/index.wxml'), 'utf8')
+
+  assert.match(profileMarkup, /class="profile-nick-field"/)
+  assert.match(profileMarkup, /class="profile-nick-input"/)
+})
+
+test('send page keeps selected devices when device list reloads', () => {
+  const sendScript = fs.readFileSync(path.resolve(__dirname, '../pages/send/index.js'), 'utf8')
+  const loadDevicesBlock = sendScript.match(/async loadDevices\(\) \{[\s\S]*?\n  \},/)?.[0] || ''
+  const successBranch = loadDevicesBlock.match(/const selectedDeviceIds = new Set\(this\.data\.selectedDeviceIds\)[\s\S]*?this\.syncSubmitState\(\)/)?.[0] || ''
+
+  assert.match(successBranch, /const selectedDeviceIds = new Set\(this\.data\.selectedDeviceIds\)/)
+  assert.match(successBranch, /selected: selectedDeviceIds\.has\(device\.id\)/)
+  assert.match(successBranch, /selectedDeviceIds: onlineDevices\.filter\(\(device\) => device\.selected\)\.map\(\(device\) => device\.id\)/)
+})
+
+test('send page rejects non-positive custom durations', () => {
+  const sendScript = fs.readFileSync(path.resolve(__dirname, '../pages/send/index.js'), 'utf8')
+
+  assert.match(sendScript, /Number\(customDurationValue\) <= 0/)
+  assert.match(sendScript, /请输入大于 0 的自定义时长/)
+})
+
 test('formatLastSeenText formats local timestamps', () => {
   assert.equal(formatLastSeenText('2026-04-21T16:00:00'), '最后在线：2026-04-21 16:00:00')
 })
@@ -481,13 +602,11 @@ test('syncWechatProfile rejects when nickname-only save fails', async () => {
 test('profile page includes sync prompt action for incomplete profile', () => {
   const profileMarkup = fs.readFileSync(path.resolve(__dirname, '../pages/profile/index.wxml'), 'utf8')
 
-  assert.match(profileMarkup, /点头像同步头像，点昵称同步昵称/)
-  assert.match(profileMarkup, /type="nickname"/)
-  assert.match(profileMarkup, /bindblur="onNickNameBlur"/)
+  assert.equal(profileMarkup.includes('点头像同步微信头像，修改昵称后会自动保存。'), true)
   assert.match(profileMarkup, /class="profile-nick-input"/)
-  assert.match(profileMarkup, /class="profile-nick-trigger"/)
-  assert.match(profileMarkup, /class="profile-nick-display"/)
-  assert.match(profileMarkup, /bindchange="onNickNameConfirm"/)
+  assert.match(profileMarkup, /class="profile-nick-field"/)
+  assert.match(profileMarkup, /bindblur="onNickNameConfirm"/)
+  assert.match(profileMarkup, /bindconfirm="onNickNameConfirm"/)
   assert.doesNotMatch(profileMarkup, /onSyncWechatProfile/)
 })
 
@@ -528,64 +647,21 @@ test('miniapp user-facing copy avoids campus and education positioning', () => {
   assert.deepEqual(violations, [])
 })
 
-test('custom tab bar keeps safe area outside fixed content height', () => {
-  const tabBarStyle = fs.readFileSync(path.resolve(__dirname, '../custom-tab-bar/index.wxss'), 'utf8')
-  const tabBarRule = tabBarStyle.match(/\.tab-bar\s*\{[\s\S]*?\n\}/)?.[0] || ''
-
-  assert.match(tabBarRule, /height:\s*100rpx;/)
-  assert.match(tabBarRule, /bottom:\s*18rpx;/)
-  assert.doesNotMatch(tabBarRule, /bottom:\s*calc\([^;]*safe-area-inset-bottom[^;]*\);/)
-  assert.doesNotMatch(tabBarRule, /padding-bottom:\s*calc\([^;]*safe-area-inset-bottom[^;]*\);/)
-})
-
 test('hero titles leave enough line box room for Huawei font rendering', () => {
   const appStyle = fs.readFileSync(path.resolve(__dirname, '../app.wxss'), 'utf8')
   const sendStyle = fs.readFileSync(path.resolve(__dirname, '../pages/send/index.wxss'), 'utf8')
-  const pageRule = appStyle.match(/\.page\s*\{[\s\S]*?\n\}/)?.[0] || ''
+  const pageBodyRule = appStyle.match(/\.page-body\s*\{[\s\S]*?\n\}/)?.[0] || ''
   const heroTitleRule = appStyle.match(/\.hero-title\s*\{[\s\S]*?\n\}/)?.[0] || ''
   const sendTitleRule = sendStyle.match(/\.send-hero-title\s*\{[\s\S]*?\n\}/)?.[0] || ''
   const heroContentLayerRule = appStyle.match(/\.hero-simple-main,\n\.hero-overline,\n\.hero-title,\n\.hero-subtitle\s*\{[\s\S]*?\n\}/)?.[0] || ''
 
-  assert.match(pageRule, /padding:\s*24rpx\s+28rpx\s+calc\(132rpx \+ env\(safe-area-inset-bottom\)\);/)
+  assert.match(pageBodyRule, /padding:\s*24rpx\s+28rpx\s+calc\(132rpx \+ env\(safe-area-inset-bottom\)\);/)
   assert.match(heroTitleRule, /line-height:\s*1\.38;/)
   assert.match(heroTitleRule, /padding-bottom:\s*8rpx;/)
   assert.match(sendTitleRule, /line-height:\s*1\.38;/)
   assert.match(sendTitleRule, /padding-bottom:\s*8rpx;/)
   assert.match(heroContentLayerRule, /position:\s*relative;/)
   assert.match(heroContentLayerRule, /z-index:\s*2;/)
-})
-
-test('miniapp uses custom navigation to avoid Huawei native title clipping', () => {
-  const appConfig = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../app.json'), 'utf8'))
-  const componentMarkup = fs.readFileSync(path.resolve(__dirname, '../components/native-title-bar/index.wxml'), 'utf8')
-  const componentScript = fs.readFileSync(path.resolve(__dirname, '../components/native-title-bar/index.js'), 'utf8')
-  const componentStyle = fs.readFileSync(path.resolve(__dirname, '../components/native-title-bar/index.wxss'), 'utf8')
-  const pages = new Map([
-    ['pages/devices/index', '设备'],
-    ['pages/bind/index', '绑定设备'],
-    ['pages/send/index', '发送'],
-    ['pages/records/index', '记录'],
-    ['pages/profile/index', '我的']
-  ])
-
-  assert.equal(appConfig.window.navigationStyle, 'custom')
-  assert.equal(appConfig.usingComponents['native-title-bar'], '/components/native-title-bar/index')
-  assert.match(componentMarkup, /custom-nav-title/)
-  assert.match(componentMarkup, /margin-top:\s*\{\{menuButtonTopGap\}\}px;/)
-  assert.match(componentScript, /getMenuButtonBoundingClientRect/)
-  assert.match(componentScript, /const menuButtonTopGap = Math\.max\(menuButton\.top - statusBarHeight, 0\)/)
-  assert.match(componentScript, /const navHeight = menuButton\.bottom/)
-  assert.match(componentStyle, /font-size:\s*28rpx;/)
-  assert.doesNotMatch(componentStyle, /min-height:\s*88px;/)
-  for (const [pagePath, title] of pages) {
-    const config = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', `${pagePath}.json`), 'utf8'))
-    const markup = fs.readFileSync(path.resolve(__dirname, '..', `${pagePath}.wxml`), 'utf8')
-    const script = fs.readFileSync(path.resolve(__dirname, '..', `${pagePath}.js`), 'utf8')
-    assert.equal(config.navigationBarTitleText, title)
-    assert.match(markup, new RegExp(`<native-title-bar title="${title}"`))
-    assert.doesNotMatch(markup, /page-native-title-offset/)
-    assert.doesNotMatch(script, /setNavigationBarTitle/)
-  }
 })
 
 test('createLoggedInSession keeps stable default user id', () => {

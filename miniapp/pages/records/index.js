@@ -7,7 +7,8 @@ const PAGE_SIZE = 10
 Page({
   data: {
     records: [],
-    isLoading: false,
+    isLoading: true,
+    hasLoadedOnce: false,
     isLoadingMore: false,
     hasMore: false,
     totalRecords: 0,
@@ -25,6 +26,7 @@ Page({
       this.getTabBar().setData({ selected: 2 })
     }
     if (!(await ensurePageLogin(this, '发送记录'))) {
+      this.setData({ isLoading: false })
       return
     }
     this.loadRecords()
@@ -43,7 +45,7 @@ Page({
 
   async loadRecords(options = {}) {
     const append = options.append === true
-    if ((append && (this.data.isLoadingMore || !this.data.hasMore)) || (!append && this.data.isLoading)) {
+    if ((append && (this.data.isLoadingMore || !this.data.hasMore)) || (!append && this.data.isLoading && this.data.hasLoadedOnce)) {
       return
     }
 
@@ -71,6 +73,7 @@ Page({
         records,
         totalRecords: total,
         hasMore: records.length < total,
+        hasLoadedOnce: true,
         displayedCount: records.reduce(
           (total, record) => total + record.deliveries.filter((delivery) => delivery.displayed).length,
           0
@@ -84,7 +87,8 @@ Page({
           errorText: error.message || '记录加载失败',
           displayedCount: 0,
           totalRecords: 0,
-          hasMore: false
+          hasMore: false,
+          hasLoadedOnce: true
         })
       }
     } finally {
@@ -159,11 +163,15 @@ Page({
     })
   },
 
-  onReachBottom() {
+  onScrollToLower() {
     if (this.data.isLoginRequired) {
       return
     }
 
     this.loadRecords({ append: true })
+  },
+
+  onReachBottom() {
+    this.onScrollToLower()
   }
 })

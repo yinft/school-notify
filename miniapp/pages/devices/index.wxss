@@ -1,7 +1,6 @@
 .device-row {
   padding: 24rpx 0;
   border-bottom: 1rpx solid #edf4ff;
-  border-left: 6rpx solid transparent;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -10,11 +9,6 @@
 
 .device-row:last-child {
   border-bottom: none;
-}
-
-.device-row:nth-child(odd) {
-  border-left-color: #d7e8ff;
-  padding-left: 16rpx;
 }
 
 .device-info {
