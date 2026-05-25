@@ -78,6 +78,9 @@ def verify_admin_credentials(db: Session, *, username: str, password: str) -> Ad
 def ensure_admin_user(db: Session, *, username: str, password: str, display_name: str) -> AdminUser:
     admin = db.execute(select(AdminUser).where(AdminUser.username == username)).scalar_one_or_none()
     if admin is not None:
+        admin.password_hash = _hash_password(password)
+        admin.display_name = display_name
+        db.flush()
         return admin
 
     admin = AdminUser(
