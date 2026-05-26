@@ -424,7 +424,7 @@ input {
 
 .metric-card {
   padding: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .vben-card-header {
@@ -435,13 +435,18 @@ input {
 .chart-card h3 {
   font-size: 20px;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .metric-card-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   padding: 12px 24px 18px;
+  min-height: 48px;
 }
 
 .metric-card-content strong,
@@ -449,6 +454,7 @@ input {
   color: hsl(var(--foreground));
   font-size: 24px;
   font-weight: 500;
+  flex-shrink: 0;
 }
 
 .metric-icon-dot {
@@ -1734,7 +1740,7 @@ body {
 .dashboard-page {
   height: 100%;
   min-height: 0;
-  grid-template-rows: minmax(116px, 0.8fr) minmax(220px, 1.45fr) minmax(180px, 1fr);
+  grid-template-rows: auto minmax(220px, 1.45fr) minmax(180px, 1fr);
 }
 
 .dashboard-page .analysis-overview-grid,
