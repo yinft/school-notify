@@ -410,14 +410,11 @@ input {
   font-weight: 600;
 }
 
-.analysis-overview-grid,
-.card-grid.four-up,
-.chart-grid {
+.card-grid.four-up {
   display: grid;
   gap: 16px;
 }
 
-.analysis-overview-grid,
 .card-grid.four-up {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -496,10 +493,6 @@ input {
 .metric-card[data-tone="violet"] .metric-icon-dot {
   background: rgb(114 46 209 / 12%);
   box-shadow: inset 0 0 0 8px rgb(114 46 209 / 8%);
-}
-
-.chart-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .chart-card,
@@ -1285,9 +1278,7 @@ input {
     display: none;
   }
 
-  .analysis-overview-grid,
-  .card-grid.four-up,
-  .chart-grid {
+  .card-grid.four-up {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -1318,9 +1309,7 @@ input {
   }
 
   .sidebar-nav,
-  .analysis-overview-grid,
-  .card-grid.four-up,
-  .chart-grid {
+  .card-grid.four-up {
     grid-template-columns: 1fr;
   }
 
@@ -1681,13 +1670,8 @@ body {
   margin-inline: 24px;
 }
 
-.analysis-overview-grid,
 .card-grid.four-up {
   grid-template-columns: repeat(4, minmax(180px, 1fr));
-}
-
-.chart-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .metric-card {
@@ -1738,9 +1722,8 @@ body {
 }
 
 .dashboard-page {
-  height: 100%;
+  height: auto;
   min-height: 0;
-  grid-template-rows: auto minmax(220px, 1.45fr) minmax(180px, 1fr);
 }
 
 .dashboard-page .analysis-overview-grid,
@@ -1748,6 +1731,24 @@ body {
 .dashboard-page .chart-grid,
 .dashboard-page .chart-card {
   min-height: 0;
+}
+
+.dashboard-page .analysis-overview-grid,
+.dashboard-page .chart-grid {
+  margin-right: 0 !important;
+  margin-left: 0 !important;
+  row-gap: 16px;
+}
+
+.dashboard-page .analysis-overview-grid > .el-col,
+.dashboard-page .chart-grid > .el-col {
+  display: flex;
+  margin-bottom: 16px;
+}
+
+.dashboard-page .analysis-overview-grid > .el-col > .metric-card,
+.dashboard-page .chart-grid > .el-col > .chart-card {
+  width: 100%;
 }
 
 .dashboard-page .metric-card-content {
@@ -1884,9 +1885,7 @@ body {
     overflow: visible;
   }
 
-  .analysis-overview-grid,
-  .card-grid.four-up,
-  .chart-grid {
+  .card-grid.four-up {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1949,9 +1948,7 @@ body {
     min-width: 1240px;
   }
 
-  .analysis-overview-grid,
   .card-grid.four-up,
-  .chart-grid,
   .version-guide-panel,
   .version-target-strip,
   .detail-meta-grid,

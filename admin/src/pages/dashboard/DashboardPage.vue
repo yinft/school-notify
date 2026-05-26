@@ -180,23 +180,25 @@ watch(summary, async () => {
       <el-button text type="primary" @click="$router.go(0)">重试</el-button>
     </section>
 
-    <section class="analysis-overview-grid">
-      <article v-for="card in cards" :key="card.label" class="metric-card vben-card" :data-tone="card.tone" v-loading="summaryLoading">
-        <header class="vben-card-header">
-          <h3>{{ card.label }}</h3>
-        </header>
-        <div class="metric-card-content">
-          <strong>{{ card.value }}</strong>
-          <span class="metric-icon-dot metric-card-illustration">
-            <el-icon><component :is="card.icon" /></el-icon>
-          </span>
-        </div>
-        <footer class="metric-card-footer">
-          <span>{{ card.totalTitle }}</span>
-          <b>{{ card.totalValue }}</b>
-        </footer>
-      </article>
-    </section>
+    <el-row class="analysis-overview-grid" :gutter="16">
+      <el-col v-for="card in cards" :key="card.label" :xs="24" :sm="12" :lg="6">
+        <article class="metric-card vben-card" :data-tone="card.tone" v-loading="summaryLoading">
+          <header class="vben-card-header">
+            <h3>{{ card.label }}</h3>
+          </header>
+          <div class="metric-card-content">
+            <strong>{{ card.value }}</strong>
+            <span class="metric-icon-dot metric-card-illustration">
+              <el-icon><component :is="card.icon" /></el-icon>
+            </span>
+          </div>
+          <footer class="metric-card-footer">
+            <span>{{ card.totalTitle }}</span>
+            <b>{{ card.totalValue }}</b>
+          </footer>
+        </article>
+      </el-col>
+    </el-row>
 
     <section class="chart-tabs-card vben-card" v-loading="trendLoading">
       <header class="vben-card-header chart-tabs-header">
@@ -210,23 +212,29 @@ watch(summary, async () => {
       <div ref="trendChart" class="echart-canvas large-chart"></div>
     </section>
 
-    <section class="chart-grid">
-      <article class="chart-card vben-card" v-loading="summaryLoading">
-        <header class="vben-card-header"><h3>在线设备占比</h3></header>
-        <div ref="statusChart" class="echart-canvas"></div>
-      </article>
-      <article class="chart-card vben-card" v-loading="summaryLoading">
-        <header class="vben-card-header"><h3>客户端版本分布</h3></header>
-        <div ref="versionChart" class="echart-canvas"></div>
-      </article>
-      <article class="chart-card vben-card" v-loading="summaryLoading">
-        <header class="vben-card-header"><h3>运营概览</h3></header>
-        <div class="dashboard-summary-list">
-          <div><span>设备在线率</span><strong>{{ summary ? `${Math.round((summary.device_status_ratio.online / Math.max(summary.device_count, 1)) * 100)}%` : '-' }}</strong></div>
-          <div><span>用户总数</span><strong>{{ summary?.user_count ?? '-' }}</strong></div>
-          <div><span>通知总量</span><strong>{{ summary?.notification_count ?? '-' }}</strong></div>
-        </div>
-      </article>
-    </section>
+    <el-row class="chart-grid" :gutter="16">
+      <el-col :xs="24" :sm="12" :lg="8">
+        <article class="chart-card vben-card" v-loading="summaryLoading">
+          <header class="vben-card-header"><h3>在线设备占比</h3></header>
+          <div ref="statusChart" class="echart-canvas"></div>
+        </article>
+      </el-col>
+      <el-col :xs="24" :sm="12" :lg="8">
+        <article class="chart-card vben-card" v-loading="summaryLoading">
+          <header class="vben-card-header"><h3>客户端版本分布</h3></header>
+          <div ref="versionChart" class="echart-canvas"></div>
+        </article>
+      </el-col>
+      <el-col :xs="24" :sm="12" :lg="8">
+        <article class="chart-card vben-card" v-loading="summaryLoading">
+          <header class="vben-card-header"><h3>运营概览</h3></header>
+          <div class="dashboard-summary-list">
+            <div><span>设备在线率</span><strong>{{ summary ? `${Math.round((summary.device_status_ratio.online / Math.max(summary.device_count, 1)) * 100)}%` : '-' }}</strong></div>
+            <div><span>用户总数</span><strong>{{ summary?.user_count ?? '-' }}</strong></div>
+            <div><span>通知总量</span><strong>{{ summary?.notification_count ?? '-' }}</strong></div>
+          </div>
+        </article>
+      </el-col>
+    </el-row>
   </div>
 </template>
