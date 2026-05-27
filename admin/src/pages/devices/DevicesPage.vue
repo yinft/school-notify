@@ -126,8 +126,8 @@ onMounted(loadDevices)
         <el-table-column label="操作" width="190" fixed="right">
           <template #default="scope">
             <div class="table-actions">
-            <el-button text type="primary" :icon="View" @click="openDetail(scope.row.device_id)">详情</el-button>
-            <el-button text :icon="Edit" @click="renameDevice(scope.row)">改名</el-button>
+            <el-button link type="primary" :icon="View" @click="openDetail(scope.row.device_id)">详情</el-button>
+            <el-button link :icon="Edit" @click="renameDevice(scope.row)">改名</el-button>
             </div>
           </template>
         </el-table-column>

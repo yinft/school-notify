@@ -25,6 +25,7 @@ for (const page of listPages) {
   const source = read(page)
   assert(source.includes('class="table-scroll"'), `${page} must wrap el-table in .table-scroll`)
   assert(/class="[^"]*table-actions[^"]*"/.test(source), `${page} must wrap operation buttons in .table-actions`)
+  assert(/<el-button\s+[^>]*\blink\b/.test(source), `${page} must use Element Plus link buttons for table actions`)
 }
 
 const css = read('src/styles/main.css')
@@ -73,6 +74,7 @@ assert(css.includes('background: rgb(255 255 255 / 72%);'), 'liquid glass cards 
 assert(css.includes('--el-color-primary: #2563eb;'), 'Element Plus primary color must be a solid pure color')
 assert(css.includes('background-color: #2563eb;'), 'primary buttons must use solid background-color')
 assert(css.includes('background-image: none !important;'), 'primary buttons must not use gradient backgrounds')
+assert(css.includes('.el-button--primary:not(.is-link):not(.is-text):not(.is-plain)'), 'primary button overrides must not restyle native link/text/plain buttons')
 assert(layout.includes('<el-menu'), 'sidebar navigation should use Element Plus el-menu')
 assert(layout.includes('<el-menu-item'), 'sidebar navigation should use Element Plus el-menu-item')
 assert(!layout.includes('class="nav-link"'), 'sidebar navigation should not use custom nav-link router styling')

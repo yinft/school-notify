@@ -347,12 +347,12 @@ onMounted(loadVersions)
         <el-table-column label="操作" min-width="300" fixed="right">
           <template #default="scope">
             <div class="table-actions table-actions-wide">
-            <el-button text type="primary" :icon="Edit" @click="openEdit(scope.row)">编辑</el-button>
-            <el-button v-if="!scope.row.is_published" text :icon="Upload" @click="handlePublish(scope.row)">发布</el-button>
-            <el-button v-else text :icon="Download" @click="handleUnpublish(scope.row)">下线</el-button>
-            <el-button v-if="scope.row.is_recommended" text type="warning" :icon="Star" disabled>当前推荐</el-button>
-            <el-button v-else-if="scope.row.is_published" text :icon="Star" @click="handleRecommend(scope.row)">设为推荐</el-button>
-            <el-button v-if="!scope.row.is_published" text type="danger" :icon="Delete" @click="handleDelete(scope.row)">删除</el-button>
+            <el-button link type="primary" :icon="Edit" @click="openEdit(scope.row)">编辑</el-button>
+            <el-button v-if="!scope.row.is_published" link :icon="Upload" @click="handlePublish(scope.row)">发布</el-button>
+            <el-button v-else link :icon="Download" @click="handleUnpublish(scope.row)">下线</el-button>
+            <el-button v-if="scope.row.is_recommended" link type="warning" :icon="Star" disabled>当前推荐</el-button>
+            <el-button v-else-if="scope.row.is_published" link :icon="Star" @click="handleRecommend(scope.row)">设为推荐</el-button>
+            <el-button v-if="!scope.row.is_published" link type="danger" :icon="Delete" @click="handleDelete(scope.row)">删除</el-button>
             </div>
           </template>
         </el-table-column>
