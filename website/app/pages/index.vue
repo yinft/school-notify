@@ -206,9 +206,8 @@ useHead({
         <h2>扫码绑定设备，再发送提醒</h2>
         <p>{{ pageContent.miniapp.note }}</p>
       </div>
-      <div class="qr-placeholder" aria-label="小程序码占位" data-aos="flip-left" data-aos-delay="160">
-        <span>小程序码</span>
-        <small>上线后替换</small>
+      <div class="qr-placeholder" aria-label="微信小程序码" data-aos="flip-left" data-aos-delay="160">
+        <img src="/images/miniapp-qr-code.jpg" alt="思故桌面小喇叭微信小程序码" />
       </div>
     </section>
 
