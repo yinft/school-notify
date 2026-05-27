@@ -53,13 +53,19 @@ async function renderTrendChart() {
 
   if (trendChartRef.value) {
     const chart = echarts.init(trendChartRef.value)
+    const isTrendNarrow = window.innerWidth <= 720
+
     chart.setOption({
-      grid: { left: 24, right: 8, top: 20, bottom: 24 },
+      grid: { left: 24, right: 8, top: 20, bottom: isTrendNarrow ? 48 : 24 },
       xAxis: {
         type: 'category',
         data: notificationTrend.value.map((item) => item.date.slice(5)),
         axisLine: { lineStyle: { color: '#d9d9d9' } },
-        axisLabel: { color: '#71717a' }
+        axisLabel: {
+          color: '#71717a',
+          interval: isTrendNarrow ? 'auto' : 0,
+          rotate: isTrendNarrow ? 30 : 0
+        }
       },
       yAxis: {
         type: 'value',
@@ -180,7 +186,7 @@ watch(summary, async () => {
       <el-button text type="primary" @click="$router.go(0)">重试</el-button>
     </section>
 
-    <el-row class="analysis-overview-grid" :gutter="16">
+    <el-row class="dashboard-grid" :gutter="16">
       <el-col v-for="card in cards" :key="card.label" :xs="24" :sm="12" :lg="6">
         <article class="metric-card vben-card" :data-tone="card.tone" v-loading="summaryLoading">
           <header class="vben-card-header">
@@ -198,21 +204,25 @@ watch(summary, async () => {
           </footer>
         </article>
       </el-col>
-    </el-row>
 
-    <section class="chart-tabs-card vben-card" v-loading="trendLoading">
-      <header class="vben-card-header chart-tabs-header">
-        <h3>流量趋势</h3>
-        <div class="chart-tab-pills">
-          <span class="active">通知趋势</span>
-          <button type="button" :class="{ active: trendDays === 7 }" @click="setTrendDays(7)">最近 7 天</button>
-          <button type="button" :class="{ active: trendDays === 30 }" @click="setTrendDays(30)">最近 30 天</button>
-        </div>
-      </header>
-      <div ref="trendChart" class="echart-canvas large-chart"></div>
-    </section>
+      <el-col class="trend-grid" :span="24" :xs="24">
+        <section class="chart-tabs-card vben-card" v-loading="trendLoading">
+          <header class="vben-card-header chart-tabs-header">
+            <h3>流量趋势</h3>
+            <div class="chart-tab-pills">
+              <span class="active">通知趋势</span>
+              <button type="button" :class="{ active: trendDays === 7 }" @click="setTrendDays(7)">最近 7 天</button>
+              <button type="button" :class="{ active: trendDays === 30 }" @click="setTrendDays(30)">最近 30 天</button>
+            </div>
+          </header>
+          <div class="trend-chart-viewport">
+            <div class="trend-chart-surface">
+              <div ref="trendChart" class="echart-canvas large-chart"></div>
+            </div>
+          </div>
+        </section>
+      </el-col>
 
-    <el-row class="chart-grid" :gutter="16">
       <el-col :xs="24" :sm="12" :lg="8">
         <article class="chart-card vben-card" v-loading="summaryLoading">
           <header class="vben-card-header"><h3>在线设备占比</h3></header>
