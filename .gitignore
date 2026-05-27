@@ -3,6 +3,8 @@ __pycache__/
 .pytest_cache/
 *.pyc
 dist/
+!admin/dist/
+!admin/dist/**
 build/
 node_modules/
 miniprogram_npm/

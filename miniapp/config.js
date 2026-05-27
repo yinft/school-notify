@@ -4,7 +4,7 @@ const CONFIGS = {
     apiBaseUrl: 'http://127.0.0.1:8000/api'
   },
   trial: {
-    apiBaseUrl: 'http://8.136.61.23:8000/api'
+    apiBaseUrl: 'https://www.schoolhelper.cn/api'
   },
   release: {
     apiBaseUrl: 'https://www.schoolhelper.cn/api'

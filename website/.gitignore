@@ -1,6 +1,8 @@
 node_modules
 .nuxt
-.output
+.output/*
+!.output/public/
+!.output/public/**
 .data
 .cache
 dist
