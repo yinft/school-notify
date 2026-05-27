@@ -1,4 +1,7 @@
+import logging
 import logging.config as config
+
+from app.core.settings import settings
 
 
 LOG_FORMAT = "%(asctime)s.%(msecs)03d %(levelname)-8s %(name)s  %(message)s"
@@ -29,6 +32,7 @@ LOGGING_CONFIG = {
         "uvicorn": {"handlers": ["default"], "level": "INFO", "propagate": False},
         "uvicorn.error": {"handlers": ["default"], "level": "INFO", "propagate": False},
         "uvicorn.access": {"handlers": ["access"], "level": "INFO", "propagate": False},
+        "sqlalchemy.engine": {"handlers": ["default"], "level": "INFO", "propagate": False},
     },
     "root": {
         "handlers": ["default"],
@@ -39,3 +43,5 @@ LOGGING_CONFIG = {
 
 def configure_logging() -> None:
     config.dictConfig(LOGGING_CONFIG)
+    if not settings.sql_echo:
+        logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)

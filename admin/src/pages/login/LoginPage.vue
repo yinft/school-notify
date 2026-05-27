@@ -10,7 +10,7 @@ const authStore = useAuthStore()
 const loading = ref(false)
 const form = reactive({
   username: 'admin',
-  password: 'pass123456'
+  password: ''
 })
 
 async function handleSubmit() {
