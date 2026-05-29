@@ -99,6 +99,10 @@ if ($asm.Version -ne "$Version.0") {
 }
 
 Write-Host ""
+Write-Host "Writing client-config.json..."
+$configFile = Join-Path $publishDir "client-config.json"
+@{ BaseUrl = $env:SCHOOL_NOTIFY_BASE_URL } | ConvertTo-Json | Set-Content $configFile -Encoding UTF8
+
 Write-Host "Compressing..."
 Compress-Archive -Path "$publishDir\*" -DestinationPath $zipPath -Force
 

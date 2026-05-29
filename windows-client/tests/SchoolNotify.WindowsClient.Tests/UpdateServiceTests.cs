@@ -58,18 +58,84 @@ public sealed class UpdateServiceTests
         Assert.True(Directory.Exists(Path.Combine(updateRootDir, latestVersion, "extracted")));
     }
 
+    [Fact]
+    public void Constructor_DoesNotRestoreIncompletePendingUpdate()
+    {
+        using var temp = new TempDirectory();
+        var versionDir = Path.Combine(temp.Path, "1.0.1");
+        var extractedDir = Path.Combine(versionDir, "extracted");
+        Directory.CreateDirectory(extractedDir);
+        File.WriteAllText(Path.Combine(extractedDir, "SchoolNotify.WindowsClient.exe"), "fake exe");
+
+        var service = new UpdateService(new HttpClient(new RecordingHandler()), temp.Path, temp.Path);
+
+        Assert.False(service.IsUpdatePending);
+        Assert.False(Directory.Exists(versionDir));
+    }
+
+    [Fact]
+    public void Constructor_RestoresCompletePendingUpdate()
+    {
+        using var temp = new TempDirectory();
+        var extractedDir = Path.Combine(temp.Path, "1.0.1", "extracted");
+        Directory.CreateDirectory(extractedDir);
+        WriteRequiredUpdateFiles(extractedDir);
+
+        var service = new UpdateService(new HttpClient(new RecordingHandler()), temp.Path, temp.Path);
+
+        Assert.True(service.IsUpdatePending);
+    }
+
     private static byte[] CreateZipBytes()
     {
         using var stream = new MemoryStream();
         using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
         {
-            var entry = archive.CreateEntry("SchoolNotify.WindowsClient.exe");
-            using var entryStream = entry.Open();
-            using var writer = new StreamWriter(entryStream);
-            writer.Write("fake exe");
+            foreach (var fileName in RequiredUpdateFiles)
+            {
+                var entry = archive.CreateEntry(fileName);
+                using var entryStream = entry.Open();
+                using var writer = new StreamWriter(entryStream);
+                writer.Write(fileName);
+            }
         }
 
         return stream.ToArray();
+    }
+
+    private static readonly string[] RequiredUpdateFiles =
+    [
+        "SchoolNotify.WindowsClient.exe",
+        "SchoolNotify.WindowsClient.dll",
+        "SchoolNotify.WindowsClient.runtimeconfig.json",
+        "client-config.json",
+    ];
+
+    private static void WriteRequiredUpdateFiles(string directory)
+    {
+        foreach (var fileName in RequiredUpdateFiles)
+        {
+            File.WriteAllText(Path.Combine(directory, fileName), fileName);
+        }
+    }
+
+    private sealed class TempDirectory : IDisposable
+    {
+        public TempDirectory()
+        {
+            Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"school-notify-update-test-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(Path);
+        }
+
+        public string Path { get; }
+
+        public void Dispose()
+        {
+            if (Directory.Exists(Path))
+            {
+                Directory.Delete(Path, true);
+            }
+        }
     }
 
     private sealed class RecordingHandler(byte[]? responseBytes = null) : HttpMessageHandler

@@ -8,6 +8,14 @@ namespace SchoolNotify.WindowsClient.Services;
 
 public sealed class UpdateService
 {
+    private static readonly string[] RequiredUpdateFiles =
+    [
+        "SchoolNotify.WindowsClient.exe",
+        "SchoolNotify.WindowsClient.dll",
+        "SchoolNotify.WindowsClient.runtimeconfig.json",
+        "client-config.json",
+    ];
+
     private readonly HttpClient _httpClient;
     private readonly string _installDir;
     private readonly string _updateRootDir;
@@ -39,7 +47,7 @@ public sealed class UpdateService
             foreach (var dir in Directory.GetDirectories(_updateRootDir))
             {
                 var extractDir = Path.Combine(dir, "extracted");
-                if (Directory.Exists(extractDir) && Directory.GetFiles(extractDir).Length > 0)
+                if (IsCompleteUpdateDirectory(extractDir))
                 {
                     _pendingVersion = Path.GetFileName(dir);
                     return;
@@ -69,8 +77,9 @@ public sealed class UpdateService
 
         var versionDir = Path.Combine(_updateRootDir, updateInfo.LatestVersion);
         var extractDir = Path.Combine(versionDir, "extracted");
+        var extractingDir = Path.Combine(versionDir, "extracting");
 
-        if (Directory.Exists(extractDir) && Directory.GetFiles(extractDir).Length > 0)
+        if (IsCompleteUpdateDirectory(extractDir))
         {
             _pendingVersion = updateInfo.LatestVersion;
             return true;
@@ -80,7 +89,7 @@ public sealed class UpdateService
 
         try
         {
-            if (Directory.Exists(extractDir) && Directory.GetFiles(extractDir).Length > 0)
+            if (IsCompleteUpdateDirectory(extractDir))
             {
                 _pendingVersion = updateInfo.LatestVersion;
                 return true;
@@ -90,11 +99,23 @@ public sealed class UpdateService
 
             CleanOldUpdateDirs(updateInfo.LatestVersion);
 
-            Directory.CreateDirectory(extractDir);
+            if (Directory.Exists(extractingDir))
+                Directory.Delete(extractingDir, true);
+            if (Directory.Exists(extractDir))
+                Directory.Delete(extractDir, true);
+
+            Directory.CreateDirectory(extractingDir);
 
             await DownloadFileAsync(downloadUri, zipPath, cancellationToken);
 
-            ZipFile.ExtractToDirectory(zipPath, extractDir, true);
+            ZipFile.ExtractToDirectory(zipPath, extractingDir, true);
+            if (!IsCompleteUpdateDirectory(extractingDir))
+            {
+                Directory.Delete(extractingDir, true);
+                return false;
+            }
+
+            Directory.Move(extractingDir, extractDir);
 
             _pendingVersion = updateInfo.LatestVersion;
             return true;
@@ -120,7 +141,7 @@ public sealed class UpdateService
             return;
 
         var extractDir = Path.Combine(_updateRootDir, _pendingVersion, "extracted");
-        if (!Directory.Exists(extractDir))
+        if (!IsCompleteUpdateDirectory(extractDir))
             return;
 
         var exePath = Environment.ProcessPath;
@@ -204,5 +225,13 @@ public sealed class UpdateService
         await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
         await using var fileStream = File.Create(destinationPath);
         await contentStream.CopyToAsync(fileStream, cancellationToken);
+    }
+
+    private static bool IsCompleteUpdateDirectory(string directory)
+    {
+        if (!Directory.Exists(directory))
+            return false;
+
+        return RequiredUpdateFiles.All(fileName => File.Exists(Path.Combine(directory, fileName)));
     }
 }
