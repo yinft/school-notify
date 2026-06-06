@@ -26,7 +26,7 @@ onMounted(async () => {
 
 function scrollToId(id) {
   const el = document.getElementById(id)
-  if (el) el.scrollIntoView({ behavior: 'smooth' })
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 
 const versionContent = computed(() => buildVersionContent(publicVersions.value))
