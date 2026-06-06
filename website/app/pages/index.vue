@@ -24,6 +24,11 @@ onMounted(async () => {
   publicVersions.value = await loadPublicVersionItems($fetch, backendBaseUrl)
 })
 
+function scrollToId(id) {
+  const el = document.getElementById(id)
+  if (el) el.scrollIntoView({ behavior: 'smooth' })
+}
+
 const versionContent = computed(() => buildVersionContent(publicVersions.value))
 const pageContent = computed(() => ({
   ...siteContent,
@@ -57,9 +62,9 @@ useHead({
           <span>{{ pageContent.brand }}</span>
         </NuxtLink>
         <div class="nav-links">
-          <a href="#features">功能</a>
-          <a href="#download">下载</a>
-          <a href="#faq">FAQ</a>
+          <a href="#features" @click.prevent="scrollToId('features')">功能</a>
+          <a href="#download" @click.prevent="scrollToId('download')">下载</a>
+          <a href="#faq" @click.prevent="scrollToId('faq')">FAQ</a>
         </div>
       </nav>
 
@@ -70,8 +75,8 @@ useHead({
           <p class="hero-subtitle">{{ pageContent.hero.subtitle }}</p>
           <p class="hero-description">{{ pageContent.hero.description }}</p>
           <div class="hero-actions">
-            <a class="button primary" :href="pageContent.hero.actions[0].href">{{ pageContent.hero.actions[0].label }}</a>
-            <a class="button secondary" :href="pageContent.hero.actions[1].href">{{ pageContent.hero.actions[1].label }}</a>
+            <a class="button primary" href="#download" @click.prevent="scrollToId('download')">{{ pageContent.hero.actions[0].label }}</a>
+            <a class="button secondary" href="#miniapp-card" @click.prevent="scrollToId('miniapp-card')">{{ pageContent.hero.actions[1].label }}</a>
           </div>
           <dl class="hero-stats" aria-label="工具特点">
             <div v-for="stat in pageContent.hero.stats" :key="stat.label">

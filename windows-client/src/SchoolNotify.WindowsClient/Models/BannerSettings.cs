@@ -7,9 +7,10 @@ public sealed record BannerSettings(
     string ImportantColorName,
     string UrgentColorName,
     int DisplayDurationSeconds,
-    string DisplayMode = BannerDisplayModes.TopBanner)
+    double BannerHeight = 100,
+    string DisplayMode = BannerDisplayModes.FullScreen)
 {
-    public static BannerSettings Default { get; } = new(160, 24, "SteelBlue", "Orange", "Red", 10, BannerDisplayModes.TopBanner);
+    public static BannerSettings Default { get; } = new(160, 24, "SteelBlue", "Orange", "Red", 10, 100, BannerDisplayModes.FullScreen);
 }
 
 public static class BannerDisplayModes

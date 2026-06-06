@@ -15,7 +15,7 @@ public partial class BannerOverlayWindow : Window
 
     public void ShowNotification(string text, string colorName, BannerSettings settings)
     {
-        ApplyLayout(settings.DisplayMode);
+        ApplyLayout(settings.DisplayMode, settings.BannerHeight);
         MarqueeTextBlock.Text = text;
         MarqueeTextBlock.FontSize = settings.FontSize;
         BannerBorder.Background = ResolveBrush(colorName);
@@ -67,12 +67,13 @@ public partial class BannerOverlayWindow : Window
         MarqueeTransform.BeginAnimation(TranslateTransform.XProperty, animation, HandoffBehavior.SnapshotAndReplace);
     }
 
-    private void ApplyLayout(string displayMode)
+    private void ApplyLayout(string displayMode, double bannerHeight)
     {
         var layout = Services.BannerOverlayLayout.Build(
             displayMode,
             SystemParameters.PrimaryScreenWidth,
-            SystemParameters.PrimaryScreenHeight);
+            SystemParameters.PrimaryScreenHeight,
+            bannerHeight);
         Left = layout.Left;
         Top = layout.Top;
         Width = layout.Width;

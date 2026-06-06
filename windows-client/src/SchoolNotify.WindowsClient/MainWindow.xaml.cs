@@ -731,6 +731,7 @@ public partial class MainWindow : Window
         _isLoadingBannerSettings = true;
         BannerSpeedSlider.Value = settings.ScrollSpeed;
         BannerFontSizeSlider.Value = settings.FontSize;
+        BannerHeightSlider.Value = settings.BannerHeight;
         SelectRadioButtonByTag(settings.NormalColorName, NormalSteelBlueRadioButton, NormalSeaGreenRadioButton, NormalMediumPurpleRadioButton, NormalSlateGrayRadioButton);
         SelectRadioButtonByTag(settings.ImportantColorName, ImportantOrangeRadioButton, ImportantGoldRadioButton, ImportantCoralRadioButton, ImportantTomatoRadioButton);
         SelectRadioButtonByTag(settings.UrgentColorName, UrgentRedRadioButton, UrgentDarkRedRadioButton, UrgentOrangeRedRadioButton, UrgentCrimsonRadioButton);
@@ -761,6 +762,7 @@ public partial class MainWindow : Window
             ImportantColorName: ReadSelectedRadioTag(BannerSettings.Default.ImportantColorName, ImportantOrangeRadioButton, ImportantGoldRadioButton, ImportantCoralRadioButton, ImportantTomatoRadioButton),
             UrgentColorName: ReadSelectedRadioTag(BannerSettings.Default.UrgentColorName, UrgentRedRadioButton, UrgentDarkRedRadioButton, UrgentOrangeRedRadioButton, UrgentCrimsonRadioButton),
             DisplayDurationSeconds: duration,
+            BannerHeight: BannerHeightSlider.Value,
             DisplayMode: ReadSelectedRadioTag(BannerSettings.Default.DisplayMode, DisplayModeTopBannerRadioButton, DisplayModeFullScreenRadioButton));
     }
 
@@ -768,6 +770,7 @@ public partial class MainWindow : Window
     {
         BannerSpeedValueTextBlock.Text = $"{settings.ScrollSpeed:0} px/s";
         BannerFontSizeValueTextBlock.Text = $"{settings.FontSize:0} px";
+        BannerHeightValueTextBlock.Text = $"{settings.BannerHeight:0} px";
     }
 
     private static void SelectRadioButtonByTag(string tag, params System.Windows.Controls.RadioButton[] radioButtons)

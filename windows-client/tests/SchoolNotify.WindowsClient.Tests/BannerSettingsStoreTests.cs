@@ -23,7 +23,8 @@ public sealed class BannerSettingsStoreTests
                 NormalColorName: "SeaGreen",
                 ImportantColorName: "Orange",
                 UrgentColorName: "Red",
-                DisplayDurationSeconds: 30);
+                DisplayDurationSeconds: 30,
+                BannerHeight: 120);
 
             await store.SaveAsync(expected);
             var actual = await store.LoadAsync();
